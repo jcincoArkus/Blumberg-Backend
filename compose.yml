@@ -1,0 +1,22 @@
+name: blumberg
+
+services:
+  database:
+    image: postgres:17
+    container_name: blumberg_database
+    hostname: postgres
+    ports:
+      - 15432:5432
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_PASSWORD: postgres
+
+networks:
+  default:
+    name: blumberg
+
+volumes:
+  postgres:
+
