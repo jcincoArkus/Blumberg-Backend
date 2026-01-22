@@ -5,21 +5,54 @@ using Adapters.Config;
 namespace Adapters.Database;
 
 /// <summary>
-/// Factory for creating ApplicationDbContext at design-time (for EF Core tools)
-/// This is only used to generate migrations, not at runtime
+/// Factory for creating ApplicationDbContext at design-time and runtime
 /// </summary>
 public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
 {
-    public ApplicationDbContext CreateDbContext(string[] args)
+    private static DbContextOptions<ApplicationDbContext>? _cachedOptions;
+
+    /// <summary>
+    /// Creates a new ApplicationDbContext instance using configuration from .env
+    /// </summary>
+    public static ApplicationDbContext Create()
     {
-        // Use ConfigLoader to load all configurations (including .env file)
+        var options = GetOptions();
+        return new ApplicationDbContext(options);
+    }
+
+    /// <summary>
+    /// Gets the DbContextOptions, cached for reuse
+    /// </summary>
+    public static DbContextOptions<ApplicationDbContext> GetOptions()
+    {
+        if (_cachedOptions != null)
+            return _cachedOptions;
+
         var config = ConfigLoader.Load();
         var connectionString = config.Database.GetConnectionString();
 
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
         optionsBuilder.UseNpgsql(connectionString);
 
-        return new ApplicationDbContext(optionsBuilder.Options);
+        _cachedOptions = optionsBuilder.Options;
+        return _cachedOptions;
+    }
+
+    /// <summary>
+    /// Gets the connection string from configuration
+    /// </summary>
+    public static string GetConnectionString()
+    {
+        var config = ConfigLoader.Load();
+        return config.Database.GetConnectionString();
+    }
+
+    /// <summary>
+    /// Design-time factory method (used by EF Core tools)
+    /// </summary>
+    public ApplicationDbContext CreateDbContext(string[] args)
+    {
+        return Create();
     }
 }
 

@@ -1,40 +1,9 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(dirname "$0")"
-source "${SCRIPT_DIR}/database.sh"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-function showHelp() {
-    echo "Blumberg CLI"
-    echo ""
-    echo "Usage: ./scripts/cli <command> [arguments]"
-    echo ""
-    migrationHelp
-    echo ""
-}
+CLI_PROJECT="${ROOT_DIR}/Tools/CLI"
 
-function bootstrap() {
-    if [ $# -eq 0 ]; then
-        showHelp
-        exit 0
-    fi
-
-    local command=$1
-    shift
-
-    case $command in
-        migration:generate)
-            migrationGenerate "$1"
-            ;;
-        help|--help|-h)
-            showHelp
-            ;;
-        *)
-            logError "Unknown command: $command"
-            echo ""
-            showHelp
-            exit 1
-            ;;
-    esac
-}
-
-bootstrap "$@"
+# Run C# CLI application
+dotnet run --project "${CLI_PROJECT}" -- "$@"
