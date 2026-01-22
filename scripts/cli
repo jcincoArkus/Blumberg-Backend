@@ -1,34 +1,40 @@
 #!/bin/bash
 
-source $(dirname "$0")/database.sh
+SCRIPT_DIR="$(dirname "$0")"
+source "${SCRIPT_DIR}/database.sh"
 
-function show_help() {
-    echo "Blumberg Database CLI"
+function showHelp() {
+    echo "Blumberg CLI"
     echo ""
     echo "Usage: ./scripts/cli <command> [arguments]"
     echo ""
-    echo "Commands:"
-    echo ""
+    migrationHelp
     echo ""
 }
 
 function bootstrap() {
     if [ $# -eq 0 ]; then
-        show_help
+        showHelp
         exit 0
     fi
 
-    for arg in $@; do
-        case $arg in
+    local command=$1
+    shift
 
-            *)
-                logError "Unknown command: $arg"
-                echo ""
-                show_help
-                exit 1
-                ;;
-        esac
-    done
+    case $command in
+        migration:generate)
+            migrationGenerate "$1"
+            ;;
+        help|--help|-h)
+            showHelp
+            ;;
+        *)
+            logError "Unknown command: $command"
+            echo ""
+            showHelp
+            exit 1
+            ;;
+    esac
 }
 
-bootstrap $@
+bootstrap "$@"
