@@ -1,0 +1,34 @@
+#!/bin/bash
+
+source $(dirname "$0")/database.sh
+
+function show_help() {
+    echo "Blumberg Database CLI"
+    echo ""
+    echo "Usage: ./scripts/cli <command> [arguments]"
+    echo ""
+    echo "Commands:"
+    echo ""
+    echo ""
+}
+
+function bootstrap() {
+    if [ $# -eq 0 ]; then
+        show_help
+        exit 0
+    fi
+
+    for arg in $@; do
+        case $arg in
+
+            *)
+                logError "Unknown command: $arg"
+                echo ""
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+}
+
+bootstrap $@

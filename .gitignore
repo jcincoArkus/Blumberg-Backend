@@ -27,6 +27,13 @@ msbuild.log
 msbuild.err
 msbuild.wrn
 
+# MSBuild bug on Mac - creates folders with backslash in name
+# Using double backslash to match literal backslash in folder name
+**/[Bb]in\\[Dd]ebug/
+**/[Bb]in\\[Rr]elease/
+**/[Oo]bj\\[Dd]ebug/
+**/[Oo]bj\\[Rr]elease/
+
 # Visual Studio 2015
 .vs/
 
