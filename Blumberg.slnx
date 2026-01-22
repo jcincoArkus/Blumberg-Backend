@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Adapters/" />
+  <Folder Name="/Adapters/Config/">
+    <Project Path="Adapters/Config/Adapters.Config.csproj" />
+  </Folder>
+  <Folder Name="/Adapters/Jwt/">
+    <Project Path="Adapters/Jwt/Adapters.Jwt.csproj" />
+  </Folder>
+  <Folder Name="/Adapters/OpenApi/">
+    <Project Path="Adapters/OpenApi/Adapters.OpenApi.csproj" />
+  </Folder>
+</Solution>
