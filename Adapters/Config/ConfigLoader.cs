@@ -60,8 +60,6 @@ public static class ConfigLoader
 
     private static void LoadEnvFile(string? envFilePath)
     {
-        var currentDir = Directory.GetCurrentDirectory();
-
         // Try custom path first
         if (!string.IsNullOrWhiteSpace(envFilePath) && File.Exists(envFilePath))
         {
@@ -69,24 +67,17 @@ public static class ConfigLoader
             return;
         }
 
-        // Try current directory
-        var envPath = Path.Combine(currentDir, ".env");
-        if (File.Exists(envPath))
+        // Search for .env in current and parent directories (up to 5 levels)
+        var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+        for (var i = 0; i < 5 && dir != null; i++)
         {
-            Env.Load(envPath);
-            return;
-        }
-
-        // Try parent directory
-        var parentDir = Directory.GetParent(currentDir)?.FullName;
-        if (parentDir != null)
-        {
-            var parentEnvPath = Path.Combine(parentDir, ".env");
-            if (File.Exists(parentEnvPath))
+            var envPath = Path.Combine(dir.FullName, ".env");
+            if (File.Exists(envPath))
             {
-                Env.Load(parentEnvPath);
+                Env.Load(envPath);
                 return;
             }
+            dir = dir.Parent;
         }
 
         // .env file is optional, environment variables might be set directly

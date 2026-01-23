@@ -10,5 +10,8 @@ rootCommand.AddCommand(MigrationCommands.MigrationUp());
 rootCommand.AddCommand(MigrationCommands.MigrationDown());
 rootCommand.AddCommand(MigrationCommands.MigrationStatus());
 
+// Add nuke commands
+rootCommand.AddCommand(DatabaseCommands.NukeAndPave());
+
 // Run
 return await rootCommand.InvokeAsync(args);
