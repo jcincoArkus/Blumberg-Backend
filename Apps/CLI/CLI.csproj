@@ -9,14 +9,16 @@
 
   <ItemGroup>
     <!-- Design package exposed for programmatic migration scaffolding -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Adapters\Config\Adapters.Config.csproj" />
     <ProjectReference Include="..\..\Adapters\Database\Adapters.Database.csproj" />
+    <ProjectReference Include="..\..\Adapters\Server\Adapters.Server.csproj" />
   </ItemGroup>
 
 </Project>
