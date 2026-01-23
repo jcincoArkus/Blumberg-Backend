@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Adapters.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260122162912_AdminTable")]
+    [Migration("20260123153813_AdminTable")]
     partial class AdminTable
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace Adapters.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -67,10 +67,16 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_admins_id");
+
+                    b.HasIndex("CreatedAt")
+                        .IsDescending()
+                        .HasDatabaseName("ix_admins_created_at_desc");
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_admins_email_unique");
 
                     b.ToTable("admins", (string)null);
                 });

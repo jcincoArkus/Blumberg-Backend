@@ -26,11 +26,17 @@ namespace Adapters.Database.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_admins", x => x.id);
+                    table.PrimaryKey("pk_admins_id", x => x.id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_admins_email",
+                name: "ix_admins_created_at_desc",
+                table: "admins",
+                column: "created_at",
+                descending: new bool[0]);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_admins_email_unique",
                 table: "admins",
                 column: "email",
                 unique: true);
