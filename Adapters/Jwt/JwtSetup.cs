@@ -1,4 +1,5 @@
 using System.Text;
+using Adapters.Config;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -11,30 +12,35 @@ namespace Adapters.Jwt;
 public static class JwtSetup
 {
     /// <summary>
-    /// Adds JWT authentication to the service collection
+    /// Adds JWT authentication to the service collection using config from ConfigLoader
     /// </summary>
     /// <param name="services">Service collection</param>
-    /// <param name="secretKey">JWT secret key (min 32 characters)</param>
-    /// <param name="issuer">JWT issuer</param>
-    /// <param name="audience">JWT audience</param>
-    /// <param name="expirationHours">Token expiration in hours (default: 24)</param>
     /// <returns>Service collection for chaining</returns>
-    public static IServiceCollection AddJwtAuthentication(
-        this IServiceCollection services,
-        string secretKey,
-        string issuer,
-        string audience,
-        int expirationHours = 24)
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services)
     {
-        if (string.IsNullOrWhiteSpace(secretKey))
-            throw new ArgumentException("JWT secret key cannot be null or empty", nameof(secretKey));
+        var config = ConfigLoader.Load();
+        return services.AddJwtAuthentication(config);
+    }
 
-        if (secretKey.Length < 32)
-            throw new ArgumentException("JWT secret key must be at least 32 characters long", nameof(secretKey));
+    /// <summary>
+    /// Adds JWT authentication to the service collection using provided config
+    /// </summary>
+    /// <param name="services">Service collection</param>
+    /// <param name="config">Application configuration</param>
+    /// <returns>Service collection for chaining</returns>
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, AppConfig config)
+    {
+        var jwt = config.Jwt;
+
+        if (string.IsNullOrWhiteSpace(jwt.SecretKey))
+            throw new ArgumentException("JWT secret key cannot be null or empty");
+
+        if (jwt.SecretKey.Length < 32)
+            throw new ArgumentException("JWT secret key must be at least 32 characters long");
 
         // Register JWT service
         services.AddScoped<IJwtService>(sp =>
-            new JwtService(secretKey, issuer, audience, expirationHours));
+            new JwtService(jwt.SecretKey, jwt.Issuer, jwt.Audience, jwt.ExpirationHours));
 
         // Configure authentication
         services.AddAuthentication(options =>
@@ -50,9 +56,9 @@ public static class JwtSetup
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = issuer,
-                ValidAudience = audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                ValidIssuer = jwt.Issuer,
+                ValidAudience = jwt.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey)),
                 ClockSkew = TimeSpan.Zero
             };
 

@@ -1,16 +1,27 @@
 <Solution>
-  <Folder Name="/Adapters/" />
-  <Folder Name="/Adapters/Config/">
-    <Project Path="Adapters/Config/Adapters.Config.csproj" />
+  <Folder Name="/Apps/CLI/">
+    <Project Path="Apps/CLI/CLI.csproj" />
   </Folder>
-  <Folder Name="/Adapters/Database/">
-    <Project Path="Adapters/Database/Adapters.Database.csproj" />
+  <Folder Name="/Apps/API/">
+    <Project Path="Apps/API/API.csproj" />
   </Folder>
-  <Folder Name="/Adapters/Jwt/">
-    <Project Path="Adapters/Jwt/Adapters.Jwt.csproj" />
+    <Folder Name="/Adapters/Config/">
+      <Project Path="Adapters/Config/Adapters.Config.csproj" />
+    </Folder>
+    <Folder Name="/Adapters/Database/">
+      <Project Path="Adapters/Database/Adapters.Database.csproj" />
+    </Folder>
+    <Folder Name="/Adapters/Jwt/">
+      <Project Path="Adapters/Jwt/Adapters.Jwt.csproj" />
+    </Folder>
+    <Folder Name="/Adapters/OpenApi/">
+      <Project Path="Adapters/OpenApi/Adapters.OpenApi.csproj" />
+    </Folder>
+  <Folder Name="/Modules/" >
+    <Project Path="Modules/Modules.csproj" />
   </Folder>
-  <Folder Name="/Adapters/OpenApi/">
-    <Project Path="Adapters/OpenApi/Adapters.OpenApi.csproj" />
-  </Folder>
+     <Folder Name="/Modules/Auth/">
+      <Project Path="Modules/Auth/Modules.Auth.csproj" />
+    </Folder>
   <Project Path="Shared/Shared.csproj" />
 </Solution>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Config\Adapters.Config.csproj" />
+    <ProjectReference Include="..\Database\Adapters.Database.csproj" />
+    <ProjectReference Include="..\Jwt\Adapters.Jwt.csproj" />
+    <ProjectReference Include="..\OpenAPI\Adapters.OpenAPI.csproj" />
+    <ProjectReference Include="..\..\Modules\Modules.csproj" />
+  </ItemGroup>
+
+</Project>
+

@@ -6,6 +6,11 @@ namespace Adapters.Jwt;
 public interface IJwtService
 {
     /// <summary>
+    /// Token expiration in hours
+    /// </summary>
+    int ExpirationHours { get; }
+
+    /// <summary>
     /// Generates a JWT token for the given user
     /// </summary>
     /// <param name="userId">User unique identifier</param>

@@ -13,7 +13,8 @@ public class JwtService : IJwtService
     private readonly string _secretKey;
     private readonly string _issuer;
     private readonly string _audience;
-    private readonly int _expirationHours;
+
+    public int ExpirationHours { get; }
 
     public JwtService(string secretKey, string issuer, string audience, int expirationHours = 24)
     {
@@ -26,7 +27,7 @@ public class JwtService : IJwtService
         _secretKey = secretKey;
         _issuer = issuer;
         _audience = audience;
-        _expirationHours = expirationHours;
+        ExpirationHours = expirationHours;
     }
 
     public string GenerateToken(Guid userId, string email, string firstName, string lastName)
@@ -48,7 +49,7 @@ public class JwtService : IJwtService
             issuer: _issuer,
             audience: _audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(_expirationHours),
+            expires: DateTime.UtcNow.AddHours(ExpirationHours),
             signingCredentials: credentials
         );
 
