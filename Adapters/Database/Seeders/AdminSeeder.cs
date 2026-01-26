@@ -27,7 +27,9 @@ public class AdminSeeder : ISeeder
     [
         // Default admin for development
         new("admin@blumberg.com", "Admin123.", "Admin", "User"),
-        new("jIbarra@blumberg.com", "Admin123.", "Juan", "Ibarra"),
+        new("jibarra@blumberg.com", "Admin123.", "Juan", "Ibarra"),
+        new("jlopez@blumberg.com", "Admin123.", "Jose", "Lopez"),
+        new("fgonzalez@blumberg.com", "Admin123.", "Fernanda", "Gonzalez"),
 
         // Add new admins below (one per line, create a PR to add)
         // new("email@example.com", "Password123!", "FirstName", "LastName"),
