@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Modules.Admins;
 using Modules.Auth;
 
 namespace Modules;
@@ -17,6 +18,7 @@ public static class ModulesSetup
     public static IServiceCollection AddApplicationModules(this IServiceCollection services)
     {
         services.AddAuthModule();
+        services.AddAdminsModule();
 
         return services;
     }
@@ -28,6 +30,7 @@ public static class ModulesSetup
     public static IEnumerable<Assembly> GetControllerAssemblies()
     {
         yield return typeof(Auth.Controller.AuthController).Assembly;
+        yield return typeof(Admins.Controller.AdminController).Assembly;
     }
 }
 

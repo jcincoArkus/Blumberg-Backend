@@ -27,5 +27,32 @@ public interface IAdminRepository
     /// <param name="email">Email address</param>
     /// <returns>True if exists, false otherwise</returns>
     Task<bool> ExistsAsync(string email);
+
+    /// <summary>
+    /// Gets all active admins
+    /// </summary>
+    /// <returns>List of active admin entities</returns>
+    Task<List<Admin>> GetAllAsync();
+
+    /// <summary>
+    /// Creates a new admin
+    /// </summary>
+    /// <param name="admin">Admin entity</param>
+    /// <returns>Created admin entity</returns>
+    Task<Admin> CreateAsync(Admin admin);
+
+    /// <summary>
+    /// Updates an admin
+    /// </summary>
+    /// <param name="admin">Admin entity</param>
+    /// <returns>Updated admin entity</returns>
+    Task<Admin> UpdateAsync(Admin admin);
+
+    /// <summary>
+    /// Soft deletes an admin by setting the DeletedAt timestamp
+    /// </summary>
+    /// <param name="admin">Admin entity</param>
+    /// <returns>Soft deleted admin entity</returns>
+    Task<Admin> DeleteAsync(Admin admin);
 }
 

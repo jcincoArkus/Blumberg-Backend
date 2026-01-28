@@ -31,5 +31,42 @@ public class AdminRepository(ApplicationDbContext context) : IAdminRepository
         return await _context.Admins
             .AnyAsync(a => a.Email == email && a.DeletedAt == null);
     }
+
+    /// <inheritdoc />
+    public async Task<List<Admin>> GetAllAsync()
+    {
+        return await _context.Admins
+            .Where(a => a.DeletedAt == null)
+            .OrderBy(a => a.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<Admin> CreateAsync(Admin admin)
+    {
+        _context.Admins.Add(admin);
+        await _context.SaveChangesAsync();
+        return admin;
+    }
+
+    /// <inheritdoc />
+    public async Task<Admin> UpdateAsync(Admin admin)
+    {
+        _context.Admins.Update(admin);
+        await _context.SaveChangesAsync();
+        return admin;
+    }
+
+    /// <inheritdoc />
+    public async Task<Admin> DeleteAsync(Admin admin)
+    {
+        // Soft delete: set DeletedAt timestamp
+        admin.DeletedAt = DateTime.UtcNow;
+        admin.UpdatedAt = DateTime.UtcNow;
+        
+        _context.Admins.Update(admin);
+        await _context.SaveChangesAsync();
+        return admin;
+    }
 }
 
