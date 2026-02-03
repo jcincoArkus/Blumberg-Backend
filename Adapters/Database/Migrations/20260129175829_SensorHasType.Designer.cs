@@ -3,6 +3,7 @@ using System;
 using Adapters.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Adapters.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260129175829_SensorHasType")]
+    partial class SensorHasType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -99,10 +102,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("description");
 
-                    b.Property<Guid>("SensorReadingId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sensor_reading_id");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -127,9 +126,6 @@ namespace Adapters.Database.Migrations
                     b.HasIndex("CreatedAt")
                         .IsDescending()
                         .HasDatabaseName("ix_alerts_created_at_desc");
-
-                    b.HasIndex("SensorReadingId")
-                        .HasDatabaseName("ix_alerts_sensor_reading_id");
 
                     b.ToTable("alerts", (string)null);
                 });
@@ -215,10 +211,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
-                    b.Property<Guid>("ThresholdId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("threshold_id");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -239,10 +231,6 @@ namespace Adapters.Database.Migrations
                     b.HasIndex("Serial")
                         .HasDatabaseName("ix_sensors_serial");
 
-                    b.HasIndex("ThresholdId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_sensors_threshold_id_unique");
-
                     b.ToTable("sensors", (string)null);
                 });
 
@@ -261,10 +249,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
-                    b.Property<Guid>("SensorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sensor_id");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -279,9 +263,6 @@ namespace Adapters.Database.Migrations
                     b.HasIndex("CreatedAt")
                         .IsDescending()
                         .HasDatabaseName("ix_sensor_readings_created_at_desc");
-
-                    b.HasIndex("SensorId")
-                        .HasDatabaseName("ix_sensor_readings_sensor_id");
 
                     b.ToTable("sensor_readings", (string)null);
                 });
@@ -433,18 +414,6 @@ namespace Adapters.Database.Migrations
                     b.ToTable("thresholds", (string)null);
                 });
 
-            modelBuilder.Entity("Shared.Entity.Alert", b =>
-                {
-                    b.HasOne("Shared.Entity.SensorReading", "SensorReading")
-                        .WithMany("Alerts")
-                        .HasForeignKey("SensorReadingId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_alerts_sensor_reading_id");
-
-                    b.Navigation("SensorReading");
-                });
-
             modelBuilder.Entity("Shared.Entity.Equipment", b =>
                 {
                     b.HasOne("Shared.Entity.Site", "Site")
@@ -473,45 +442,14 @@ namespace Adapters.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_sensors_sensor_type_id");
 
-                    b.HasOne("Shared.Entity.Threshold", "Threshold")
-                        .WithOne("Sensor")
-                        .HasForeignKey("Shared.Entity.Sensor", "ThresholdId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_sensors_threshold_id");
-
                     b.Navigation("Equipment");
 
                     b.Navigation("SensorType");
-
-                    b.Navigation("Threshold");
-                });
-
-            modelBuilder.Entity("Shared.Entity.SensorReading", b =>
-                {
-                    b.HasOne("Shared.Entity.Sensor", "Sensor")
-                        .WithMany("SensorReadings")
-                        .HasForeignKey("SensorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_sensor_readings_sensor_id");
-
-                    b.Navigation("Sensor");
                 });
 
             modelBuilder.Entity("Shared.Entity.Equipment", b =>
                 {
                     b.Navigation("Sensors");
-                });
-
-            modelBuilder.Entity("Shared.Entity.Sensor", b =>
-                {
-                    b.Navigation("SensorReadings");
-                });
-
-            modelBuilder.Entity("Shared.Entity.SensorReading", b =>
-                {
-                    b.Navigation("Alerts");
                 });
 
             modelBuilder.Entity("Shared.Entity.SensorType", b =>
@@ -522,11 +460,6 @@ namespace Adapters.Database.Migrations
             modelBuilder.Entity("Shared.Entity.Site", b =>
                 {
                     b.Navigation("Equipment");
-                });
-
-            modelBuilder.Entity("Shared.Entity.Threshold", b =>
-                {
-                    b.Navigation("Sensor");
                 });
 #pragma warning restore 612, 618
         }

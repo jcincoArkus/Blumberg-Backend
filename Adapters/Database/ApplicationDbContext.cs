@@ -27,6 +27,41 @@ public class ApplicationDbContext : DbContext
     public DbSet<Admin> Admins => Set<Admin>();
 
     /// <summary>
+    /// Gets or sets the Sites DbSet
+    /// </summary>
+    public DbSet<Site> Sites => Set<Site>();
+
+    /// <summary>
+    /// Gets or sets the Equipment DbSet
+    /// </summary>
+    public DbSet<Equipment> Equipment => Set<Equipment>();
+
+    /// <summary>
+    /// Gets or sets the Sensors DbSet
+    /// </summary>
+    public DbSet<Sensor> Sensors => Set<Sensor>();
+
+    /// <summary>
+    /// Gets or sets the SensorTypes DbSet
+    /// </summary>
+    public DbSet<SensorType> SensorTypes => Set<SensorType>();
+
+    /// <summary>
+    /// Gets or sets the Thresholds DbSet
+    /// </summary>
+    public DbSet<Threshold> Thresholds => Set<Threshold>();
+
+    /// <summary>
+    /// Gets or sets the SensorReadings DbSet
+    /// </summary>
+    public DbSet<SensorReading> SensorReadings => Set<SensorReading>();
+
+    /// <summary>
+    /// Gets or sets the Alerts DbSet
+    /// </summary>
+    public DbSet<Alert> Alerts => Set<Alert>();
+
+    /// <summary>
     /// Configures the model and entity relationships
     /// </summary>
     /// <param name="modelBuilder">Model builder</param>
