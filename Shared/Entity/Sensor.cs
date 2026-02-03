@@ -1,33 +1,21 @@
+using Shared.Enums;
+
 namespace Shared.Entity;
 
 /// <summary>
 /// Sensor entity representing a sensor device
 /// </summary>
-
 public class Sensor : BaseEntity
-
 {
     /// <summary>
     /// Sensor's serial number
     /// </summary>
     public string Serial { get; set; } = string.Empty;
 
-
     /// <summary>
-    /// Sensor's status
+    /// Sensor's operational status
     /// </summary>
-
     public SensorStatus Status { get; set; }
-
-    /// <summary>
-    /// Sensor's possible status values
-    /// </summary>
-    public enum SensorStatus
-    {
-        Available,
-        Unavailable,
-        Unknown
-    }
 
     /// <summary>
     /// Equipment this sensor is contained in

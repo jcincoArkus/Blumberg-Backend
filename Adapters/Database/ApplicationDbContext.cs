@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Shared.Entity;
+using Shared.Enums;
 
 namespace Adapters.Database;
 
@@ -70,8 +71,31 @@ public class ApplicationDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         // Apply all entity configurations from this assembly
-        // Entity configurations will be added in separate files (e.g., AdminConfiguration.cs)
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+        // Domain enums: store as string VARCHAR(50) so adding new enum values does NOT require a migration
+        var domainEnumTypes = new[]
+        {
+            typeof(SensorStatus),
+            typeof(SensorTypeKind),
+            typeof(Unit),
+            typeof(IngestionSource),
+            typeof(IngestionStatus),
+            typeof(SensorHealthStatus)
+        };
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType.IsEnum && domainEnumTypes.Contains(property.ClrType))
+                {
+                    modelBuilder.Entity(entityType.ClrType)
+                        .Property(property.Name)
+                        .HasConversion<string>()
+                        .HasMaxLength(50);
+                }
+            }
+        }
     }
 
     /// <summary>

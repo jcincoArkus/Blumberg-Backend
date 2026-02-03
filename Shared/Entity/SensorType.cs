@@ -1,3 +1,5 @@
+using Shared.Enums;
+
 namespace Shared.Entity;
 
 /// <summary>
@@ -6,14 +8,14 @@ namespace Shared.Entity;
 public class SensorType : BaseEntity
 {
     /// <summary>
-    /// Sensor type's name
+    /// Kind/category of sensor (e.g. Temperature, Humidity)
     /// </summary>
-    public string Type { get; set; } = string.Empty;
+    public SensorTypeKind Type { get; set; }
 
     /// <summary>
-    /// Sensor type's unit of measurement
+    /// Unit of measurement for this sensor type
     /// </summary>
-    public string Unit { get; set; } = string.Empty;
+    public Unit Unit { get; set; }
 
     /// <summary>
     /// Sensors classified by this type

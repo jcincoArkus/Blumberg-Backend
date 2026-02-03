@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shared.Entity;
+using Shared.Enums;
 
 namespace Adapters.Database.Schemas;
 
@@ -25,9 +26,11 @@ public class SensorTypeSchema : IEntityTypeConfiguration<SensorType>
         builder.HasKey(e => e.Id).HasName("pk_sensor_types_id");
         builder.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
 
-        // Properties
-        builder.Property(e => e.Type).HasColumnName("type").IsRequired().HasMaxLength(100);
-        builder.Property(e => e.Unit).HasColumnName("unit").IsRequired().HasMaxLength(50);
+        // Properties (domain enums stored as string VARCHAR(50); new values do not require migration)
+        builder.Property(e => e.Type).HasColumnName("type").IsRequired()
+            .HasConversion<string>().HasMaxLength(50);
+        builder.Property(e => e.Unit).HasColumnName("unit").IsRequired()
+            .HasConversion<string>().HasMaxLength(50);
 
         // Timestamps
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();

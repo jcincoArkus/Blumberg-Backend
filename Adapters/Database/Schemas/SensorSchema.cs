@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shared.Entity;
+using Shared.Enums;
 
 namespace Adapters.Database.Schemas;
 
@@ -28,7 +29,8 @@ public class SensorSchema : IEntityTypeConfiguration<Sensor>
         // Properties
         builder.Property(e => e.Serial).HasColumnName("serial").IsRequired().HasMaxLength(100);
         builder.HasIndex(e => e.Serial).HasDatabaseName("ix_sensors_serial");
-        builder.Property(e => e.Status).HasColumnName("status").IsRequired();
+        builder.Property(e => e.Status).HasColumnName("status").IsRequired()
+            .HasConversion<string>().HasMaxLength(50);
         builder.Property(e => e.EquipmentId).HasColumnName("equipment_id").IsRequired();
         builder.HasIndex(e => e.EquipmentId).HasDatabaseName("ix_sensors_equipment_id");
         builder.Property(e => e.SensorTypeId).HasColumnName("sensor_type_id").IsRequired();
