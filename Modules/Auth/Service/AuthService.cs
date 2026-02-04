@@ -22,7 +22,8 @@ public class AuthService(IAdminRepository adminRepository, IJwtService jwtServic
             admin.Id,
             admin.Email,
             admin.FirstName,
-            admin.LastName);
+            admin.LastName,
+            admin.OrganizationId);
 
         return new AuthResponse
         {
@@ -30,6 +31,7 @@ public class AuthService(IAdminRepository adminRepository, IJwtService jwtServic
             Email = admin.Email,
             FirstName = admin.FirstName,
             LastName = admin.LastName,
+            OrganizationId = admin.OrganizationId,
             ExpiresAt = DateTime.UtcNow.AddHours(jwtService.ExpirationHours)
         };
     }

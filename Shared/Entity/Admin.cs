@@ -24,5 +24,15 @@ public class Admin : BaseEntity
     /// Admin's last name
     /// </summary>
     public string LastName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Organization this admin belongs to
+    /// </summary>
+    public Guid OrganizationId { get; set; }
+
+    /// <summary>
+    /// Navigation to the organization
+    /// </summary>
+    public Organization Organization { get; set; } = null!;
 }
 

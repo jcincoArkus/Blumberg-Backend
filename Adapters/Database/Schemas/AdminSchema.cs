@@ -24,9 +24,11 @@ public class AdminSchema : IEntityTypeConfiguration<Admin>
         // Primary key
         builder.HasKey(e => e.Id).HasName("pk_admins_id");
         builder.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
-        // Email (unique, required)
+        // Email (unique per organization)
         builder.Property(e => e.Email).HasColumnName("email").IsRequired().HasMaxLength(255);
-        builder.HasIndex(e => e.Email).IsUnique().HasDatabaseName("ix_admins_email_unique");
+        builder.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+        builder.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_admins_organization_id");
+        builder.HasIndex(e => new { e.OrganizationId, e.Email }).IsUnique().HasDatabaseName("ix_admins_organization_id_email_unique");
         // Password hash (required)
         builder.Property(e => e.PasswordHash).HasColumnName("password_hash").IsRequired();
         // First name (required)
@@ -38,6 +40,13 @@ public class AdminSchema : IEntityTypeConfiguration<Admin>
         builder.HasIndex(e => e.CreatedAt).IsDescending().HasDatabaseName("ix_admins_created_at_desc");
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");
+
+        // Relationships: Admin belongs to Organization
+        builder.HasOne(e => e.Organization)
+            .WithMany(e => e.Admins)
+            .HasForeignKey(e => e.OrganizationId)
+            .HasConstraintName("fk_admins_organization_id")
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

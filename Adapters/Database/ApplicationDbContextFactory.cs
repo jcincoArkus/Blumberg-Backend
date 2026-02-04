@@ -12,12 +12,13 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     private static DbContextOptions<ApplicationDbContext>? _cachedOptions;
 
     /// <summary>
-    /// Creates a new ApplicationDbContext instance using configuration from .env
+    /// Creates a new ApplicationDbContext instance using configuration from .env.
+    /// Uses a design-time tenant context (no request scope); for migrations and tooling only.
     /// </summary>
     public static ApplicationDbContext Create()
     {
         var options = GetOptions();
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, new DesignTimeTenantContext());
     }
 
     /// <summary>

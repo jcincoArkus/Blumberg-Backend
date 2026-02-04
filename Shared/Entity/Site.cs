@@ -36,6 +36,16 @@ public class Site : BaseEntity
     public string Country { get; set; } = string.Empty;
 
     /// <summary>
+    /// Organization this site belongs to
+    /// </summary>
+    public Guid OrganizationId { get; set; }
+
+    /// <summary>
+    /// Navigation to the organization
+    /// </summary>
+    public Organization Organization { get; set; } = null!;
+
+    /// <summary>
     /// Equipment at this site
     /// </summary>
     public ICollection<Equipment> Equipment { get; set; } = new List<Equipment>();

@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Shared.Constants;
 
 namespace Adapters.Jwt;
 
@@ -30,7 +31,7 @@ public class JwtService : IJwtService
         ExpirationHours = expirationHours;
     }
 
-    public string GenerateToken(Guid userId, string email, string firstName, string lastName)
+    public string GenerateToken(Guid userId, string email, string firstName, string lastName, Guid organizationId)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -41,6 +42,7 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Email, email),
             new Claim(JwtRegisteredClaimNames.GivenName, firstName),
             new Claim(JwtRegisteredClaimNames.FamilyName, lastName),
+            new Claim(TenantClaimNames.OrgIdClaim, organizationId.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };

@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Shared.csproj" />
     <ProjectReference Include="..\Config\Adapters.Config.csproj" />
     <ProjectReference Include="..\Database\Adapters.Database.csproj" />
     <ProjectReference Include="..\Jwt\Adapters.Jwt.csproj" />

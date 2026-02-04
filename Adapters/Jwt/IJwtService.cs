@@ -17,8 +17,9 @@ public interface IJwtService
     /// <param name="email">User email</param>
     /// <param name="firstName">User first name</param>
     /// <param name="lastName">User last name</param>
+    /// <param name="organizationId">Organization (tenant) ID for scoping</param>
     /// <returns>JWT token string</returns>
-    string GenerateToken(Guid userId, string email, string firstName, string lastName);
+    string GenerateToken(Guid userId, string email, string firstName, string lastName, Guid organizationId);
 
     /// <summary>
     /// Validates a JWT token

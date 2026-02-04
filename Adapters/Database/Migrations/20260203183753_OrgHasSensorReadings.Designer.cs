@@ -3,6 +3,7 @@ using System;
 using Adapters.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Adapters.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260203183753_OrgHasSensorReadings")]
+    partial class OrgHasSensorReadings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,10 +58,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
 
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")
@@ -75,12 +74,9 @@ namespace Adapters.Database.Migrations
                         .IsDescending()
                         .HasDatabaseName("ix_admins_created_at_desc");
 
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_admins_organization_id");
-
-                    b.HasIndex("OrganizationId", "Email")
+                    b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_admins_organization_id_email_unique");
+                        .HasDatabaseName("ix_admins_email_unique");
 
                     b.ToTable("admins", (string)null);
                 });
@@ -515,18 +511,6 @@ namespace Adapters.Database.Migrations
                     b.ToTable("thresholds", (string)null);
                 });
 
-            modelBuilder.Entity("Shared.Entity.Admin", b =>
-                {
-                    b.HasOne("Shared.Entity.Organization", "Organization")
-                        .WithMany("Admins")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_admins_organization_id");
-
-                    b.Navigation("Organization");
-                });
-
             modelBuilder.Entity("Shared.Entity.Alert", b =>
                 {
                     b.HasOne("Shared.Entity.SensorReading", "SensorReading")
@@ -639,8 +623,6 @@ namespace Adapters.Database.Migrations
 
             modelBuilder.Entity("Shared.Entity.Organization", b =>
                 {
-                    b.Navigation("Admins");
-
                     b.Navigation("Equipment");
 
                     b.Navigation("SensorReadings");

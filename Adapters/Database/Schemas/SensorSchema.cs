@@ -31,6 +31,8 @@ public class SensorSchema : IEntityTypeConfiguration<Sensor>
         builder.HasIndex(e => e.Serial).HasDatabaseName("ix_sensors_serial");
         builder.Property(e => e.Status).HasColumnName("status").IsRequired()
             .HasConversion<string>().HasMaxLength(50);
+        builder.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+        builder.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_sensors_organization_id");
         builder.Property(e => e.EquipmentId).HasColumnName("equipment_id").IsRequired();
         builder.HasIndex(e => e.EquipmentId).HasDatabaseName("ix_sensors_equipment_id");
         builder.Property(e => e.SensorTypeId).HasColumnName("sensor_type_id").IsRequired();
@@ -43,6 +45,13 @@ public class SensorSchema : IEntityTypeConfiguration<Sensor>
         builder.HasIndex(e => e.CreatedAt).IsDescending().HasDatabaseName("ix_sensors_created_at_desc");
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");
+
+        // Relationships: Sensor belongs to Organization
+        builder.HasOne(e => e.Organization)
+            .WithMany(e => e.Sensors)
+            .HasForeignKey(e => e.OrganizationId)
+            .HasConstraintName("fk_sensors_organization_id")
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Relationships: Sensor is configured by one Threshold (1:1)
         builder.HasOne(e => e.Threshold)

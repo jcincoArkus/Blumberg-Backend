@@ -16,6 +16,16 @@ public class Equipment : BaseEntity
     public string EquipmentType { get; set; } = string.Empty;
 
     /// <summary>
+    /// Organization this equipment belongs to
+    /// </summary>
+    public Guid OrganizationId { get; set; }
+
+    /// <summary>
+    /// Navigation to the organization
+    /// </summary>
+    public Organization Organization { get; set; } = null!;
+
+    /// <summary>
     /// Site this equipment belongs to
     /// </summary>
     public Guid SiteId { get; set; }

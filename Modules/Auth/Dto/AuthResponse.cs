@@ -26,6 +26,11 @@ public class AuthResponse
     public string LastName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Organization (tenant) ID the admin belongs to; included in JWT as orgId claim
+    /// </summary>
+    public Guid OrganizationId { get; set; }
+
+    /// <summary>
     /// Token expiration time
     /// </summary>
     public DateTime ExpiresAt { get; set; }

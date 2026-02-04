@@ -1,31 +1,38 @@
 using Microsoft.EntityFrameworkCore;
+using Shared.Abstractions;
 using Shared.Entity;
 using Shared.Enums;
 
 namespace Adapters.Database;
 
 /// <summary>
-/// Main application database context for PostgreSQL
+/// Main application database context for PostgreSQL.
+/// Applies global query filters: soft delete (DeletedAt == null) and tenant scope (OrganizationId) where applicable.
 /// </summary>
-/// <remarks>
-/// This DbContext manages all entity sets and database operations.
-/// Configured to use PostgreSQL with Npgsql provider.
-/// </remarks>
 public class ApplicationDbContext : DbContext
 {
+    private readonly ITenantContext _tenantContext;
+
     /// <summary>
     /// Initializes a new instance of the ApplicationDbContext
     /// </summary>
     /// <param name="options">DbContext options</param>
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    /// <param name="tenantContext">Current tenant context for request-scoped filtering</param>
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantContext tenantContext)
         : base(options)
     {
+        _tenantContext = tenantContext;
     }
 
     /// <summary>
     /// Gets or sets the Admins DbSet
     /// </summary>
     public DbSet<Admin> Admins => Set<Admin>();
+
+    /// <summary>
+    /// Gets or sets the Organizations DbSet
+    /// </summary>
+    public DbSet<Organization> Organizations => Set<Organization>();
 
     /// <summary>
     /// Gets or sets the Sites DbSet
@@ -96,19 +103,59 @@ public class ApplicationDbContext : DbContext
                 }
             }
         }
+
+        // Global query filters: soft delete + tenant scope (evaluated at query time; no cross-tenant data access)
+        modelBuilder.Entity<Admin>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+        modelBuilder.Entity<Site>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+        modelBuilder.Entity<Equipment>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+        modelBuilder.Entity<Sensor>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+        modelBuilder.Entity<SensorReading>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+
+        // Soft delete only (no OrganizationId)
+        modelBuilder.Entity<Organization>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<SensorType>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<Threshold>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<Alert>().HasQueryFilter(e => e.DeletedAt == null);
     }
 
     /// <summary>
-    /// Saves all changes made in this context to the database
+    /// Saves all changes made in this context to the database.
+    /// Validates tenant scope: no cross-tenant writes; sets OrganizationId on new tenant-scoped entities.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Number of state entries written to the database</returns>
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // Add automatic timestamp handling here if needed
-        // Example: Set CreatedAt, UpdatedAt for entities with BaseEntity
+        var orgId = _tenantContext.CurrentOrganizationId;
+
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+            {
+                if (entry.Entity is Admin a)
+                    ValidateAndSetTenant(a.OrganizationId, () => a.OrganizationId = orgId!.Value, orgId, nameof(Admin));
+                else if (entry.Entity is Site s)
+                    ValidateAndSetTenant(s.OrganizationId, () => s.OrganizationId = orgId!.Value, orgId, nameof(Site));
+                else if (entry.Entity is Equipment eq)
+                    ValidateAndSetTenant(eq.OrganizationId, () => eq.OrganizationId = orgId!.Value, orgId, nameof(Equipment));
+                else if (entry.Entity is Sensor sn)
+                    ValidateAndSetTenant(sn.OrganizationId, () => sn.OrganizationId = orgId!.Value, orgId, nameof(Sensor));
+                else if (entry.Entity is SensorReading sr)
+                    ValidateAndSetTenant(sr.OrganizationId, () => sr.OrganizationId = orgId!.Value, orgId, nameof(SensorReading));
+            }
+        }
 
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    private static void ValidateAndSetTenant(Guid entityOrgId, Action setOrgId, Guid? currentOrgId, string entityName)
+    {
+        if (currentOrgId == null)
+            throw new InvalidOperationException($"Tenant context is required to create or update {entityName}.");
+        if (entityOrgId == Guid.Empty)
+            setOrgId();
+        else if (entityOrgId != currentOrgId)
+            throw new InvalidOperationException($"Cross-tenant access is not allowed for {entityName}.");
     }
 }
 

@@ -27,6 +27,8 @@ public class SensorReadingSchema : IEntityTypeConfiguration<SensorReading>
 
         // Properties
         builder.Property(e => e.Value).HasColumnName("value").IsRequired();
+        builder.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+        builder.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_sensor_readings_organization_id");
         builder.Property(e => e.SensorId).HasColumnName("sensor_id").IsRequired();
         builder.HasIndex(e => e.SensorId).HasDatabaseName("ix_sensor_readings_sensor_id");
 
@@ -35,6 +37,13 @@ public class SensorReadingSchema : IEntityTypeConfiguration<SensorReading>
         builder.HasIndex(e => e.CreatedAt).IsDescending().HasDatabaseName("ix_sensor_readings_created_at_desc");
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");
+
+        // Relationships: SensorReading belongs to Organization
+        builder.HasOne(e => e.Organization)
+            .WithMany(e => e.SensorReadings)
+            .HasForeignKey(e => e.OrganizationId)
+            .HasConstraintName("fk_sensor_readings_organization_id")
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Relationships: SensorReading triggers many Alerts
         builder.HasMany(e => e.Alerts)

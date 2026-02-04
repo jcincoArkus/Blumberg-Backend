@@ -1,6 +1,7 @@
 using Adapters.Config;
 using Adapters.Database;
 using Adapters.Jwt;
+using Shared.Abstractions;
 using Adapters.OpenAPI.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -69,6 +70,10 @@ public class ApiServer
             });
             options.OperationFilter<AuthorizeCheckOperationFilter>();
         });
+
+        // Tenant context (JWT orgId claim or X-Organization-Id header for dev)
+        services.AddHttpContextAccessor();
+        services.AddScoped<ITenantContext, TenantContext>();
 
         // Database setup
         services.AddDbContext<ApplicationDbContext>(options =>

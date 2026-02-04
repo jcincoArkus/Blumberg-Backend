@@ -21,7 +21,9 @@ public class AdminRepository(ApplicationDbContext context) : IAdminRepository
     /// <inheritdoc />
     public async Task<Admin?> GetByEmailAsync(string email)
     {
+        // Bypass tenant filter for login: find admin by email across organizations
         return await _context.Admins
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(a => a.Email == email && a.DeletedAt == null);
     }
 

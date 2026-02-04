@@ -18,6 +18,16 @@ public class Sensor : BaseEntity
     public SensorStatus Status { get; set; }
 
     /// <summary>
+    /// Organization this sensor belongs to
+    /// </summary>
+    public Guid OrganizationId { get; set; }
+
+    /// <summary>
+    /// Navigation to the organization
+    /// </summary>
+    public Organization Organization { get; set; } = null!;
+
+    /// <summary>
     /// Equipment this sensor is contained in
     /// </summary>
     public Guid EquipmentId { get; set; }

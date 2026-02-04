@@ -3,6 +3,7 @@ using System;
 using Adapters.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Adapters.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260203181937_OrganizationTable")]
+    partial class OrganizationTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,10 +58,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
 
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")
@@ -75,12 +74,9 @@ namespace Adapters.Database.Migrations
                         .IsDescending()
                         .HasDatabaseName("ix_admins_created_at_desc");
 
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_admins_organization_id");
-
-                    b.HasIndex("OrganizationId", "Email")
+                    b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_admins_organization_id_email_unique");
+                        .HasDatabaseName("ix_admins_email_unique");
 
                     b.ToTable("admins", (string)null);
                 });
@@ -168,10 +164,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
                     b.Property<Guid>("SiteId")
                         .HasColumnType("uuid")
                         .HasColumnName("site_id");
@@ -186,9 +178,6 @@ namespace Adapters.Database.Migrations
                     b.HasIndex("CreatedAt")
                         .IsDescending()
                         .HasDatabaseName("ix_equipment_created_at_desc");
-
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_equipment_organization_id");
 
                     b.HasIndex("SiteId")
                         .HasDatabaseName("ix_equipment_site_id");
@@ -260,10 +249,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("equipment_id");
 
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
                     b.Property<Guid>("SensorTypeId")
                         .HasColumnType("uuid")
                         .HasColumnName("sensor_type_id");
@@ -298,9 +283,6 @@ namespace Adapters.Database.Migrations
                     b.HasIndex("EquipmentId")
                         .HasDatabaseName("ix_sensors_equipment_id");
 
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_sensors_organization_id");
-
                     b.HasIndex("SensorTypeId")
                         .HasDatabaseName("ix_sensors_sensor_type_id");
 
@@ -329,10 +311,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
                     b.Property<Guid>("SensorId")
                         .HasColumnType("uuid")
                         .HasColumnName("sensor_id");
@@ -351,9 +329,6 @@ namespace Adapters.Database.Migrations
                     b.HasIndex("CreatedAt")
                         .IsDescending()
                         .HasDatabaseName("ix_sensor_readings_created_at_desc");
-
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_sensor_readings_organization_id");
 
                     b.HasIndex("SensorId")
                         .HasDatabaseName("ix_sensor_readings_sensor_id");
@@ -441,10 +416,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
                     b.Property<string>("PostalCode")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -467,9 +438,6 @@ namespace Adapters.Database.Migrations
                     b.HasIndex("CreatedAt")
                         .IsDescending()
                         .HasDatabaseName("ix_sites_created_at_desc");
-
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_sites_organization_id");
 
                     b.ToTable("sites", (string)null);
                 });
@@ -515,18 +483,6 @@ namespace Adapters.Database.Migrations
                     b.ToTable("thresholds", (string)null);
                 });
 
-            modelBuilder.Entity("Shared.Entity.Admin", b =>
-                {
-                    b.HasOne("Shared.Entity.Organization", "Organization")
-                        .WithMany("Admins")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_admins_organization_id");
-
-                    b.Navigation("Organization");
-                });
-
             modelBuilder.Entity("Shared.Entity.Alert", b =>
                 {
                     b.HasOne("Shared.Entity.SensorReading", "SensorReading")
@@ -541,21 +497,12 @@ namespace Adapters.Database.Migrations
 
             modelBuilder.Entity("Shared.Entity.Equipment", b =>
                 {
-                    b.HasOne("Shared.Entity.Organization", "Organization")
-                        .WithMany("Equipment")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_equipment_organization_id");
-
                     b.HasOne("Shared.Entity.Site", "Site")
                         .WithMany("Equipment")
                         .HasForeignKey("SiteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_equipment_site_id");
-
-                    b.Navigation("Organization");
 
                     b.Navigation("Site");
                 });
@@ -568,13 +515,6 @@ namespace Adapters.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_sensors_equipment_id");
-
-                    b.HasOne("Shared.Entity.Organization", "Organization")
-                        .WithMany("Sensors")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_sensors_organization_id");
 
                     b.HasOne("Shared.Entity.SensorType", "SensorType")
                         .WithMany("Sensors")
@@ -592,8 +532,6 @@ namespace Adapters.Database.Migrations
 
                     b.Navigation("Equipment");
 
-                    b.Navigation("Organization");
-
                     b.Navigation("SensorType");
 
                     b.Navigation("Threshold");
@@ -601,13 +539,6 @@ namespace Adapters.Database.Migrations
 
             modelBuilder.Entity("Shared.Entity.SensorReading", b =>
                 {
-                    b.HasOne("Shared.Entity.Organization", "Organization")
-                        .WithMany("SensorReadings")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_sensor_readings_organization_id");
-
                     b.HasOne("Shared.Entity.Sensor", "Sensor")
                         .WithMany("SensorReadings")
                         .HasForeignKey("SensorId")
@@ -615,39 +546,12 @@ namespace Adapters.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_sensor_readings_sensor_id");
 
-                    b.Navigation("Organization");
-
                     b.Navigation("Sensor");
-                });
-
-            modelBuilder.Entity("Shared.Entity.Site", b =>
-                {
-                    b.HasOne("Shared.Entity.Organization", "Organization")
-                        .WithMany("Sites")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_sites_organization_id");
-
-                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("Shared.Entity.Equipment", b =>
                 {
                     b.Navigation("Sensors");
-                });
-
-            modelBuilder.Entity("Shared.Entity.Organization", b =>
-                {
-                    b.Navigation("Admins");
-
-                    b.Navigation("Equipment");
-
-                    b.Navigation("SensorReadings");
-
-                    b.Navigation("Sensors");
-
-                    b.Navigation("Sites");
                 });
 
             modelBuilder.Entity("Shared.Entity.Sensor", b =>

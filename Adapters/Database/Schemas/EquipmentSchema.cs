@@ -28,6 +28,8 @@ public class EquipmentSchema : IEntityTypeConfiguration<Equipment>
         // Properties
         builder.Property(e => e.Name).HasColumnName("name").IsRequired().HasMaxLength(200);
         builder.Property(e => e.EquipmentType).HasColumnName("equipment_type").IsRequired().HasMaxLength(100);
+        builder.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+        builder.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_equipment_organization_id");
         builder.Property(e => e.SiteId).HasColumnName("site_id").IsRequired();
         builder.HasIndex(e => e.SiteId).HasDatabaseName("ix_equipment_site_id");
 
@@ -36,6 +38,13 @@ public class EquipmentSchema : IEntityTypeConfiguration<Equipment>
         builder.HasIndex(e => e.CreatedAt).IsDescending().HasDatabaseName("ix_equipment_created_at_desc");
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");
+
+        // Relationships: Equipment belongs to Organization
+        builder.HasOne(e => e.Organization)
+            .WithMany(e => e.Equipment)
+            .HasForeignKey(e => e.OrganizationId)
+            .HasConstraintName("fk_equipment_organization_id")
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Relationships: Equipment contains many Sensors
         builder.HasMany(e => e.Sensors)

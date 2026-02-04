@@ -11,6 +11,16 @@ public class SensorReading : BaseEntity
     public decimal Value { get; set; }
 
     /// <summary>
+    /// Organization this reading belongs to
+    /// </summary>
+    public Guid OrganizationId { get; set; }
+
+    /// <summary>
+    /// Navigation to the organization
+    /// </summary>
+    public Organization Organization { get; set; } = null!;
+
+    /// <summary>
     /// Sensor that produced this reading
     /// </summary>
     public Guid SensorId { get; set; }
