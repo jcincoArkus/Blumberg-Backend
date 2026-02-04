@@ -150,8 +150,13 @@ public class ApplicationDbContext : DbContext
 
     private static void ValidateAndSetTenant(Guid entityOrgId, Action setOrgId, Guid? currentOrgId, string entityName)
     {
+        // No tenant context (e.g. design-time, CLI seeders): allow only if entity already has OrganizationId set
         if (currentOrgId == null)
-            throw new InvalidOperationException($"Tenant context is required to create or update {entityName}.");
+        {
+            if (entityOrgId == Guid.Empty)
+                throw new InvalidOperationException($"Tenant context is required to create or update {entityName}, or set OrganizationId explicitly (e.g. in seeders).");
+            return;
+        }
         if (entityOrgId == Guid.Empty)
             setOrgId();
         else if (entityOrgId != currentOrgId)

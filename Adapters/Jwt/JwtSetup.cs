@@ -50,6 +50,9 @@ public static class JwtSetup
         })
         .AddJwtBearer(options =>
         {
+            // Preserve custom claim names (e.g. "orgId") so TenantContext can read them
+            options.MapInboundClaims = false;
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,

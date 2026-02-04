@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Shared.Entity;
 
 namespace Adapters.Database.Seeders;
@@ -13,7 +14,7 @@ public record AdminSeedData(
 );
 
 /// <summary>
-/// Seeds admin users
+/// Seeds admin users, bound to the test organization from OrganizationSeeder.
 /// </summary>
 public class AdminSeeder : ISeeder
 {
@@ -37,6 +38,16 @@ public class AdminSeeder : ISeeder
 
     public async Task SeedAsync(ApplicationDbContext context)
     {
+        var org = await context.Organizations
+            .FirstOrDefaultAsync(o => o.Slug == OrganizationSeeder.TestOrganizationSlug && o.DeletedAt == null);
+
+        if (org == null)
+        {
+            throw new InvalidOperationException(
+                $"Test organization '{OrganizationSeeder.TestOrganizationSlug}' not found. Ensure OrganizationSeeder runs before AdminSeeder (Order).");
+        }
+
+        var created = 0;
         foreach (var data in Admins)
         {
             if (context.Admins.Any(a => a.Email == data.Email))
@@ -52,15 +63,16 @@ public class AdminSeeder : ISeeder
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(data.Password),
                 FirstName = data.FirstName,
                 LastName = data.LastName,
+                OrganizationId = org.Id,
                 CreatedAt = DateTime.UtcNow
             };
 
             context.Admins.Add(admin);
+            created++;
         }
 
-        Console.WriteLine($"  → Created {Admins.Length} admin(s)");
-
         await context.SaveChangesAsync();
+        Console.WriteLine($"  → Created {created} admin(s) (bound to organization '{org.Name}')");
     }
 }
 

@@ -2,6 +2,9 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Modules.Admins;
 using Modules.Auth;
+using Modules.Equipment;
+using Modules.Sensors;
+using Modules.Sites;
 
 namespace Modules;
 
@@ -19,7 +22,9 @@ public static class ModulesSetup
     {
         services.AddAuthModule();
         services.AddAdminsModule();
-
+        services.AddSitesModule();
+        services.AddEquipmentModule();
+        services.AddSensorModule();
         return services;
     }
 
@@ -31,6 +36,9 @@ public static class ModulesSetup
     {
         yield return typeof(Auth.Controller.AuthController).Assembly;
         yield return typeof(Admins.Controller.AdminController).Assembly;
+        yield return typeof(Sites.Controller.SiteController).Assembly;
+        yield return typeof(Equipment.Controller.EquipmentController).Assembly;
+        yield return typeof(Sensors.Controller.SensorController).Assembly;
     }
 }
 

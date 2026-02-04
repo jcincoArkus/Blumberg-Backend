@@ -1,8 +1,6 @@
 using System.CommandLine;
-using Adapters.Config;
 using Adapters.Database;
 using Adapters.Database.Seeders;
-using Microsoft.EntityFrameworkCore;
 
 namespace CLI.Commands;
 
@@ -24,11 +22,7 @@ public static class DatabaseCommands
         {
             try
             {
-                var config = ConfigLoader.Load();
-                var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-                optionsBuilder.UseNpgsql(config.Database.GetConnectionString());
-
-                await using var context = new ApplicationDbContext(optionsBuilder.Options);
+                await using var context = ApplicationDbContextFactory.Create();
 
                 Console.WriteLine();
                 await SeederRunner.NukeAndPaveAsync(context);

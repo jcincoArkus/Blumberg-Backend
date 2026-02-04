@@ -12,7 +12,7 @@ public static class SeederRunner
     /// </summary>
     private static IEnumerable<ISeeder> GetSeeders()
     {
-        // Add new seeders here in the future
+        yield return new OrganizationSeeder();
         yield return new AdminSeeder();
     }
 

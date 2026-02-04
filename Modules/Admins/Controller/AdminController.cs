@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,7 @@ namespace Modules.Admins.Controller;
 [ApiController]
 [Route("/api/v1/admins")]
 [Tags("Admins")]
+[Authorize]
 public class AdminController(IAdminService adminService, ILogger<AdminController> logger) : ControllerBase
 {
     private readonly IAdminService _adminService = adminService;
