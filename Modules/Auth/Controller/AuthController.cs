@@ -15,9 +15,6 @@ namespace Modules.Auth.Controller;
 [Tags("Authentication")]
 public class AuthController(IAuthService authService, ILogger<AuthController> logger) : ControllerBase
 {
-    private readonly IAuthService _authService = authService;
-    private readonly ILogger<AuthController> _logger = logger;
-
     /// <summary>
     /// Authenticates an admin user
     /// </summary>
@@ -26,24 +23,27 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
     /// <response code="200">Login successful</response>
     /// <response code="401">Invalid credentials</response>
     [AllowAnonymous]
-    [HttpPost("login")]
+    [HttpPost("login", Name = "LoginV1")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
     {
+        logger.LogDebug("Attempting login for email: {Email}", request.Email);
+
         try
         {
-            var response = await _authService.LoginAsync(request);
+            var response = await authService.LoginAsync(request);
+            logger.LogInformation("Login successful for email: {Email}", request.Email);
             return Ok(response);
         }
         catch (UnauthorizedAccessException ex)
         {
-            _logger.LogWarning("Login failed for email: {Email}", request.Email);
+            logger.LogWarning("Login failed for email: {Email}", request.Email);
             return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during login");
+            logger.LogError(ex, "Error during login for email: {Email}", request.Email);
             return StatusCode(500, new { message = "An error occurred during login" });
         }
     }

@@ -1,3 +1,4 @@
+using Adapters.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Modules.Auth.Repository;
 using Modules.Auth.Service;
@@ -16,8 +17,8 @@ public static class AuthModule
     /// <returns>Service collection for chaining</returns>
     public static IServiceCollection AddAuthModule(this IServiceCollection services)
     {
-        services.AddScoped<IAdminRepository, AdminRepository>();
-        services.AddScoped<IAuthService, AuthService>();
+        services.AddScopedWithSpan<IAdminRepository, AdminRepository>();
+        services.AddScopedWithSpan<IAuthService, AuthService>();
 
         return services;
     }

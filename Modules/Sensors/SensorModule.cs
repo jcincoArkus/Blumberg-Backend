@@ -1,3 +1,4 @@
+using Adapters.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Modules.Sensors.Repository;
 using Modules.Sensors.Service;
@@ -16,9 +17,9 @@ public static class SensorModule
     /// <returns>Service collection for chaining</returns>
     public static IServiceCollection AddSensorModule(this IServiceCollection services)
     {
-        services.AddScoped<ISensorRepository, SensorRepository>();
-        services.AddScoped<ISensorReadingRepository, SensorReadingRepository>();
-        services.AddScoped<ISensorService, SensorService>();
+        services.AddScopedWithSpan<ISensorRepository, SensorRepository>();
+        services.AddScopedWithSpan<ISensorReadingRepository, SensorReadingRepository>();
+        services.AddScopedWithSpan<ISensorService, SensorService>();
 
         return services;
     }

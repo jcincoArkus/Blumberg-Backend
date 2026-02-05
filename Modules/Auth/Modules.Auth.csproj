@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\Adapters\Database\Adapters.Database.csproj" />
     <ProjectReference Include="..\..\Adapters\Jwt\Adapters.Jwt.csproj" />
     <ProjectReference Include="..\..\Shared\Shared.csproj" />
+    <ProjectReference Include="..\..\Adapters\Telemetry\Adapters.Telemetry.csproj" />
   </ItemGroup>
 
 </Project>

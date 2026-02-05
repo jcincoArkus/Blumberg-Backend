@@ -75,6 +75,16 @@ public class ApplicationDbContext : DbContext
     public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
 
     /// <summary>
+    /// Gets or sets the CasbinRules DbSet for authorization policies
+    /// </summary>
+    public DbSet<CasbinRule> CasbinRules => Set<CasbinRule>();
+
+    /// <summary>
+    /// Gets or sets the RoleMetadata DbSet for role display information
+    /// </summary>
+    public DbSet<RoleMetadata> RoleMetadata => Set<RoleMetadata>();
+
+    /// <summary>
     /// Configures the model and entity relationships
     /// </summary>
     /// <param name="modelBuilder">Model builder</param>

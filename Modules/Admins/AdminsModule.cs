@@ -1,3 +1,4 @@
+using Adapters.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Modules.Admins.Service;
 
@@ -15,7 +16,7 @@ public static class AdminsModule
     /// <returns>Service collection for chaining</returns>
     public static IServiceCollection AddAdminsModule(this IServiceCollection services)
     {
-        services.AddScoped<IAdminService, AdminService>();
+        services.AddScopedWithSpan<IAdminService, AdminService>();
 
         return services;
     }

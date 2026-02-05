@@ -141,6 +141,41 @@ namespace Adapters.Database.Migrations
                     b.ToTable("alerts", (string)null);
                 });
 
+            modelBuilder.Entity("Shared.Entity.CasbinRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("PType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("V0")
+                        .HasColumnType("text");
+
+                    b.Property<string>("V1")
+                        .HasColumnType("text");
+
+                    b.Property<string>("V2")
+                        .HasColumnType("text");
+
+                    b.Property<string>("V3")
+                        .HasColumnType("text");
+
+                    b.Property<string>("V4")
+                        .HasColumnType("text");
+
+                    b.Property<string>("V5")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CasbinRules");
+                });
+
             modelBuilder.Entity("Shared.Entity.Equipment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -264,6 +299,63 @@ namespace Adapters.Database.Migrations
                         .HasDatabaseName("ix_organizations_slug_unique");
 
                     b.ToTable("organizations", (string)null);
+                });
+
+            modelBuilder.Entity("Shared.Entity.RoleMetadata", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<byte>("ColorB")
+                        .HasColumnType("smallint")
+                        .HasColumnName("color_b");
+
+                    b.Property<byte>("ColorG")
+                        .HasColumnType("smallint")
+                        .HasColumnName("color_g");
+
+                    b.Property<byte>("ColorR")
+                        .HasColumnType("smallint")
+                        .HasColumnName("color_r");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_name");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("role_metadata", (string)null);
                 });
 
             modelBuilder.Entity("Shared.Entity.Sensor", b =>

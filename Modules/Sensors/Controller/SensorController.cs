@@ -16,25 +16,25 @@ namespace Modules.Sensors.Controller;
 [Authorize]
 public class SensorController(ISensorService sensorService, ILogger<SensorController> logger) : ControllerBase
 {
-    private readonly ISensorService _sensorService = sensorService;
-    private readonly ILogger<SensorController> _logger = logger;
-
     /// <summary>
     /// Gets all sensors
     /// </summary>
     /// <returns>List of sensors</returns>
-    [HttpGet]
+    [HttpGet(Name = "GetAllSensorsV1")]
     [ProducesResponseType(typeof(List<SensorResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<SensorResponse>>> GetAll()
     {
+        logger.LogDebug("Getting all sensors");
+
         try
         {
-            var sensors = await _sensorService.GetAllAsync();
+            var sensors = await sensorService.GetAllAsync();
+            logger.LogInformation("Retrieved {Count} sensors", sensors.Count);
             return Ok(sensors);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting all sensors");
+            logger.LogError(ex, "Error getting all sensors");
             return StatusCode(500, new { message = "An error occurred while getting all sensors" });
         }
     }
@@ -48,7 +48,7 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
     /// <param name="page">1-based page number (default 1)</param>
     /// <param name="pageSize">Page size (default 20)</param>
     /// <returns>Paginated readings</returns>
-    [HttpGet("{id}/readings")]
+    [HttpGet("{id}/readings", Name = "GetSensorReadingsV1")]
     [ProducesResponseType(typeof(PagedResponse<SensorReadingResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResponse<SensorReadingResponse>>> GetReadings(
@@ -58,23 +58,26 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
+        logger.LogDebug("Getting readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", id, page, pageSize);
+
         try
         {
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 20;
             if (pageSize > 100) pageSize = 100;
 
-            var result = await _sensorService.GetReadingsAsync(id, from, to, page, pageSize);
+            var result = await sensorService.GetReadingsAsync(id, from, to, page, pageSize);
+            logger.LogInformation("Retrieved {Count} readings for sensor {SensorId}", result.Items.Count, id);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Sensor not found with ID: {Id}", id);
+            logger.LogWarning("Sensor not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting readings for sensor {SensorId}", id);
+            logger.LogError(ex, "Error getting readings for sensor {SensorId}", id);
             return StatusCode(500, new { message = "An error occurred while getting sensor readings" });
         }
     }
@@ -84,24 +87,27 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
     /// </summary>
     /// <param name="id">Sensor ID</param>
     /// <returns>Sensor</returns>
-    [HttpGet("{id}")]
+    [HttpGet("{id}", Name = "GetSensorByIdV1")]
     [ProducesResponseType(typeof(SensorResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SensorResponse>> GetById(Guid id)
     {
+        logger.LogDebug("Getting sensor by ID: {Id}", id);
+
         try
         {
-            var sensor = await _sensorService.GetByIdAsync(id);
+            var sensor = await sensorService.GetByIdAsync(id);
+            logger.LogInformation("Retrieved sensor {Id}", id);
             return Ok(sensor);
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Sensor not found with ID: {Id}", id);
+            logger.LogWarning("Sensor not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting sensor by ID");
+            logger.LogError(ex, "Error getting sensor {Id}", id);
             return StatusCode(500, new { message = "An error occurred while getting sensor by ID" });
         }
     }
@@ -111,24 +117,27 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
     /// </summary>
     /// <param name="request">Sensor information</param>
     /// <returns>Created sensor</returns>
-    [HttpPost]
+    [HttpPost(Name = "CreateSensorV1")]
     [ProducesResponseType(typeof(SensorResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<SensorResponse>> Create([FromBody] SensorRequest request)
     {
+        logger.LogDebug("Creating new sensor: {Serial}", request.Serial);
+
         try
         {
-            var newSensor = await _sensorService.CreateAsync(request);
+            var newSensor = await sensorService.CreateAsync(request);
+            logger.LogInformation("Sensor created successfully with ID: {Id}", newSensor.Id);
             return CreatedAtAction(nameof(GetById), new { id = newSensor.Id }, newSensor);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to create sensor: {Message}", ex.Message);
+            logger.LogWarning("Failed to create sensor: {Message}", ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating sensor");
+            logger.LogError(ex, "Error creating sensor: {Serial}", request.Serial);
             return StatusCode(500, new { message = "An error occurred while creating sensor" });
         }
     }
@@ -139,30 +148,33 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
     /// <param name="id">Sensor ID</param>
     /// <param name="request">Sensor information</param>
     /// <returns>Updated sensor</returns>
-    [HttpPut("{id}")]
+    [HttpPut("{id}", Name = "UpdateSensorV1")]
     [ProducesResponseType(typeof(SensorResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SensorResponse>> Update(Guid id, [FromBody] SensorRequest request)
     {
+        logger.LogDebug("Updating sensor {Id}", id);
+
         try
         {
-            var updatedSensor = await _sensorService.UpdateAsync(id, request);
+            var updatedSensor = await sensorService.UpdateAsync(id, request);
+            logger.LogInformation("Sensor {Id} updated successfully", id);
             return Ok(updatedSensor);
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Sensor not found with ID: {Id}", id);
+            logger.LogWarning("Sensor not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to update sensor: {Message}", ex.Message);
+            logger.LogWarning("Failed to update sensor {Id}: {Message}", id, ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating sensor");
+            logger.LogError(ex, "Error updating sensor {Id}", id);
             return StatusCode(500, new { message = "An error occurred while updating sensor" });
         }
     }
@@ -172,24 +184,27 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
     /// </summary>
     /// <param name="id">Sensor ID</param>
     /// <returns>No content</returns>
-    [HttpDelete("{id}")]
+    [HttpDelete("{id}", Name = "DeleteSensorV1")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(Guid id)
     {
+        logger.LogDebug("Deleting sensor {Id}", id);
+
         try
         {
-            await _sensorService.DeleteAsync(id);
+            await sensorService.DeleteAsync(id);
+            logger.LogInformation("Sensor {Id} deleted successfully", id);
             return Ok();
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Sensor not found with ID: {Id}", id);
+            logger.LogWarning("Sensor not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting sensor");
+            logger.LogError(ex, "Error deleting sensor {Id}", id);
             return StatusCode(500, new { message = "An error occurred while deleting sensor" });
         }
     }

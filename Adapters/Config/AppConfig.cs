@@ -4,7 +4,7 @@ namespace Adapters.Config;
 /// Main application configuration container
 /// </summary>
 /// <remarks>
-/// Aggregates all configuration sections (Database, JWT, Application).
+/// Aggregates all configuration sections (Database, JWT, Application, Log, Telemetry).
 /// Each section is self-initializing and self-validating.
 /// Load using ConfigLoader.Load() or via dependency injection with AddAppConfiguration().
 /// </remarks>
@@ -17,6 +17,7 @@ namespace Adapters.Config;
 /// var connectionString = config.Database.GetConnectionString();
 /// var jwtSecret = config.Jwt.SecretKey;
 /// var isDev = config.Application.IsDevelopment;
+/// var logLevel = config.Log.Level;
 ///
 /// // Or via DI
 /// services.AddAppConfiguration();
@@ -41,4 +42,14 @@ public class AppConfig
     /// Application-level configuration section
     /// </summary>
     public ApplicationConfig Application { get; internal set; } = new();
+
+    /// <summary>
+    /// Logger configuration section
+    /// </summary>
+    public LogConfig Log { get; internal set; } = new();
+
+    /// <summary>
+    /// Telemetry configuration section
+    /// </summary>
+    public TelemetryConfig Telemetry { get; internal set; } = new();
 }

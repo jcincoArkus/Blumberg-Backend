@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Shared.Entity;
 
 namespace Adapters.Database.Seeders;
@@ -5,8 +6,10 @@ namespace Adapters.Database.Seeders;
 /// <summary>
 /// Seeds a test organization. Other seeders (e.g. AdminSeeder) bind their data to this organization.
 /// </summary>
-public class OrganizationSeeder : ISeeder
+public class OrganizationSeeder(ILoggerFactory loggerFactory) : ISeeder
 {
+    private readonly ILogger _logger = loggerFactory.CreateLogger<OrganizationSeeder>();
+
     /// <summary>
     /// Slug of the test organization created by this seeder. Use this to look up the org in other seeders.
     /// </summary>
@@ -18,13 +21,13 @@ public class OrganizationSeeder : ISeeder
     {
         if (context.Organizations.Any(o => o.Slug == TestOrganizationSlug))
         {
-            Console.WriteLine($"  → Test organization '{TestOrganizationSlug}' already exists, skipping...");
+            _logger.LogInformation("Test organization '{Slug}' already exists, skipping", TestOrganizationSlug);
             return;
         }
 
         var org = new Organization
         {
-            Id = Guid.Empty(),
+            Id = Guid.NewGuid(),
             Name = "Blumberg",
             Slug = TestOrganizationSlug,
             CreatedAt = DateTime.UtcNow
@@ -33,6 +36,6 @@ public class OrganizationSeeder : ISeeder
         context.Organizations.Add(org);
         await context.SaveChangesAsync();
 
-        Console.WriteLine($"  → Created test organization '{org.Name}' (slug: {TestOrganizationSlug})");
+        _logger.LogInformation("Created test organization '{Name}' (slug: {Slug})", org.Name, TestOrganizationSlug);
     }
 }

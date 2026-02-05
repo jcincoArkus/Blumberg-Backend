@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Reflection;
 using Adapters.Database;
+using Adapters.Logger;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Design;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CLI.Commands;
 
@@ -19,15 +21,16 @@ public static class MigrationCommands
     /// <summary>
     /// Creates the migration:generate command
     /// </summary>
-    public static Command MigrationGenerate()
+    public static Command MigrationGenerate(ILoggerFactory loggerFactory)
     {
+        var logger = loggerFactory.CreateLogger("MigrationGenerate");
         var command = new Command("migration:generate", "Generate a new migration from schema changes");
         var nameArg = new Argument<string>("name", "Name of the migration");
         command.AddArgument(nameArg);
 
         command.SetHandler((string name) =>
         {
-            Console.WriteLine($"[INFO] Generating migration '{name}'...");
+            logger.LogInformation("Generating migration {MigrationName}", name);
 
             try
             {
@@ -56,15 +59,21 @@ public static class MigrationCommands
                 // Scaffold migration
                 var scaffolder = serviceProvider.GetRequiredService<IMigrationsScaffolder>();
                 var projectDir = GetDatabaseProjectDir();
-                var rootNamespace = "Adapters.Database";
+                const string rootNamespace = "Adapters.Database";
 
                 var migration = scaffolder.ScaffoldMigration(name, rootNamespace);
 
                 // Check if migration is empty
                 if (IsMigrationEmpty(migration))
                 {
-                    Console.WriteLine("[WARNING] No schema changes detected.");
-                    Console.WriteLine("[INFO] No migration needed - schemas are up to date.");
+                    // Example: Zap-like syntax with key-value pairs (different types)
+                    logger.LogWarnWithProps("no schema changes detected",
+                        "migrationName", name,
+                        "projectDir", projectDir,
+                        "timestamp", DateTime.UtcNow,
+                        "isEmpty", true,
+                        "changeCount", 0);
+                    logger.LogInformation("No migration needed - schemas are up to date");
                     return;
                 }
 
@@ -72,14 +81,14 @@ public static class MigrationCommands
                 var outputDir = Path.Combine(projectDir, "Migrations");
                 scaffolder.Save(projectDir, migration, outputDir);
 
-                Console.WriteLine($"[SUCCESS] Migration '{name}' generated successfully.");
-                Console.WriteLine($"  Files created in: {outputDir}");
+                logger.LogInformation("Migration {MigrationName} generated successfully. Files created in: {OutputDir}", name, outputDir);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Failed to generate migration: {ex.Message}");
-                if (ex.InnerException != null)
-                    Console.WriteLine($"  Inner: {ex.InnerException.Message}");
+                // Example: Zap-like syntax with exception and key-value pairs
+                logger.LogErrorWithProps(ex, "failed to generate migration",
+                    "migrationName", name,
+                    "errorType", ex.GetType().Name);
                 Environment.Exit(1);
             }
         }, nameArg);
@@ -90,13 +99,14 @@ public static class MigrationCommands
     /// <summary>
     /// Creates the migration:up command
     /// </summary>
-    public static Command MigrationUp()
+    public static Command MigrationUp(ILoggerFactory loggerFactory)
     {
+        var logger = loggerFactory.CreateLogger("MigrationUp");
         var command = new Command("migration:up", "Apply pending migrations to the database");
 
         command.SetHandler(async () =>
         {
-            Console.WriteLine("[INFO] Applying pending migrations...");
+            logger.LogInformation("Applying pending migrations");
 
             try
             {
@@ -107,24 +117,24 @@ public static class MigrationCommands
 
                 if (pendingList.Count == 0)
                 {
-                    Console.WriteLine("[INFO] No pending migrations found. Database is up to date.");
+                    logger.LogInformation("No pending migrations found. Database is up to date");
                     return;
                 }
 
-                Console.WriteLine($"[INFO] Found {pendingList.Count} pending migration(s):");
+                logger.LogInformation("Found {Count} pending migration(s)", pendingList.Count);
                 foreach (var migration in pendingList)
                 {
-                    Console.WriteLine($"  - {migration}");
+                    logger.LogDebug("  - {Migration}", migration);
                 }
 
-                Console.WriteLine("[INFO] Applying migrations...");
+                logger.LogInformation("Applying migrations");
                 await context.Database.MigrateAsync();
 
-                Console.WriteLine("[SUCCESS] Migrations applied successfully.");
+                logger.LogInformation("Migrations applied successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Failed to apply migrations: {ex.Message}");
+                logger.LogError(ex, "Failed to apply migrations");
                 Environment.Exit(1);
             }
         });
@@ -135,13 +145,14 @@ public static class MigrationCommands
     /// <summary>
     /// Creates the migration:down command
     /// </summary>
-    public static Command MigrationDown()
+    public static Command MigrationDown(ILoggerFactory loggerFactory)
     {
+        var logger = loggerFactory.CreateLogger("MigrationDown");
         var command = new Command("migration:down", "Rollback the last applied migration");
 
         command.SetHandler(async () =>
         {
-            Console.WriteLine("[INFO] Rolling back last migration...");
+            logger.LogInformation("Rolling back last migration");
 
             try
             {
@@ -152,7 +163,7 @@ public static class MigrationCommands
 
                 if (appliedList.Count == 0)
                 {
-                    Console.WriteLine("[INFO] No migrations to rollback.");
+                    logger.LogInformation("No migrations to rollback");
                     return;
                 }
 
@@ -161,18 +172,18 @@ public static class MigrationCommands
                     ? appliedList[^2]  // Second to last
                     : "0";              // Rollback to empty
 
-                Console.WriteLine($"[INFO] Current migration: {appliedList[^1]}");
-                Console.WriteLine($"[INFO] Rolling back to: {(targetMigration == "0" ? "(empty database)" : targetMigration)}");
+                var targetDisplay = targetMigration == "0" ? "(empty database)" : targetMigration;
+                logger.LogInformation("Current migration: {Current}, rolling back to: {Target}", appliedList[^1], targetDisplay);
 
                 // Use the migrator to rollback
                 var migrator = context.GetInfrastructure().GetRequiredService<IMigrator>();
                 await migrator.MigrateAsync(targetMigration);
 
-                Console.WriteLine("[SUCCESS] Rollback completed successfully.");
+                logger.LogInformation("Rollback completed successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Failed to rollback migration: {ex.Message}");
+                logger.LogError(ex, "Failed to rollback migration");
                 Environment.Exit(1);
             }
         });
@@ -183,8 +194,9 @@ public static class MigrationCommands
     /// <summary>
     /// Creates the migration:status command
     /// </summary>
-    public static Command MigrationStatus()
+    public static Command MigrationStatus(ILoggerFactory loggerFactory)
     {
+        var logger = loggerFactory.CreateLogger("MigrationStatus");
         var command = new Command("migration:status", "Show migration status");
 
         command.SetHandler(async () =>
@@ -196,27 +208,25 @@ public static class MigrationCommands
                 var applied = (await context.Database.GetAppliedMigrationsAsync()).ToList();
                 var pending = (await context.Database.GetPendingMigrationsAsync()).ToList();
 
-                Console.WriteLine("Migration Status:");
-                Console.WriteLine($"  Applied: {applied.Count}");
-                Console.WriteLine($"  Pending: {pending.Count}");
+                logger.LogInformation("Migration Status - Applied: {AppliedCount}, Pending: {PendingCount}", applied.Count, pending.Count);
 
                 if (applied.Count > 0)
                 {
-                    Console.WriteLine("\nApplied Migrations:");
+                    logger.LogInformation("Applied Migrations:");
                     foreach (var m in applied)
-                        Console.WriteLine($"  [x] {m}");
+                        logger.LogInformation("  [x] {Migration}", m);
                 }
 
                 if (pending.Count > 0)
                 {
-                    Console.WriteLine("\nPending Migrations:");
+                    logger.LogInformation("Pending Migrations:");
                     foreach (var m in pending)
-                        Console.WriteLine($"  [ ] {m}");
+                        logger.LogInformation("  [ ] {Migration}", m);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] {ex.Message}");
+                logger.LogError(ex, "Failed to get migration status");
                 Environment.Exit(1);
             }
         });

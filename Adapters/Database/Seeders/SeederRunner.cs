@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Adapters.Database.Seeders;
 
@@ -10,49 +11,52 @@ public static class SeederRunner
     /// <summary>
     /// Gets all seeders ordered by their Order property
     /// </summary>
-    private static IEnumerable<ISeeder> GetSeeders()
+    private static IEnumerable<ISeeder> GetSeeders(ILoggerFactory loggerFactory)
     {
-        yield return new OrganizationSeeder();
-        yield return new AdminSeeder();
+        yield return new OrganizationSeeder(loggerFactory);
+        yield return new AdminSeeder(loggerFactory);
     }
 
     /// <summary>
     /// Runs all seeders in order
     /// </summary>
-    public static async Task RunAsync(ApplicationDbContext context)
+    private static async Task RunAsync(ApplicationDbContext context, ILoggerFactory loggerFactory)
     {
-        Console.WriteLine("Running seeders...");
+        var logger = loggerFactory.CreateLogger("SeederRunner");
+        logger.LogInformation("Running seeders");
 
-        foreach (var seeder in GetSeeders().OrderBy(s => s.Order))
+        foreach (var seeder in GetSeeders(loggerFactory).OrderBy(s => s.Order))
         {
-            Console.WriteLine($"  [{seeder.GetType().Name}]");
+            logger.LogInformation("Running seeder: {SeederName}", seeder.GetType().Name);
             await seeder.SeedAsync(context);
         }
 
-        Console.WriteLine("Seeders completed.");
+        logger.LogInformation("Seeders completed");
     }
 
     /// <summary>
     /// Drops all tables and recreates the database schema
     /// </summary>
-    public static async Task NukeAsync(ApplicationDbContext context)
+    private static async Task NukeAsync(ApplicationDbContext context, ILoggerFactory loggerFactory)
     {
-        Console.WriteLine("Dropping database...");
+        var logger = loggerFactory.CreateLogger("SeederRunner");
+
+        logger.LogWarning("Dropping database");
         await context.Database.EnsureDeletedAsync();
 
-        Console.WriteLine("Creating database...");
+        logger.LogInformation("Creating database");
         await context.Database.EnsureCreatedAsync();
 
-        Console.WriteLine("Database recreated.");
+        logger.LogInformation("Database recreated");
     }
 
     /// <summary>
     /// Nukes the database and runs all seeders
     /// </summary>
-    public static async Task NukeAndPaveAsync(ApplicationDbContext context)
+    public static async Task NukeAndPaveAsync(ApplicationDbContext context, ILoggerFactory loggerFactory)
     {
-        await NukeAsync(context);
-        await RunAsync(context);
+        await NukeAsync(context, loggerFactory);
+        await RunAsync(context, loggerFactory);
     }
 }
 

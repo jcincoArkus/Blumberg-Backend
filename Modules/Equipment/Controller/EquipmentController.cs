@@ -16,25 +16,25 @@ namespace Modules.Equipment.Controller;
 [Authorize]
 public class EquipmentController(IEquipmentService equipmentService, ILogger<EquipmentController> logger) : ControllerBase
 {
-    private readonly IEquipmentService _equipmentService = equipmentService;
-    private readonly ILogger<EquipmentController> _logger = logger;
-
     /// <summary>
     /// Gets all equipment
     /// </summary>
     /// <returns>List of equipment</returns>
-    [HttpGet]
+    [HttpGet(Name = "GetAllEquipmentV1")]
     [ProducesResponseType(typeof(List<EquipmentResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<EquipmentResponse>>> GetAll()
     {
+        logger.LogDebug("Getting all equipment");
+
         try
         {
-            var equipment = await _equipmentService.GetAllAsync();
+            var equipment = await equipmentService.GetAllAsync();
+            logger.LogInformation("Retrieved {Count} equipment", equipment.Count);
             return Ok(equipment);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting all equipment");
+            logger.LogError(ex, "Error getting all equipment");
             return StatusCode(500, new { message = "An error occurred while getting all equipment" });
         }
     }
@@ -44,24 +44,27 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
     /// </summary>
     /// <param name="id">Equipment ID</param>
     /// <returns>Equipment</returns>
-    [HttpGet("{id}")]
+    [HttpGet("{id}", Name = "GetEquipmentByIdV1")]
     [ProducesResponseType(typeof(EquipmentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EquipmentResponse>> GetById(Guid id)
     {
+        logger.LogDebug("Getting equipment by ID: {Id}", id);
+
         try
         {
-            var equipment = await _equipmentService.GetByIdAsync(id);
+            var equipment = await equipmentService.GetByIdAsync(id);
+            logger.LogInformation("Retrieved equipment {Id}", id);
             return Ok(equipment);
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Equipment not found with ID: {Id}", id);
+            logger.LogWarning("Equipment not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting equipment by ID");
+            logger.LogError(ex, "Error getting equipment {Id}", id);
             return StatusCode(500, new { message = "An error occurred while getting equipment by ID" });
         }
     }
@@ -71,24 +74,27 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
     /// </summary>
     /// <param name="request">Equipment information</param>
     /// <returns>Created equipment</returns>
-    [HttpPost]
+    [HttpPost(Name = "CreateEquipmentV1")]
     [ProducesResponseType(typeof(EquipmentResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<EquipmentResponse>> Create([FromBody] EquipmentRequest request)
     {
+        logger.LogDebug("Creating new equipment: {Name}", request.Name);
+
         try
         {
-            var newEquipment = await _equipmentService.CreateAsync(request);
+            var newEquipment = await equipmentService.CreateAsync(request);
+            logger.LogInformation("Equipment created successfully with ID: {Id}", newEquipment.Id);
             return CreatedAtAction(nameof(GetById), new { id = newEquipment.Id }, newEquipment);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to create equipment: {Message}", ex.Message);
+            logger.LogWarning("Failed to create equipment: {Message}", ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating equipment");
+            logger.LogError(ex, "Error creating equipment: {Name}", request.Name);
             return StatusCode(500, new { message = "An error occurred while creating equipment" });
         }
     }
@@ -99,30 +105,33 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
     /// <param name="id">Equipment ID</param>
     /// <param name="request">Equipment information</param>
     /// <returns>Updated equipment</returns>
-    [HttpPut("{id}")]
+    [HttpPut("{id}", Name = "UpdateEquipmentV1")]
     [ProducesResponseType(typeof(EquipmentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EquipmentResponse>> Update(Guid id, [FromBody] EquipmentRequest request)
     {
+        logger.LogDebug("Updating equipment {Id}", id);
+
         try
         {
-            var updatedEquipment = await _equipmentService.UpdateAsync(id, request);
+            var updatedEquipment = await equipmentService.UpdateAsync(id, request);
+            logger.LogInformation("Equipment {Id} updated successfully", id);
             return Ok(updatedEquipment);
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Equipment not found with ID: {Id}", id);
+            logger.LogWarning("Equipment not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to update equipment: {Message}", ex.Message);
+            logger.LogWarning("Failed to update equipment {Id}: {Message}", id, ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating equipment");
+            logger.LogError(ex, "Error updating equipment {Id}", id);
             return StatusCode(500, new { message = "An error occurred while updating equipment" });
         }
     }
@@ -132,24 +141,27 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
     /// </summary>
     /// <param name="id">Equipment ID</param>
     /// <returns>No content</returns>
-    [HttpDelete("{id}")]
+    [HttpDelete("{id}", Name = "DeleteEquipmentV1")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(Guid id)
     {
+        logger.LogDebug("Deleting equipment {Id}", id);
+
         try
         {
-            await _equipmentService.DeleteAsync(id);
+            await equipmentService.DeleteAsync(id);
+            logger.LogInformation("Equipment {Id} deleted successfully", id);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Equipment not found with ID: {Id}", id);
+            logger.LogWarning("Equipment not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting equipment");
+            logger.LogError(ex, "Error deleting equipment {Id}", id);
             return StatusCode(500, new { message = "An error occurred while deleting equipment" });
         }
     }

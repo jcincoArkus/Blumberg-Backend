@@ -1,6 +1,7 @@
 using System.CommandLine;
 using Adapters.Database;
 using Adapters.Database.Seeders;
+using Microsoft.Extensions.Logging;
 
 namespace CLI.Commands;
 
@@ -12,10 +13,9 @@ public static class DatabaseCommands
     /// <summary>
     /// Nuke and pave command - drops database, recreates schema, and seeds data
     /// </summary>
-    public static Command NukeAndPave()
+    public static Command NukeAndPave(ILoggerFactory loggerFactory)
     {
-
-
+        var logger = loggerFactory.CreateLogger("NukeAndPave");
         var command = new Command("nukeAndPave", "Drop database, recreate schema, and seed data");
 
         command.SetHandler(async () =>
@@ -24,14 +24,13 @@ public static class DatabaseCommands
             {
                 await using var context = ApplicationDbContextFactory.Create();
 
-                Console.WriteLine();
-                await SeederRunner.NukeAndPaveAsync(context);
-                Console.WriteLine();
-                Console.WriteLine("✅ Database nuked and paved successfully!");
+                logger.LogInformation("Starting database nuke and pave operation");
+                await SeederRunner.NukeAndPaveAsync(context, loggerFactory);
+                logger.LogInformation("Database nuked and paved successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error: {ex.Message}");
+                logger.LogError(ex, "Failed to nuke and pave database");
                 Environment.Exit(1);
             }
         });

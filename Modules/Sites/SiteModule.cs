@@ -1,3 +1,4 @@
+using Adapters.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Modules.Sites.Repository;
 using Modules.Sites.Service;
@@ -16,8 +17,8 @@ public static class SitesModule
     /// <returns>Service collection for chaining</returns>
     public static IServiceCollection AddSitesModule(this IServiceCollection services)
     {
-        services.AddScoped<ISiteRepository, SiteRepository>();
-        services.AddScoped<ISiteService, SiteService>();
+        services.AddScopedWithSpan<ISiteRepository, SiteRepository>();
+        services.AddScopedWithSpan<ISiteService, SiteService>();
 
         return services;
     }

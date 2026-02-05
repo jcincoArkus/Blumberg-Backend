@@ -1,3 +1,5 @@
+using Adapters.Telemetry;
+using Microsoft.Extensions.Logging;
 using Modules.Equipment.Dto;
 using Modules.Equipment.Repository;
 using Shared.Entity;
@@ -7,29 +9,46 @@ namespace Modules.Equipment.Service;
 /// <summary>
 /// Service implementation for equipment operations
 /// </summary>
-public class EquipmentService(IEquipmentRepository equipmentRepository) : IEquipmentService
+public class EquipmentService(IEquipmentRepository equipmentRepository, ILogger<EquipmentService> logger) : IEquipmentService
 {
-    private readonly IEquipmentRepository _equipmentRepository = equipmentRepository;
-
     /// <inheritdoc />
-    public async Task<List<EquipmentResponse>> GetAllAsync()
+    [Span]
+    public virtual async Task<List<EquipmentResponse>> GetAllAsync()
     {
-        var equipment = await _equipmentRepository.GetAllAsync();
+        logger.LogDebug("Getting all equipment from repository");
+
+        var equipment = await equipmentRepository.GetAllAsync();
+
+        logger.LogInformation("Retrieved {Count} equipment", equipment.Count);
+
         return equipment.Select(MapToResponse).ToList();
     }
 
     /// <inheritdoc />
-    public async Task<EquipmentResponse> GetByIdAsync(Guid id)
+    [Span]
+    public virtual async Task<EquipmentResponse> GetByIdAsync(Guid id)
     {
-        var equipment = await _equipmentRepository.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Equipment with ID {id} was not found");
+        logger.LogDebug("Getting equipment by ID: {Id}", id);
+
+        var equipment = await equipmentRepository.GetByIdAsync(id);
+
+        if (equipment == null)
+        {
+            logger.LogWarning("Equipment not found with ID: {Id}", id);
+            throw new KeyNotFoundException($"Equipment with ID {id} was not found");
+        }
+
+        logger.LogInformation("Retrieved equipment {Id}", id);
 
         return MapToResponse(equipment);
     }
 
     /// <inheritdoc />
-    public async Task<EquipmentResponse> CreateAsync(EquipmentRequest request)
+    [Span(IncludeArguments = true)]
+    public virtual async Task<EquipmentResponse> CreateAsync(EquipmentRequest request)
     {
+        logger.LogDebug("Creating new equipment: {Name}", request.Name);
+
         var equipment = new Shared.Entity.Equipment
         {
             Name = request.Name,
@@ -37,30 +56,53 @@ public class EquipmentService(IEquipmentRepository equipmentRepository) : IEquip
             SiteId = request.SiteId
         };
 
-        var createdEquipment = await _equipmentRepository.CreateAsync(equipment);
+        var createdEquipment = await equipmentRepository.CreateAsync(equipment);
+
+        logger.LogInformation("Equipment created successfully with ID: {Id}", createdEquipment.Id);
+
         return MapToResponse(createdEquipment);
     }
 
     /// <inheritdoc />
-    public async Task<EquipmentResponse> UpdateAsync(Guid id, EquipmentRequest request)
+    [Span(IncludeArguments = true)]
+    public virtual async Task<EquipmentResponse> UpdateAsync(Guid id, EquipmentRequest request)
     {
-        var equipment = await _equipmentRepository.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Equipment with ID {id} was not found");
+        logger.LogDebug("Updating equipment {Id}", id);
+
+        var equipment = await equipmentRepository.GetByIdAsync(id);
+
+        if (equipment == null)
+        {
+            logger.LogWarning("Equipment not found with ID: {Id}", id);
+            throw new KeyNotFoundException($"Equipment with ID {id} was not found");
+        }
 
         equipment.Name = request.Name;
         equipment.EquipmentType = request.EquipmentType;
         equipment.SiteId = request.SiteId;
 
-        var updatedEquipment = await _equipmentRepository.UpdateAsync(equipment);
+        var updatedEquipment = await equipmentRepository.UpdateAsync(equipment);
+
+        logger.LogInformation("Equipment {Id} updated successfully", id);
+
         return MapToResponse(updatedEquipment);
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid id)
+    [Span]
+    public virtual async Task DeleteAsync(Guid id)
     {
-        var deleted = await _equipmentRepository.SoftDeleteAsync(id);
+        logger.LogDebug("Deleting equipment {Id}", id);
+
+        var deleted = await equipmentRepository.SoftDeleteAsync(id);
+
         if (!deleted)
+        {
+            logger.LogWarning("Equipment not found with ID: {Id}", id);
             throw new KeyNotFoundException($"Equipment with ID {id} was not found");
+        }
+
+        logger.LogInformation("Equipment {Id} deleted successfully", id);
     }
 
     /// <summary>

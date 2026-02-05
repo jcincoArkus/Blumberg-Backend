@@ -82,11 +82,15 @@ public class JwtConfig
         if (string.IsNullOrWhiteSpace(Audience))
             throw new InvalidOperationException("JWT audience (JWT_AUDIENCE) is required");
 
-        if (ExpirationHours <= 0)
-            throw new InvalidOperationException("JWT expiration hours must be greater than 0");
-
-        if (ExpirationHours > 720) // 30 days
-            Console.WriteLine("WARNING: JWT expiration is set to more than 30 days. Consider using refresh tokens.");
+        switch (ExpirationHours)
+        {
+            case <= 0:
+                throw new InvalidOperationException("JWT expiration hours must be greater than 0");
+            // 30 days
+            case > 720:
+                Console.WriteLine("WARNING: JWT expiration is set to more than 30 days. Consider using refresh tokens.");
+                break;
+        }
 
         return this;
     }

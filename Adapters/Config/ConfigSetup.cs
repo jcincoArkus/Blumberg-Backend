@@ -25,6 +25,7 @@ public static class ConfigSetup
         services.AddSingleton(config.Database);
         services.AddSingleton(config.Jwt);
         services.AddSingleton(config.Application);
+        services.AddSingleton(config.Telemetry);
 
         return services;
     }

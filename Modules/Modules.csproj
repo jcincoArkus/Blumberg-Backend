@@ -13,12 +13,15 @@
   <!-- Exclude subfolders that are separate projects -->
   <ItemGroup>
     <Compile Remove="Auth\**\*.cs" />
+    <Compile Remove="Permissions\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Adapters\Database\Adapters.Database.csproj" />
-    <ProjectReference Include="..\..\Shared\Shared.csproj" />
-    <ProjectReference Include="Auth\Modules.Auth.csproj" />
+    <ProjectReference Include="../Adapters/Database/Adapters.Database.csproj" />
+    <ProjectReference Include="../Shared/Shared.csproj" />
+    <ProjectReference Include="Auth/Modules.Auth.csproj" />
+    <ProjectReference Include="..\Adapters\Telemetry\Adapters.Telemetry.csproj" />
+    <ProjectReference Include="Permissions\Modules.Permissions.csproj" />
   </ItemGroup>
 
 </Project>

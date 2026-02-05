@@ -16,28 +16,28 @@ namespace Modules.Admins.Controller;
 [Authorize]
 public class AdminController(IAdminService adminService, ILogger<AdminController> logger) : ControllerBase
 {
-    private readonly IAdminService _adminService = adminService;
-    private readonly ILogger<AdminController> _logger = logger;
-
     /// <summary>
     /// Gets a list of all active admins
     /// </summary>
     /// <returns>List of admin information</returns>
     /// <response code="200">Returns the list of admins</response>
     /// <response code="500">Internal server error</response>
-    [HttpGet]
+    [HttpGet(Name = "GetAllAdminsV1")]
     [ProducesResponseType(typeof(List<AdminResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<AdminResponse>>> GetAll()
     {
+        logger.LogDebug("Getting all admins");
+
         try
         {
-            var admins = await _adminService.GetAllAsync();
+            var admins = await adminService.GetAllAsync();
+            logger.LogInformation("Retrieved {Count} admins", admins.Count);
             return Ok(admins);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving admins");
+            logger.LogError(ex, "Error retrieving admins");
             return StatusCode(500, new { message = "An error occurred while retrieving admins" });
         }
     }
@@ -49,24 +49,27 @@ public class AdminController(IAdminService adminService, ILogger<AdminController
     /// <returns>Admin information</returns>
     /// <response code="200">Returns the admin information</response>
     /// <response code="404">Admin not found</response>
-    [HttpGet("{id}")]
+    [HttpGet("{id}", Name = "GetAdminByIdV1")]
     [ProducesResponseType(typeof(AdminResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AdminResponse>> GetById(Guid id)
     {
+        logger.LogDebug("Getting admin by ID: {Id}", id);
+
         try
         {
-            var admin = await _adminService.GetByIdAsync(id);
+            var admin = await adminService.GetByIdAsync(id);
+            logger.LogInformation("Retrieved admin {Id}", id);
             return Ok(admin);
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Admin not found with ID: {Id}", id);
+            logger.LogWarning("Admin not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving admin");
+            logger.LogError(ex, "Error retrieving admin {Id}", id);
             return StatusCode(500, new { message = "An error occurred while retrieving admin" });
         }
     }
@@ -78,24 +81,27 @@ public class AdminController(IAdminService adminService, ILogger<AdminController
     /// <returns>Admin information</returns>
     /// <response code="201">Admin created successfully</response>
     /// <response code="400">Invalid request data</response>
-    [HttpPost]
+    [HttpPost(Name = "CreateAdminV1")]
     [ProducesResponseType(typeof(AdminResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<AdminResponse>> Create([FromBody] AdminRequest admin)
     {
+        logger.LogDebug("Creating new admin with email: {Email}", admin.Email);
+
         try
         {
-            var newAdmin = await _adminService.CreateAsync(admin);
+            var newAdmin = await adminService.CreateAsync(admin);
+            logger.LogInformation("Admin created successfully with ID: {Id}", newAdmin.Id);
             return CreatedAtAction(nameof(GetById), new { id = newAdmin.Id }, newAdmin);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to create admin: {Message}", ex.Message);
+            logger.LogWarning("Failed to create admin: {Message}", ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating admin");
+            logger.LogError(ex, "Error creating admin with email: {Email}", admin.Email);
             return StatusCode(500, new { message = "An error occurred while creating admin" });
         }
     }
@@ -108,29 +114,32 @@ public class AdminController(IAdminService adminService, ILogger<AdminController
     /// <returns>Admin information</returns>
     /// <response code="200">Admin updated successfully</response>
     /// <response code="400">Invalid request data</response>
-    [HttpPut("{id}")]
+    [HttpPut("{id}", Name = "UpdateAdminV1")]
     [ProducesResponseType(typeof(AdminResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<AdminResponse>> Update(Guid id, [FromBody] AdminRequest admin)
     {
+        logger.LogDebug("Updating admin {Id}", id);
+
         try
         {
-            var updatedAdmin = await _adminService.UpdateAsync(id, admin);
+            var updatedAdmin = await adminService.UpdateAsync(id, admin);
+            logger.LogInformation("Admin {Id} updated successfully", id);
             return Ok(updatedAdmin);
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Admin not found with ID: {Id}", id);
+            logger.LogWarning("Admin not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to update admin: {Message}", ex.Message);
+            logger.LogWarning("Failed to update admin {Id}: {Message}", id, ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating admin");
+            logger.LogError(ex, "Error updating admin {Id}", id);
             return StatusCode(500, new { message = "An error occurred while updating admin" });
         }
     }
@@ -142,24 +151,27 @@ public class AdminController(IAdminService adminService, ILogger<AdminController
     /// <returns>Admin information</returns>
     /// <response code="200">Admin deleted successfully</response>
     /// <response code="404">Admin not found</response>
-    [HttpDelete("{id}")]
+    [HttpDelete("{id}", Name = "DeleteAdminV1")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(Guid id)
     {
+        logger.LogDebug("Deleting admin {Id}", id);
+
         try
         {
-            await _adminService.DeleteAsync(id);
+            await adminService.DeleteAsync(id);
+            logger.LogInformation("Admin {Id} deleted successfully", id);
             return Ok();
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Admin not found with ID: {Id}", id);
+            logger.LogWarning("Admin not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting admin");
+            logger.LogError(ex, "Error deleting admin {Id}", id);
             return StatusCode(500, new { message = "An error occurred while deleting admin" });
         }
     }

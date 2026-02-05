@@ -1,3 +1,5 @@
+using Adapters.Telemetry;
+using Microsoft.Extensions.Logging;
 using Modules.Sensors.Dto;
 using Modules.Sensors.Repository;
 
@@ -6,30 +8,46 @@ namespace Modules.Sensors.Service;
 /// <summary>
 /// Service implementation for sensor operations
 /// </summary>
-public class SensorService(ISensorRepository sensorRepository, ISensorReadingRepository sensorReadingRepository) : ISensorService
+public class SensorService(ISensorRepository sensorRepository, ISensorReadingRepository sensorReadingRepository, ILogger<SensorService> logger) : ISensorService
 {
-    private readonly ISensorRepository _sensorRepository = sensorRepository;
-    private readonly ISensorReadingRepository _sensorReadingRepository = sensorReadingRepository;
-
     /// <inheritdoc />
-    public async Task<List<SensorResponse>> GetAllAsync()
+    [Span]
+    public virtual async Task<List<SensorResponse>> GetAllAsync()
     {
-        var sensors = await _sensorRepository.GetAllAsync();
+        logger.LogDebug("Getting all sensors from repository");
+
+        var sensors = await sensorRepository.GetAllAsync();
+
+        logger.LogInformation("Retrieved {Count} sensors", sensors.Count);
+
         return sensors.Select(MapToResponse).ToList();
     }
 
     /// <inheritdoc />
-    public async Task<SensorResponse> GetByIdAsync(Guid id)
+    [Span]
+    public virtual async Task<SensorResponse> GetByIdAsync(Guid id)
     {
-        var sensor = await _sensorRepository.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Sensor with ID {id} was not found");
+        logger.LogDebug("Getting sensor by ID: {Id}", id);
+
+        var sensor = await sensorRepository.GetByIdAsync(id);
+
+        if (sensor == null)
+        {
+            logger.LogWarning("Sensor not found with ID: {Id}", id);
+            throw new KeyNotFoundException($"Sensor with ID {id} was not found");
+        }
+
+        logger.LogInformation("Retrieved sensor {Id}", id);
 
         return MapToResponse(sensor);
     }
 
     /// <inheritdoc />
-    public async Task<SensorResponse> CreateAsync(SensorRequest request)
+    [Span(IncludeArguments = true)]
+    public virtual async Task<SensorResponse> CreateAsync(SensorRequest request)
     {
+        logger.LogDebug("Creating new sensor: {Serial}", request.Serial);
+
         var sensor = new Shared.Entity.Sensor
         {
             Serial = request.Serial,
@@ -39,15 +57,26 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
             ThresholdId = request.ThresholdId
         };
 
-        var createdSensor = await _sensorRepository.CreateAsync(sensor);
+        var createdSensor = await sensorRepository.CreateAsync(sensor);
+
+        logger.LogInformation("Sensor created successfully with ID: {Id}", createdSensor.Id);
+
         return MapToResponse(createdSensor);
     }
 
     /// <inheritdoc />
-    public async Task<SensorResponse> UpdateAsync(Guid id, SensorRequest request)
+    [Span(IncludeArguments = true)]
+    public virtual async Task<SensorResponse> UpdateAsync(Guid id, SensorRequest request)
     {
-        var sensor = await _sensorRepository.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Sensor with ID {id} was not found");
+        logger.LogDebug("Updating sensor {Id}", id);
+
+        var sensor = await sensorRepository.GetByIdAsync(id);
+
+        if (sensor == null)
+        {
+            logger.LogWarning("Sensor not found with ID: {Id}", id);
+            throw new KeyNotFoundException($"Sensor with ID {id} was not found");
+        }
 
         sensor.Serial = request.Serial;
         sensor.Status = request.Status;
@@ -55,30 +84,52 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
         sensor.SensorTypeId = request.SensorTypeId;
         sensor.ThresholdId = request.ThresholdId;
 
-        var updatedSensor = await _sensorRepository.UpdateAsync(sensor);
+        var updatedSensor = await sensorRepository.UpdateAsync(sensor);
+
+        logger.LogInformation("Sensor {Id} updated successfully", id);
+
         return MapToResponse(updatedSensor);
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid id)
+    [Span]
+    public virtual async Task DeleteAsync(Guid id)
     {
-        var deleted = await _sensorRepository.SoftDeleteAsync(id);
+        logger.LogDebug("Deleting sensor {Id}", id);
+
+        var deleted = await sensorRepository.SoftDeleteAsync(id);
+
         if (!deleted)
+        {
+            logger.LogWarning("Sensor not found with ID: {Id}", id);
             throw new KeyNotFoundException($"Sensor with ID {id} was not found");
+        }
+
+        logger.LogInformation("Sensor {Id} deleted successfully", id);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResponse<SensorReadingResponse>> GetReadingsAsync(
+    [Span]
+    public virtual async Task<PagedResponse<SensorReadingResponse>> GetReadingsAsync(
         Guid sensorId,
         DateTime? fromUtc,
         DateTime? toUtc,
         int page,
         int pageSize)
     {
-        _ = await _sensorRepository.GetByIdAsync(sensorId)
-            ?? throw new KeyNotFoundException($"Sensor with ID {sensorId} was not found");
+        logger.LogDebug("Getting readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", sensorId, page, pageSize);
 
-        var (items, totalCount) = await _sensorReadingRepository.GetBySensorIdAsync(sensorId, fromUtc, toUtc, page, pageSize);
+        var sensor = await sensorRepository.GetByIdAsync(sensorId);
+
+        if (sensor == null)
+        {
+            logger.LogWarning("Sensor not found with ID: {SensorId}", sensorId);
+            throw new KeyNotFoundException($"Sensor with ID {sensorId} was not found");
+        }
+
+        var (items, totalCount) = await sensorReadingRepository.GetBySensorIdAsync(sensorId, fromUtc, toUtc, page, pageSize);
+
+        logger.LogInformation("Retrieved {Count} readings for sensor {SensorId}", items.Count, sensorId);
 
         return new PagedResponse<SensorReadingResponse>
         {

@@ -1,3 +1,5 @@
+using Adapters.Telemetry;
+using Microsoft.Extensions.Logging;
 using Modules.Admins.Dto;
 using Modules.Auth.Repository;
 using Shared.Entity;
@@ -7,15 +9,18 @@ namespace Modules.Admins.Service;
 /// <summary>
 /// Service implementation for admin operations
 /// </summary>
-public class AdminService(IAdminRepository adminRepository) : IAdminService
+public class AdminService(IAdminRepository adminRepository, ILogger<AdminService> logger) : IAdminService
 {
-    private readonly IAdminRepository _adminRepository = adminRepository;
-
     /// <inheritdoc />
-    public async Task<List<AdminResponse>> GetAllAsync()
+    [Span]
+    public virtual async Task<List<AdminResponse>> GetAllAsync()
     {
-        var admins = await _adminRepository.GetAllAsync();
-        
+        logger.LogDebug("Getting all admins from repository");
+
+        var admins = await adminRepository.GetAllAsync();
+
+        logger.LogInformation("Retrieved {Count} admins", admins.Count);
+
         return admins.Select(admin => new AdminResponse
         {
             Id = admin.Id,
@@ -28,15 +33,21 @@ public class AdminService(IAdminRepository adminRepository) : IAdminService
     }
 
     /// <inheritdoc />
-    public async Task<AdminResponse> GetByIdAsync(Guid id)
+    [Span]
+    public virtual async Task<AdminResponse> GetByIdAsync(Guid id)
     {
-        var admin = await _adminRepository.GetByIdAsync(id);
-        
+        logger.LogDebug("Getting admin by ID: {Id}", id);
+
+        var admin = await adminRepository.GetByIdAsync(id);
+
         if (admin == null)
         {
+            logger.LogWarning("Admin not found with ID: {Id}", id);
             throw new KeyNotFoundException($"Admin with ID {id} was not found.");
         }
-        
+
+        logger.LogInformation("Retrieved admin {Id}", id);
+
         return new AdminResponse
         {
             Id = admin.Id,
@@ -49,12 +60,16 @@ public class AdminService(IAdminRepository adminRepository) : IAdminService
     }
 
     /// <inheritdoc />
-    public async Task<AdminResponse> CreateAsync(AdminRequest request)
+    [Span(IncludeArguments = true)]
+    public virtual async Task<AdminResponse> CreateAsync(AdminRequest request)
     {
+        logger.LogDebug("Creating new admin with email: {Email}", request.Email);
+
         // Check if email already exists
-        var emailExists = await _adminRepository.ExistsAsync(request.Email);
+        var emailExists = await adminRepository.ExistsAsync(request.Email);
         if (emailExists)
         {
+            logger.LogWarning("Failed to create admin: email already exists: {Email}", request.Email);
             throw new InvalidOperationException($"Admin with email {request.Email} already exists.");
         }
 
@@ -70,7 +85,9 @@ public class AdminService(IAdminRepository adminRepository) : IAdminService
         };
 
         // Save to database
-        var createdAdmin = await _adminRepository.CreateAsync(newAdmin);
+        var createdAdmin = await adminRepository.CreateAsync(newAdmin);
+
+        logger.LogInformation("Admin created successfully with ID: {Id}, Email: {Email}", createdAdmin.Id, createdAdmin.Email);
 
         // Map to response DTO
         return new AdminResponse
@@ -85,11 +102,15 @@ public class AdminService(IAdminRepository adminRepository) : IAdminService
     }
 
     /// <inheritdoc />
-    public async Task<AdminResponse> UpdateAsync(Guid id, AdminRequest request)
+    [Span(IncludeArguments = true)]
+    public virtual async Task<AdminResponse> UpdateAsync(Guid id, AdminRequest request)
     {
-        var admin = await _adminRepository.GetByIdAsync(id);
+        logger.LogDebug("Updating admin {Id}", id);
+
+        var admin = await adminRepository.GetByIdAsync(id);
         if (admin == null)
         {
+            logger.LogWarning("Admin not found with ID: {Id}", id);
             throw new KeyNotFoundException($"Admin with ID {id} was not found.");
         }
 
@@ -100,7 +121,9 @@ public class AdminService(IAdminRepository adminRepository) : IAdminService
         admin.UpdatedAt = DateTime.UtcNow;
 
         // Save to database
-        var updatedAdmin = await _adminRepository.UpdateAsync(admin);
+        var updatedAdmin = await adminRepository.UpdateAsync(admin);
+
+        logger.LogInformation("Admin {Id} updated successfully", id);
 
         // Map to response DTO
         return new AdminResponse
@@ -115,16 +138,22 @@ public class AdminService(IAdminRepository adminRepository) : IAdminService
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid id)
+    [Span]
+    public virtual async Task DeleteAsync(Guid id)
     {
-        var admin = await _adminRepository.GetByIdAsync(id);
+        logger.LogDebug("Deleting admin {Id}", id);
+
+        var admin = await adminRepository.GetByIdAsync(id);
         if (admin == null)
         {
+            logger.LogWarning("Admin not found with ID: {Id}", id);
             throw new KeyNotFoundException($"Admin with ID {id} was not found.");
         }
 
         // Soft delete admin entity
-        await _adminRepository.DeleteAsync(admin);
+        await adminRepository.DeleteAsync(admin);
+
+        logger.LogInformation("Admin {Id} deleted successfully", id);
     }
 
 }

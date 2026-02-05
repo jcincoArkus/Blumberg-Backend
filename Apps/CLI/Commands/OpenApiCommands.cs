@@ -1,13 +1,16 @@
 using System.CommandLine;
 using System.Net.Sockets;
 using Adapters.Server;
+using Microsoft.Extensions.Logging;
 
 namespace CLI.Commands;
 
 public static class OpenApiCommands
 {
-    public static Command OpenApiGenerate()
+    public static Command GenerateOpenApi(ILoggerFactory loggerFactory)
     {
+        var logger = loggerFactory.CreateLogger("OpenApiGenerate");
+
         var outputOption = new Option<string>(
             name: "--output",
             description: "Output file path for the YAML",
@@ -20,7 +23,7 @@ public static class OpenApiCommands
 
         command.SetHandler(async (output) =>
         {
-            await GenerateOpenApiYaml(output);
+            await GenerateOpenApiYaml(output, logger);
         }, outputOption);
 
         return command;
@@ -35,14 +38,17 @@ public static class OpenApiCommands
         return port;
     }
 
-    private static async Task GenerateOpenApiYaml(string outputPath)
+    private static async Task GenerateOpenApiYaml(string outputPath, ILogger logger)
     {
-        Console.WriteLine("Generating OpenAPI specification...");
+        logger.LogInformation("Generating OpenAPI specification");
 
         var port = GetRandomAvailablePort();
         var baseUrl = $"http://localhost:{port}";
 
-        Console.WriteLine($"Starting temporary server on port {port}...");
+        logger.LogInformation("Starting temporary server on port {Port}", port);
+
+        // Set environment variable to skip database initialization for OpenAPI generation
+        Environment.SetEnvironmentVariable("SKIP_DB_INIT", "true");
 
         try
         {
@@ -66,17 +72,13 @@ public static class OpenApiCommands
 
             await File.WriteAllTextAsync(resolvedPath, yamlContent);
 
-            Console.WriteLine($"✅ OpenAPI spec saved to: {resolvedPath}");
+            logger.LogInformation("OpenAPI spec saved to: {Path}", resolvedPath);
 
             await server.StopAsync();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error: {ex.Message}");
-            if (ex.InnerException != null)
-            {
-                Console.WriteLine($"   Inner: {ex.InnerException.Message}");
-            }
+            logger.LogError(ex, "Failed to generate OpenAPI specification");
         }
     }
 }

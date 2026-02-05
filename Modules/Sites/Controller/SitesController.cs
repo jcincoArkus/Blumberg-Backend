@@ -23,13 +23,16 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     /// Gets all sites
     /// </summary>
     /// <returns>List of sites</returns>
-    [HttpGet]
+    [HttpGet(Name = "GetAllSitesV1")]
     [ProducesResponseType(typeof(List<SiteResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<SiteResponse>>> GetAll()
     {
+        _logger.LogDebug("Getting all sites");
+
         try
         {
             var sites = await _siteService.GetAllAsync();
+            _logger.LogInformation("Retrieved {Count} sites", sites.Count);
             return Ok(sites);
         }
         catch (Exception ex)
@@ -44,14 +47,17 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     /// </summary>
     /// <param name="id">Site ID</param>
     /// <returns>Site</returns>
-    [HttpGet("{id}")]
+    [HttpGet("{id}", Name = "GetSiteByIdV1")]
     [ProducesResponseType(typeof(SiteResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SiteResponse>> GetById(Guid id)
     {
+        _logger.LogDebug("Getting site by ID: {Id}", id);
+
         try
         {
             var site = await _siteService.GetByIdAsync(id);
+            _logger.LogInformation("Retrieved site {Id}", id);
             return Ok(site);
         }
         catch (KeyNotFoundException ex)
@@ -61,7 +67,7 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting site by ID");
+            _logger.LogError(ex, "Error getting site {Id}", id);
             return StatusCode(500, new { message = "An error occurred while getting site by ID" });
         }
     }
@@ -71,14 +77,17 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     /// </summary>
     /// <param name="site">Site information</param>
     /// <returns>Site</returns>
-    [HttpPost]
+    [HttpPost(Name = "CreateSiteV1")]
     [ProducesResponseType(typeof(SiteResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<SiteResponse>> Create([FromBody] SiteRequest site)
     {
+        _logger.LogDebug("Creating new site: {Name}", site.Name);
+
         try
         {
             var newSite = await _siteService.CreateAsync(site);
+            _logger.LogInformation("Site created successfully with ID: {Id}", newSite.Id);
             return CreatedAtAction(nameof(GetById), new { id = newSite.Id }, newSite);
         }
         catch (InvalidOperationException ex)
@@ -88,7 +97,7 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating site");
+            _logger.LogError(ex, "Error creating site: {Name}", site.Name);
             return StatusCode(500, new { message = "An error occurred while creating site" });
         }
     }
@@ -99,15 +108,18 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     /// <param name="id">Site ID</param>
     /// <param name="site">Site information</param>
     /// <returns>Site</returns>
-    [HttpPut("{id}")]
+    [HttpPut("{id}", Name = "UpdateSiteV1")]
     [ProducesResponseType(typeof(SiteResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SiteResponse>> Update(Guid id, [FromBody] SiteRequest site)
     {
+        _logger.LogDebug("Updating site {Id}", id);
+
         try
         {
             var updatedSite = await _siteService.UpdateAsync(id, site);
+            _logger.LogInformation("Site {Id} updated successfully", id);
             return Ok(updatedSite);
         }
         catch (KeyNotFoundException ex)
@@ -117,12 +129,12 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to update site: {Message}", ex.Message);
+            _logger.LogWarning("Failed to update site {Id}: {Message}", id, ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating site");
+            _logger.LogError(ex, "Error updating site {Id}", id);
             return StatusCode(500, new { message = "An error occurred while updating site" });
         }
     }
@@ -132,14 +144,17 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     /// </summary>
     /// <param name="id">Site ID</param>
     /// <returns>No content</returns>
-    [HttpDelete("{id}")]
+    [HttpDelete("{id}", Name = "DeleteSiteV1")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(Guid id)
     {
+        _logger.LogDebug("Deleting site {Id}", id);
+
         try
         {
             await _siteService.DeleteAsync(id);
+            _logger.LogInformation("Site {Id} deleted successfully", id);
             return Ok();
         }
         catch (KeyNotFoundException ex)
@@ -149,7 +164,7 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting site");
+            _logger.LogError(ex, "Error deleting site {Id}", id);
             return StatusCode(500, new { message = "An error occurred while deleting site" });
         }
     }

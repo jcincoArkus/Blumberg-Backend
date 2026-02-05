@@ -14,9 +14,7 @@ internal static class EnvHelper
     public static string GetEnvRequired(string key)
     {
         var value = Environment.GetEnvironmentVariable(key);
-        if (string.IsNullOrWhiteSpace(value))
-            throw new InvalidOperationException($"Required environment variable '{key}' is not set");
-        return value;
+        return string.IsNullOrWhiteSpace(value) ? throw new InvalidOperationException($"Required environment variable '{key}' is not set") : value;
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Modules.Admins;
 using Modules.Auth;
 using Modules.Equipment;
+using Modules.Permissions;
 using Modules.Sensors;
 using Modules.Sites;
 
@@ -25,6 +26,7 @@ public static class ModulesSetup
         services.AddSitesModule();
         services.AddEquipmentModule();
         services.AddSensorModule();
+        services.AddPermissionsModule();
         return services;
     }
 
@@ -39,6 +41,7 @@ public static class ModulesSetup
         yield return typeof(Sites.Controller.SiteController).Assembly;
         yield return typeof(Equipment.Controller.EquipmentController).Assembly;
         yield return typeof(Sensors.Controller.SensorController).Assembly;
+        yield return typeof(Permissions.Controller.RolesController).Assembly;
     }
 }
 

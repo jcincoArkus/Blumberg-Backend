@@ -3,10 +3,197 @@ info:
   title: CLI
   version: '1.0'
 paths:
+  /api/v1/admins:
+    get:
+      tags:
+        - Admins
+      operationId: GetAllAdminsV1
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminResponse'
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminResponse'
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - Admins
+      operationId: CreateAdminV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AdminRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AdminRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/admins/{id}':
+    get:
+      tags:
+        - Admins
+      operationId: GetAdminByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - Admins
+      operationId: UpdateAdminV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AdminRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AdminRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/AdminResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - Admins
+      operationId: DeleteAdminV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
   /api/v1/auth/login:
     post:
       tags:
         - Authentication
+      operationId: LoginV1
       requestBody:
         content:
           application/json:
@@ -43,8 +230,1198 @@ paths:
             text/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  /api/v1/equipment:
+    get:
+      tags:
+        - Equipment
+      operationId: GetAllEquipmentV1
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EquipmentResponse'
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EquipmentResponse'
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EquipmentResponse'
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - Equipment
+      operationId: CreateEquipmentV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/equipment/{id}':
+    get:
+      tags:
+        - Equipment
+      operationId: GetEquipmentByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - Equipment
+      operationId: UpdateEquipmentV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/EquipmentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - Equipment
+      operationId: DeleteEquipmentV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  /api/permissions/resources:
+    get:
+      tags:
+        - Permissions
+      operationId: GetPermissionResourcesV1
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ResourcesResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourcesResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ResourcesResponse'
+      security:
+        - Bearer: [ ]
+  /api/permissions/actions:
+    get:
+      tags:
+        - Permissions
+      operationId: GetPermissionActionsV1
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ActionsResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionsResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ActionsResponse'
+      security:
+        - Bearer: [ ]
+  /api/permissions/check:
+    post:
+      tags:
+        - Permissions
+      operationId: CheckPermissionCurrentUserV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckPermissionRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CheckPermissionRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CheckPermissionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/CheckPermissionResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckPermissionResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/CheckPermissionResponse'
+      security:
+        - Bearer: [ ]
+  '/api/permissions/check/{userId}':
+    post:
+      tags:
+        - Permissions
+      operationId: CheckPermissionUserV1
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckPermissionRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CheckPermissionRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CheckPermissionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/CheckPermissionResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckPermissionResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/CheckPermissionResponse'
+      security:
+        - Bearer: [ ]
+  '/api/roles/{roleName}/permissions':
+    get:
+      tags:
+        - RolePermissions
+      operationId: GetRolePermissionsV1
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RolePermissionsResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolePermissionsResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RolePermissionsResponse'
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - RolePermissions
+      operationId: AssignRolePermissionsV1
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionsToRoleRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionsToRoleRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionsToRoleRequest'
+      responses:
+        '200':
+          description: OK
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - RolePermissions
+      operationId: RemoveRolePermissionsV1
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemovePermissionsFromRoleRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/RemovePermissionsFromRoleRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/RemovePermissionsFromRoleRequest'
+      responses:
+        '200':
+          description: OK
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - RolePermissions
+      operationId: ReplaceRolePermissionsV1
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionsToRoleRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionsToRoleRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionsToRoleRequest'
+      responses:
+        '200':
+          description: OK
+      security:
+        - Bearer: [ ]
+  /api/roles:
+    get:
+      tags:
+        - Roles
+      operationId: GetAllRolesV1
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RolesListResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesListResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RolesListResponse'
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - Roles
+      operationId: CreateRoleV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+      security:
+        - Bearer: [ ]
+  '/api/roles/{roleName}':
+    get:
+      tags:
+        - Roles
+      operationId: GetRoleByNameV1
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - Roles
+      operationId: UpdateRoleV1
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - Roles
+      operationId: DeleteRoleV1
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+      security:
+        - Bearer: [ ]
+  '/api/roles/{roleName}/users':
+    get:
+      tags:
+        - RoleUsers
+      operationId: GetRoleUsersV1
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RoleUsersResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleUsersResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RoleUsersResponse'
+      security:
+        - Bearer: [ ]
+  /api/v1/sensors:
+    get:
+      tags:
+        - Sensors
+      operationId: GetAllSensorsV1
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SensorResponse'
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SensorResponse'
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SensorResponse'
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - Sensors
+      operationId: CreateSensorV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SensorRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SensorRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SensorRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/sensors/{id}/readings':
+    get:
+      tags:
+        - Sensors
+      operationId: GetSensorReadingsV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorReadingResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorReadingResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorReadingResponsePagedResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/sensors/{id}':
+    get:
+      tags:
+        - Sensors
+      operationId: GetSensorByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - Sensors
+      operationId: UpdateSensorV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SensorRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SensorRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SensorRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - Sensors
+      operationId: DeleteSensorV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  /api/v1/sites:
+    get:
+      tags:
+        - Sites
+      operationId: GetAllSitesV1
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteResponse'
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteResponse'
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteResponse'
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - Sites
+      operationId: CreateSiteV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SiteRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SiteRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/sites/{id}':
+    get:
+      tags:
+        - Sites
+      operationId: GetSiteByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - Sites
+      operationId: UpdateSiteV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SiteRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SiteRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SiteResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - Sites
+      operationId: DeleteSiteV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/users/{userId}/roles':
+    get:
+      tags:
+        - UserRoles
+      operationId: GetUserRolesV1
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/UserRolesResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRolesResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/UserRolesResponse'
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - UserRoles
+      operationId: AssignUserRolesV1
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRolesToUserRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AssignRolesToUserRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AssignRolesToUserRequest'
+      responses:
+        '200':
+          description: OK
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - UserRoles
+      operationId: RemoveUserRolesV1
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveRolesFromUserRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/RemoveRolesFromUserRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/RemoveRolesFromUserRequest'
+      responses:
+        '200':
+          description: OK
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - UserRoles
+      operationId: ReplaceUserRolesV1
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRolesToUserRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AssignRolesToUserRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AssignRolesToUserRequest'
+      responses:
+        '200':
+          description: OK
+      security:
+        - Bearer: [ ]
 components:
   schemas:
+    ActionsResponse:
+      required:
+        - actions
+      type: object
+      properties:
+        actions:
+          type: array
+          items:
+            type: string
+          nullable: true
+      additionalProperties: false
+    AdminRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          nullable: true
+        password:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+      additionalProperties: false
+    AdminResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    AssignPermissionsToRoleRequest:
+      required:
+        - permissions
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RolePermissionDto'
+          nullable: true
+      additionalProperties: false
+    AssignRolesToUserRequest:
+      required:
+        - roles
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+          nullable: true
+      additionalProperties: false
     AuthResponse:
       type: object
       properties:
@@ -60,9 +1437,101 @@ components:
         lastName:
           type: string
           nullable: true
+        organizationId:
+          type: string
+          format: uuid
         expiresAt:
           type: string
           format: date-time
+      additionalProperties: false
+    CheckPermissionRequest:
+      required:
+        - action
+        - resource
+      type: object
+      properties:
+        resource:
+          type: string
+          nullable: true
+        action:
+          type: string
+          nullable: true
+      additionalProperties: false
+    CheckPermissionResponse:
+      required:
+        - hasPermission
+      type: object
+      properties:
+        hasPermission:
+          type: boolean
+      additionalProperties: false
+    CreateRoleRequest:
+      required:
+        - color
+        - description
+        - displayName
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        displayName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        isDefault:
+          type: boolean
+      additionalProperties: false
+    EquipmentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        equipmentType:
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+      additionalProperties: false
+    EquipmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        equipmentType:
+          type: string
+          nullable: true
+        organizationId:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+        siteName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
       additionalProperties: false
     LoginRequest:
       required:
@@ -98,6 +1567,363 @@ components:
           type: string
           nullable: true
       additionalProperties: { }
+    RemovePermissionsFromRoleRequest:
+      required:
+        - permissions
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RolePermissionDto'
+          nullable: true
+      additionalProperties: false
+    RemoveRolesFromUserRequest:
+      required:
+        - roles
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+          nullable: true
+      additionalProperties: false
+    ResourceDto:
+      required:
+        - actions
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        actions:
+          type: array
+          items:
+            type: string
+          nullable: true
+      additionalProperties: false
+    ResourcesResponse:
+      required:
+        - resources
+      type: object
+      properties:
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceDto'
+          nullable: true
+      additionalProperties: false
+    RoleDto:
+      required:
+        - color
+        - description
+        - displayName
+        - isDefault
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        displayName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        isDefault:
+          type: boolean
+      additionalProperties: false
+    RolePermissionDto:
+      required:
+        - action
+        - resource
+      type: object
+      properties:
+        resource:
+          type: string
+          nullable: true
+        action:
+          type: string
+          nullable: true
+      additionalProperties: false
+    RolePermissionsResponse:
+      required:
+        - permissions
+        - roleName
+      type: object
+      properties:
+        roleName:
+          type: string
+          nullable: true
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RolePermissionDto'
+          nullable: true
+      additionalProperties: false
+    RoleResponse:
+      required:
+        - role
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleDto'
+      additionalProperties: false
+    RoleUsersResponse:
+      required:
+        - roleName
+        - userIds
+      type: object
+      properties:
+        roleName:
+          type: string
+          nullable: true
+        userIds:
+          type: array
+          items:
+            type: string
+          nullable: true
+      additionalProperties: false
+    RolesListResponse:
+      required:
+        - roles
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleDto'
+          nullable: true
+      additionalProperties: false
+    SensorReadingResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        value:
+          type: number
+          format: double
+        timestampUtc:
+          type: string
+          format: date-time
+        unit:
+          $ref: '#/components/schemas/Unit'
+        organizationId:
+          type: string
+          format: uuid
+        ingestionRunId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    SensorReadingResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SensorReadingResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    SensorRequest:
+      type: object
+      properties:
+        serial:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/SensorStatus'
+        equipmentId:
+          type: string
+          format: uuid
+        sensorTypeId:
+          type: string
+          format: uuid
+        thresholdId:
+          type: string
+          format: uuid
+      additionalProperties: false
+    SensorResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serial:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/SensorStatus'
+        organizationId:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
+          nullable: true
+        equipmentId:
+          type: string
+          format: uuid
+        equipmentName:
+          type: string
+          nullable: true
+        sensorTypeId:
+          type: string
+          format: uuid
+        sensorTypeName:
+          type: string
+          nullable: true
+        thresholdId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    SensorStatus:
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+      type: integer
+      format: int32
+    SiteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        postalCode:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+      additionalProperties: false
+    SiteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        postalCode:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        organizationId:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    Unit:
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+      type: integer
+      format: int32
+    UpdateRoleRequest:
+      required:
+        - color
+        - description
+        - displayName
+      type: object
+      properties:
+        displayName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        isDefault:
+          type: boolean
+      additionalProperties: false
+    UserRolesResponse:
+      required:
+        - roles
+        - userId
+      type: object
+      properties:
+        userId:
+          type: string
+          nullable: true
+        roles:
+          type: array
+          items:
+            type: string
+          nullable: true
+      additionalProperties: false
   securitySchemes:
     Bearer:
       type: http
@@ -105,4 +1931,13 @@ components:
       scheme: Bearer
       bearerFormat: JWT
 tags:
+  - name: Admins
   - name: Authentication
+  - name: Equipment
+  - name: Permissions
+  - name: RolePermissions
+  - name: Roles
+  - name: RoleUsers
+  - name: Sensors
+  - name: Sites
+  - name: UserRoles

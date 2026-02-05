@@ -28,7 +28,9 @@ public static class ConfigLoader
         {
             Database = new DatabaseConfig().Init().Validate(),
             Jwt = new JwtConfig().Init().Validate(),
-            Application = new ApplicationConfig().Init().Validate()
+            Application = new ApplicationConfig().Init().Validate(),
+            Log = new LogConfig().Init().Validate(),
+            Telemetry = new TelemetryConfig().Init().Validate()
         };
 
         _loaded = true;
@@ -38,15 +40,7 @@ public static class ConfigLoader
     /// <summary>
     /// Gets the current loaded configuration (throws if not loaded)
     /// </summary>
-    public static AppConfig Current
-    {
-        get
-        {
-            if (_config == null)
-                throw new InvalidOperationException("Configuration not loaded. Call ConfigLoader.Load() first.");
-            return _config;
-        }
-    }
+    public static AppConfig Current => _config ?? throw new InvalidOperationException("Configuration not loaded. Call ConfigLoader.Load() first.");
 
     /// <summary>
     /// Reloads configuration (useful for testing)
@@ -67,6 +61,7 @@ public static class ConfigLoader
             return;
         }
 
+        // TODO: needs review
         // Search for .env in current and parent directories (up to 5 levels)
         var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
         for (var i = 0; i < 5 && dir != null; i++)

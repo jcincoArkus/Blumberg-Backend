@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Shared.Entity;
 
 namespace Adapters.Database.Seeders;
@@ -16,8 +17,10 @@ public record AdminSeedData(
 /// <summary>
 /// Seeds admin users, bound to the test organization from OrganizationSeeder.
 /// </summary>
-public class AdminSeeder : ISeeder
+public class AdminSeeder(ILoggerFactory loggerFactory) : ISeeder
 {
+    private readonly ILogger _logger = loggerFactory.CreateLogger<AdminSeeder>();
+
     public int Order => 0;
 
     /// <summary>
@@ -52,7 +55,7 @@ public class AdminSeeder : ISeeder
         {
             if (context.Admins.Any(a => a.Email == data.Email))
             {
-                Console.WriteLine($"  → Admin '{data.Email}' already exists, skipping...");
+                _logger.LogDebug("Admin '{Email}' already exists, skipping", data.Email);
                 continue;
             }
 
@@ -72,7 +75,7 @@ public class AdminSeeder : ISeeder
         }
 
         await context.SaveChangesAsync();
-        Console.WriteLine($"  → Created {created} admin(s) (bound to organization '{org.Name}')");
+        _logger.LogInformation("Created {Count} admin(s) (bound to organization '{OrgName}')", created, org.Name);
     }
 }
 

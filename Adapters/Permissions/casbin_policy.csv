@@ -1,0 +1,181 @@
+# Casbin Policy File for Blumberg RBAC System
+# Format: p, subject (role), object (resource), action
+# This file defines what actions each role can perform on each resource
+#
+# Roles:
+#   - admin: Full system access with all permissions
+#   - manager: Operational management access, can manage equipment and alerts
+#   - operator: Standard operational access, can acknowledge alerts
+#   - readonly: View-only access to all data
+#
+# Resources:
+#   - system-overview: System-wide dashboard and metrics
+#   - site-overview: Site-specific dashboard and metrics
+#   - sites: Site management
+#   - organizations: Organization management
+#   - equipment: Equipment monitoring and management
+#   - equipment-config: Equipment configuration
+#   - equipment-status: Equipment status tracking
+#   - alerts: Alert viewing and management
+#   - alerts-config: Alert rules and configuration
+#   - alert-rules: Alert rule definitions
+#   - sensors: Sensor monitoring
+#   - sensor-config: Sensor configuration
+#   - sensor-health: Sensor health monitoring
+#   - sensor-types: Sensor type definitions
+#   - thresholds: Threshold management
+#   - sensor-readings: Sensor data readings
+#   - ingestion: Data ingestion monitoring
+#   - ingestion-config: Data ingestion configuration
+#   - ingestion-runs: Ingestion run history
+#   - reports: Report viewing and generation
+#   - report-config: Report configuration
+#   - users: User management
+#   - roles: Role management
+#   - permissions: Permission management
+#
+# Actions:
+#   - read: View/query data
+#   - write: Create/update/delete
+#   - acknowledge: Acknowledge alerts
+#   - configure: Configure settings
+#   - execute: Execute operations (e.g., run ingestion)
+#   - export: Export data
+
+# ============================================================================
+# ADMIN ROLE - Full Access to Everything
+# ============================================================================
+p, admin, system-overview, read
+p, admin, system-overview, write
+p, admin, site-overview, read
+p, admin, site-overview, write
+p, admin, sites, read
+p, admin, sites, write
+p, admin, organizations, read
+p, admin, organizations, write
+p, admin, equipment, read
+p, admin, equipment, write
+p, admin, equipment-config, read
+p, admin, equipment-config, write
+p, admin, equipment-config, configure
+p, admin, equipment-status, read
+p, admin, equipment-status, write
+p, admin, alerts, read
+p, admin, alerts, write
+p, admin, alerts, acknowledge
+p, admin, alerts-config, read
+p, admin, alerts-config, write
+p, admin, alerts-config, configure
+p, admin, alert-rules, read
+p, admin, alert-rules, write
+p, admin, sensors, read
+p, admin, sensors, write
+p, admin, sensor-config, read
+p, admin, sensor-config, write
+p, admin, sensor-config, configure
+p, admin, sensor-health, read
+p, admin, sensor-health, write
+p, admin, sensor-types, read
+p, admin, sensor-types, write
+p, admin, thresholds, read
+p, admin, thresholds, write
+p, admin, sensor-readings, read
+p, admin, sensor-readings, write
+p, admin, ingestion, read
+p, admin, ingestion, write
+p, admin, ingestion, execute
+p, admin, ingestion-config, read
+p, admin, ingestion-config, write
+p, admin, ingestion-config, configure
+p, admin, ingestion-runs, read
+p, admin, ingestion-runs, write
+p, admin, reports, read
+p, admin, reports, write
+p, admin, reports, export
+p, admin, report-config, read
+p, admin, report-config, write
+p, admin, users, read
+p, admin, users, write
+p, admin, roles, read
+p, admin, roles, write
+p, admin, permissions, read
+p, admin, permissions, write
+
+# ============================================================================
+# MANAGER ROLE - Operational Management Access
+# ============================================================================
+p, manager, system-overview, read
+p, manager, site-overview, read
+p, manager, sites, read
+p, manager, equipment, read
+p, manager, equipment, write
+p, manager, equipment-config, read
+p, manager, equipment-status, read
+p, manager, equipment-status, write
+p, manager, alerts, read
+p, manager, alerts, write
+p, manager, alerts, acknowledge
+p, manager, alerts-config, read
+p, manager, alert-rules, read
+p, manager, sensors, read
+p, manager, sensor-config, read
+p, manager, sensor-health, read
+p, manager, sensor-types, read
+p, manager, thresholds, read
+p, manager, thresholds, write
+p, manager, sensor-readings, read
+p, manager, ingestion, read
+p, manager, ingestion, execute
+p, manager, ingestion-runs, read
+p, manager, reports, read
+p, manager, reports, export
+p, manager, users, read
+p, manager, roles, read
+
+# ============================================================================
+# OPERATOR ROLE - Standard Operational Access
+# ============================================================================
+p, operator, system-overview, read
+p, operator, site-overview, read
+p, operator, sites, read
+p, operator, equipment, read
+p, operator, equipment-status, read
+p, operator, alerts, read
+p, operator, alerts, acknowledge
+p, operator, alert-rules, read
+p, operator, sensors, read
+p, operator, sensor-health, read
+p, operator, sensor-types, read
+p, operator, thresholds, read
+p, operator, sensor-readings, read
+p, operator, ingestion, read
+p, operator, ingestion-runs, read
+p, operator, reports, read
+p, operator, reports, export
+
+# ============================================================================
+# READONLY ROLE - View-Only Access
+# ============================================================================
+p, readonly, system-overview, read
+p, readonly, site-overview, read
+p, readonly, sites, read
+p, readonly, equipment, read
+p, readonly, equipment-config, read
+p, readonly, equipment-status, read
+p, readonly, alerts, read
+p, readonly, alerts-config, read
+p, readonly, alert-rules, read
+p, readonly, sensors, read
+p, readonly, sensor-config, read
+p, readonly, sensor-health, read
+p, readonly, sensor-types, read
+p, readonly, thresholds, read
+p, readonly, sensor-readings, read
+p, readonly, ingestion, read
+p, readonly, ingestion-config, read
+p, readonly, ingestion-runs, read
+p, readonly, reports, read
+p, readonly, report-config, read
+p, readonly, users, read
+p, readonly, roles, read
+

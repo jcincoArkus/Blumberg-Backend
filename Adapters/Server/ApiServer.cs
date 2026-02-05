@@ -1,6 +1,9 @@
 using Adapters.Config;
 using Adapters.Database;
 using Adapters.Jwt;
+using Adapters.Logger;
+using Adapters.Telemetry;
+using Adapters.Permissions;
 using Shared.Abstractions;
 using Adapters.OpenAPI.Filters;
 using Microsoft.AspNetCore.Builder;
@@ -31,6 +34,9 @@ public class ApiServer
         var config = ConfigLoader.Load();
 
         var builder = WebApplication.CreateBuilder(args ?? []);
+
+        builder.AddStructuredLogging(config.Log);
+        builder.AddDistributedTracing(config.Telemetry);
 
         if (!string.IsNullOrEmpty(url))
         {
@@ -82,6 +88,9 @@ public class ApiServer
         // JWT Authentication
         services.AddJwtAuthentication(config);
 
+        // Casbin Authorization
+        services.AddCasbinAuthorization();
+
         // CORS
         services.AddCors(options =>
         {
@@ -99,6 +108,17 @@ public class ApiServer
 
     private static void ConfigureMiddleware(WebApplication app)
     {
+        // Skip database initialization if SKIP_DB_INIT environment variable is set
+        var skipDbInit = Environment.GetEnvironmentVariable("SKIP_DB_INIT");
+        if (skipDbInit != "true")
+        {
+            // Initialize permission system (migrations, policies, role metadata)
+            InitializePermissionSystemAsync(app.Services).GetAwaiter().GetResult();
+        }
+
+        // Request logging (must be early in pipeline)
+        app.UseStructuredRequestLogging();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -118,6 +138,14 @@ public class ApiServer
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+    }
+
+    /// <summary>
+    /// Initializes the permission system automatically on startup
+    /// </summary>
+    private static async Task InitializePermissionSystemAsync(IServiceProvider serviceProvider)
+    {
+        await serviceProvider.InitializePermissionSystemAsync();
     }
 
     public void Run() => _app.Run();
