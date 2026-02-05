@@ -70,6 +70,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<Alert> Alerts => Set<Alert>();
 
     /// <summary>
+    /// Gets or sets the IngestionRuns DbSet
+    /// </summary>
+    public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
+
+    /// <summary>
     /// Configures the model and entity relationships
     /// </summary>
     /// <param name="modelBuilder">Model builder</param>
@@ -116,6 +121,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SensorType>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Threshold>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Alert>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<IngestionRun>().HasQueryFilter(e => e.DeletedAt == null);
     }
 
     /// <summary>

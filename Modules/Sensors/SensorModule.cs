@@ -17,6 +17,7 @@ public static class SensorModule
     public static IServiceCollection AddSensorModule(this IServiceCollection services)
     {
         services.AddScoped<ISensorRepository, SensorRepository>();
+        services.AddScoped<ISensorReadingRepository, SensorReadingRepository>();
         services.AddScoped<ISensorService, SensorService>();
 
         return services;

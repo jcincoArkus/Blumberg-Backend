@@ -1,3 +1,5 @@
+using Shared.Enums;
+
 namespace Shared.Entity;
 
 /// <summary>
@@ -9,6 +11,16 @@ public class SensorReading : BaseEntity
     /// Sensor reading's value
     /// </summary>
     public decimal Value { get; set; }
+
+    /// <summary>
+    /// UTC timestamp when the reading was taken
+    /// </summary>
+    public DateTime TimestampUtc { get; set; }
+
+    /// <summary>
+    /// Unit of measurement for the value (stored as string)
+    /// </summary>
+    public Unit Unit { get; set; }
 
     /// <summary>
     /// Organization this reading belongs to
@@ -29,6 +41,16 @@ public class SensorReading : BaseEntity
     /// Navigation to the sensor
     /// </summary>
     public Sensor Sensor { get; set; } = null!;
+
+    /// <summary>
+    /// Optional ingestion run that produced this reading
+    /// </summary>
+    public Guid? IngestionRunId { get; set; }
+
+    /// <summary>
+    /// Navigation to the ingestion run (when set)
+    /// </summary>
+    public IngestionRun? IngestionRun { get; set; }
 
     /// <summary>
     /// Alerts triggered by this sensor reading

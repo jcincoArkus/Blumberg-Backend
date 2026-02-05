@@ -45,4 +45,21 @@ public interface ISensorService
     /// <param name="id">Sensor ID</param>
     /// <exception cref="KeyNotFoundException">When sensor is not found</exception>
     Task DeleteAsync(Guid id);
+
+    /// <summary>
+    /// Gets paginated readings for a sensor
+    /// </summary>
+    /// <param name="sensorId">Sensor ID</param>
+    /// <param name="fromUtc">Optional start of time range (inclusive)</param>
+    /// <param name="toUtc">Optional end of time range (inclusive)</param>
+    /// <param name="page">1-based page number</param>
+    /// <param name="pageSize">Page size</param>
+    /// <returns>Paginated readings</returns>
+    /// <exception cref="KeyNotFoundException">When sensor is not found</exception>
+    Task<PagedResponse<SensorReadingResponse>> GetReadingsAsync(
+        Guid sensorId,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        int page,
+        int pageSize);
 }

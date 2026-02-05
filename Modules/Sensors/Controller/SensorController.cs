@@ -40,6 +40,46 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
     }
 
     /// <summary>
+    /// Gets paginated readings for a sensor
+    /// </summary>
+    /// <param name="id">Sensor ID</param>
+    /// <param name="from">Optional start of time range (UTC, inclusive)</param>
+    /// <param name="to">Optional end of time range (UTC, inclusive)</param>
+    /// <param name="page">1-based page number (default 1)</param>
+    /// <param name="pageSize">Page size (default 20)</param>
+    /// <returns>Paginated readings</returns>
+    [HttpGet("{id}/readings")]
+    [ProducesResponseType(typeof(PagedResponse<SensorReadingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResponse<SensorReadingResponse>>> GetReadings(
+        Guid id,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+
+            var result = await _sensorService.GetReadingsAsync(id, from, to, page, pageSize);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning("Sensor not found with ID: {Id}", id);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting readings for sensor {SensorId}", id);
+            return StatusCode(500, new { message = "An error occurred while getting sensor readings" });
+        }
+    }
+
+    /// <summary>
     /// Gets a sensor by ID
     /// </summary>
     /// <param name="id">Sensor ID</param>

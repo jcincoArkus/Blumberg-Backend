@@ -6,9 +6,10 @@ namespace Modules.Sensors.Service;
 /// <summary>
 /// Service implementation for sensor operations
 /// </summary>
-public class SensorService(ISensorRepository sensorRepository) : ISensorService
+public class SensorService(ISensorRepository sensorRepository, ISensorReadingRepository sensorReadingRepository) : ISensorService
 {
     private readonly ISensorRepository _sensorRepository = sensorRepository;
+    private readonly ISensorReadingRepository _sensorReadingRepository = sensorReadingRepository;
 
     /// <inheritdoc />
     public async Task<List<SensorResponse>> GetAllAsync()
@@ -64,6 +65,46 @@ public class SensorService(ISensorRepository sensorRepository) : ISensorService
         var deleted = await _sensorRepository.SoftDeleteAsync(id);
         if (!deleted)
             throw new KeyNotFoundException($"Sensor with ID {id} was not found");
+    }
+
+    /// <inheritdoc />
+    public async Task<PagedResponse<SensorReadingResponse>> GetReadingsAsync(
+        Guid sensorId,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        int page,
+        int pageSize)
+    {
+        _ = await _sensorRepository.GetByIdAsync(sensorId)
+            ?? throw new KeyNotFoundException($"Sensor with ID {sensorId} was not found");
+
+        var (items, totalCount) = await _sensorReadingRepository.GetBySensorIdAsync(sensorId, fromUtc, toUtc, page, pageSize);
+
+        return new PagedResponse<SensorReadingResponse>
+        {
+            Items = items.Select(MapReadingToResponse).ToList(),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
+    /// <summary>
+    /// Maps a SensorReading entity to a SensorReadingResponse DTO
+    /// </summary>
+    private static SensorReadingResponse MapReadingToResponse(Shared.Entity.SensorReading reading)
+    {
+        return new SensorReadingResponse
+        {
+            Id = reading.Id,
+            SensorId = reading.SensorId,
+            Value = reading.Value,
+            TimestampUtc = reading.TimestampUtc,
+            Unit = reading.Unit,
+            OrganizationId = reading.OrganizationId,
+            IngestionRunId = reading.IngestionRunId,
+            CreatedAt = reading.CreatedAt
+        };
     }
 
     /// <summary>
