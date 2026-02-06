@@ -2,6 +2,7 @@ using Adapters.Telemetry;
 using Microsoft.Extensions.Logging;
 using Modules.Sites.Dto;
 using Modules.Sites.Repository;
+using Shared.Dto;
 using Shared.Entity;
 
 namespace Modules.Sites.Service;
@@ -13,20 +14,20 @@ public class SiteService(ISiteRepository siteRepository, ILogger<SiteService> lo
 {
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<SiteResponse>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Site> Items, int TotalCount)> GetAllAsync(PaginationRequest request)
     {
-        logger.LogDebug("Getting all sites from repository");
+        logger.LogDebug("Getting sites page {Page}, pageSize {PageSize}", request.Page, request.PageSize);
 
-        var sites = await siteRepository.GetAllAsync();
+        var result = await siteRepository.GetPagedAsync(request);
 
-        logger.LogInformation("Retrieved {Count} sites", sites.Count);
+        logger.LogInformation("Retrieved {Count} sites (total: {TotalCount})", result.Items.Count, result.TotalCount);
 
-        return sites.Select(MapToResponse).ToList();
+        return result;
     }
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<SiteResponse> GetByIdAsync(Guid id)
+    public virtual async Task<Site> GetByIdAsync(Guid id)
     {
         logger.LogDebug("Getting site by ID: {Id}", id);
 
@@ -40,12 +41,12 @@ public class SiteService(ISiteRepository siteRepository, ILogger<SiteService> lo
 
         logger.LogInformation("Retrieved site {Id}", id);
 
-        return MapToResponse(site);
+        return site;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<SiteResponse> CreateAsync(SiteRequest request)
+    public virtual async Task<Site> CreateAsync(SiteRequest request)
     {
         logger.LogDebug("Creating new site: {Name}", request.Name);
 
@@ -63,12 +64,12 @@ public class SiteService(ISiteRepository siteRepository, ILogger<SiteService> lo
 
         logger.LogInformation("Site created successfully with ID: {Id}", createdSite.Id);
 
-        return MapToResponse(createdSite);
+        return createdSite;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<SiteResponse> UpdateAsync(Guid id, SiteRequest request)
+    public virtual async Task<Site> UpdateAsync(Guid id, SiteRequest request)
     {
         logger.LogDebug("Updating site {Id}", id);
 
@@ -91,7 +92,7 @@ public class SiteService(ISiteRepository siteRepository, ILogger<SiteService> lo
 
         logger.LogInformation("Site {Id} updated successfully", id);
 
-        return MapToResponse(updatedSite);
+        return updatedSite;
     }
 
     /// <inheritdoc />
@@ -109,26 +110,5 @@ public class SiteService(ISiteRepository siteRepository, ILogger<SiteService> lo
         }
 
         logger.LogInformation("Site {Id} deleted successfully", id);
-    }
-
-    /// <summary>
-    /// Maps a Site entity to a SiteResponse DTO
-    /// </summary>
-    private static SiteResponse MapToResponse(Site site)
-    {
-        return new SiteResponse
-        {
-            Id = site.Id,
-            Name = site.Name,
-            Address = site.Address,
-            City = site.City,
-            State = site.State,
-            PostalCode = site.PostalCode,
-            Country = site.Country,
-            OrganizationId = site.OrganizationId,
-            OrganizationName = site.Organization?.Name ?? string.Empty,
-            CreatedAt = site.CreatedAt,
-            UpdatedAt = site.UpdatedAt
-        };
     }
 }

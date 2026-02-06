@@ -2,6 +2,7 @@ using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Shared.Dto;
 using Shared.Entity;
 
 namespace Modules.Auth.Repository;
@@ -63,18 +64,33 @@ public class AdminRepository(ApplicationDbContext context, ILogger<AdminReposito
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<Admin>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Admin> Items, int TotalCount)> GetPagedAsync(PaginationRequest request)
     {
-        logger.LogDebug("Querying all admins");
+        logger.LogDebug("Querying admins page {Page}, pageSize {PageSize}, search '{Search}'", request.Page, request.PageSize, request.Search);
 
-        var admins = await context.Admins
-            .Where(a => a.DeletedAt == null)
+        var query = context.Admins
+            .Where(a => a.DeletedAt == null);
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim().ToLower();
+            query = query.Where(a =>
+                a.Email.ToLower().Contains(search) ||
+                a.FirstName.ToLower().Contains(search) ||
+                a.LastName.ToLower().Contains(search));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
             .OrderBy(a => a.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync();
 
-        logger.LogInformation("Retrieved {Count} admins from database", admins.Count);
+        logger.LogInformation("Retrieved {Count} admins from database (total: {TotalCount})", items.Count, totalCount);
 
-        return admins;
+        return (items, totalCount);
     }
 
     /// <inheritdoc />
@@ -82,6 +98,11 @@ public class AdminRepository(ApplicationDbContext context, ILogger<AdminReposito
     public virtual async Task<Admin> CreateAsync(Admin admin)
     {
         logger.LogDebug("Creating admin in database: {Email}", admin.Email);
+
+        admin.Id = Guid.NewGuid();
+        admin.CreatedAt = DateTime.UtcNow;
+        admin.UpdatedAt = null;
+        admin.DeletedAt = null;
 
         context.Admins.Add(admin);
         await context.SaveChangesAsync();
@@ -107,20 +128,24 @@ public class AdminRepository(ApplicationDbContext context, ILogger<AdminReposito
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<Admin> DeleteAsync(Admin admin)
+    public virtual async Task<bool> SoftDeleteAsync(Guid id)
     {
-        logger.LogDebug("Soft deleting admin in database: {Id}", admin.Id);
+        logger.LogDebug("Soft deleting admin in database: {Id}", id);
 
-        // Soft delete: set DeletedAt timestamp
+        var admin = await GetByIdAsync(id);
+        if (admin == null)
+        {
+            logger.LogWarning("Admin not found for deletion: {Id}", id);
+            return false;
+        }
+
         admin.DeletedAt = DateTime.UtcNow;
         admin.UpdatedAt = DateTime.UtcNow;
 
-        context.Admins.Update(admin);
         await context.SaveChangesAsync();
 
-        logger.LogInformation("Admin {Id} soft deleted in database", admin.Id);
+        logger.LogInformation("Admin {Id} soft deleted in database", id);
 
-        return admin;
+        return true;
     }
 }
-

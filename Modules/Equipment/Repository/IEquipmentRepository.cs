@@ -1,3 +1,4 @@
+using Shared.Dto;
 using Shared.Entity;
 
 namespace Modules.Equipment.Repository;
@@ -8,10 +9,11 @@ namespace Modules.Equipment.Repository;
 public interface IEquipmentRepository
 {
     /// <summary>
-    /// Gets all equipment that are not soft deleted
+    /// Gets paginated equipment
     /// </summary>
-    /// <returns>List of active equipment</returns>
-    Task<List<Shared.Entity.Equipment>> GetAllAsync();
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated equipment and total count</returns>
+    Task<(IReadOnlyList<Shared.Entity.Equipment> Items, int TotalCount)> GetPagedAsync(PaginationRequest request);
 
     /// <summary>
     /// Gets equipment by ID

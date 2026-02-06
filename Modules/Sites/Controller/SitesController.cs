@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Modules.Sites.Service;
-using Modules.Sites.Dto;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Modules.Sites.Dto;
+using Modules.Sites.Service;
+using Shared.Dto;
+using Shared.Entity;
 
 namespace Modules.Sites.Controller;
 
@@ -16,28 +18,32 @@ namespace Modules.Sites.Controller;
 [Authorize]
 public class SiteController(ISiteService siteService, ILogger<SiteController> logger) : ControllerBase
 {
-    private readonly ISiteService _siteService = siteService;
-    private readonly ILogger<SiteController> _logger = logger;
-
     /// <summary>
-    /// Gets all sites
+    /// Gets paginated sites
     /// </summary>
-    /// <returns>List of sites</returns>
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated list of sites</returns>
     [HttpGet(Name = "GetAllSitesV1")]
-    [ProducesResponseType(typeof(List<SiteResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<SiteResponse>>> GetAll()
+    [ProducesResponseType(typeof(PagedResponse<SiteResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<SiteResponse>>> GetAll([FromQuery] PaginationRequest request)
     {
-        _logger.LogDebug("Getting all sites");
+        logger.LogDebug("Getting all sites");
 
         try
         {
-            var sites = await _siteService.GetAllAsync();
-            _logger.LogInformation("Retrieved {Count} sites", sites.Count);
-            return Ok(sites);
+            var (items, totalCount) = await siteService.GetAllAsync(request);
+            logger.LogInformation("Retrieved {Count} sites", items.Count);
+            return Ok(new PagedResponse<SiteResponse>
+            {
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                Page = request.Page,
+                PageSize = request.PageSize
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting all sites");
+            logger.LogError(ex, "Error getting all sites");
             return StatusCode(500, new { message = "An error occurred while getting all sites" });
         }
     }
@@ -52,28 +58,28 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SiteResponse>> GetById(Guid id)
     {
-        _logger.LogDebug("Getting site by ID: {Id}", id);
+        logger.LogDebug("Getting site by ID: {Id}", id);
 
         try
         {
-            var site = await _siteService.GetByIdAsync(id);
-            _logger.LogInformation("Retrieved site {Id}", id);
-            return Ok(site);
+            var site = await siteService.GetByIdAsync(id);
+            logger.LogInformation("Retrieved site {Id}", id);
+            return Ok(MapToResponse(site));
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Site not found with ID: {Id}", id);
+            logger.LogWarning("Site not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting site {Id}", id);
+            logger.LogError(ex, "Error getting site {Id}", id);
             return StatusCode(500, new { message = "An error occurred while getting site by ID" });
         }
     }
 
     /// <summary>
-        /// Creates a new site
+    /// Creates a new site
     /// </summary>
     /// <param name="site">Site information</param>
     /// <returns>Site</returns>
@@ -82,22 +88,23 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<SiteResponse>> Create([FromBody] SiteRequest site)
     {
-        _logger.LogDebug("Creating new site: {Name}", site.Name);
+        logger.LogDebug("Creating new site: {Name}", site.Name);
 
         try
         {
-            var newSite = await _siteService.CreateAsync(site);
-            _logger.LogInformation("Site created successfully with ID: {Id}", newSite.Id);
-            return CreatedAtAction(nameof(GetById), new { id = newSite.Id }, newSite);
+            var newSite = await siteService.CreateAsync(site);
+            var response = MapToResponse(newSite);
+            logger.LogInformation("Site created successfully with ID: {Id}", response.Id);
+            return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to create site: {Message}", ex.Message);
+            logger.LogWarning("Failed to create site: {Message}", ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating site: {Name}", site.Name);
+            logger.LogError(ex, "Error creating site: {Name}", site.Name);
             return StatusCode(500, new { message = "An error occurred while creating site" });
         }
     }
@@ -114,27 +121,27 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SiteResponse>> Update(Guid id, [FromBody] SiteRequest site)
     {
-        _logger.LogDebug("Updating site {Id}", id);
+        logger.LogDebug("Updating site {Id}", id);
 
         try
         {
-            var updatedSite = await _siteService.UpdateAsync(id, site);
-            _logger.LogInformation("Site {Id} updated successfully", id);
-            return Ok(updatedSite);
+            var updatedSite = await siteService.UpdateAsync(id, site);
+            logger.LogInformation("Site {Id} updated successfully", id);
+            return Ok(MapToResponse(updatedSite));
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Site not found with ID: {Id}", id);
+            logger.LogWarning("Site not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("Failed to update site {Id}: {Message}", id, ex.Message);
+            logger.LogWarning("Failed to update site {Id}: {Message}", id, ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating site {Id}", id);
+            logger.LogError(ex, "Error updating site {Id}", id);
             return StatusCode(500, new { message = "An error occurred while updating site" });
         }
     }
@@ -149,23 +156,44 @@ public class SiteController(ISiteService siteService, ILogger<SiteController> lo
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(Guid id)
     {
-        _logger.LogDebug("Deleting site {Id}", id);
+        logger.LogDebug("Deleting site {Id}", id);
 
         try
         {
-            await _siteService.DeleteAsync(id);
-            _logger.LogInformation("Site {Id} deleted successfully", id);
+            await siteService.DeleteAsync(id);
+            logger.LogInformation("Site {Id} deleted successfully", id);
             return Ok();
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning("Site not found with ID: {Id}", id);
+            logger.LogWarning("Site not found with ID: {Id}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting site {Id}", id);
+            logger.LogError(ex, "Error deleting site {Id}", id);
             return StatusCode(500, new { message = "An error occurred while deleting site" });
         }
+    }
+
+    /// <summary>
+    /// Maps a Site entity to a SiteResponse DTO
+    /// </summary>
+    private static SiteResponse MapToResponse(Site site)
+    {
+        return new SiteResponse
+        {
+            Id = site.Id,
+            Name = site.Name,
+            Address = site.Address,
+            City = site.City,
+            State = site.State,
+            PostalCode = site.PostalCode,
+            Country = site.Country,
+            OrganizationId = site.OrganizationId,
+            OrganizationName = site.Organization?.Name ?? string.Empty,
+            CreatedAt = site.CreatedAt,
+            UpdatedAt = site.UpdatedAt
+        };
     }
 }

@@ -2,6 +2,7 @@ using Adapters.Telemetry;
 using Microsoft.Extensions.Logging;
 using Modules.Sensors.Dto;
 using Modules.Sensors.Repository;
+using Shared.Dto;
 
 namespace Modules.Sensors.Service;
 
@@ -12,20 +13,20 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 {
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<SensorResponse>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Shared.Entity.Sensor> Items, int TotalCount)> GetAllAsync(PaginationRequest request)
     {
-        logger.LogDebug("Getting all sensors from repository");
+        logger.LogDebug("Getting sensors page {Page}, pageSize {PageSize}", request.Page, request.PageSize);
 
-        var sensors = await sensorRepository.GetAllAsync();
+        var result = await sensorRepository.GetPagedAsync(request);
 
-        logger.LogInformation("Retrieved {Count} sensors", sensors.Count);
+        logger.LogInformation("Retrieved {Count} sensors (total: {TotalCount})", result.Items.Count, result.TotalCount);
 
-        return sensors.Select(MapToResponse).ToList();
+        return result;
     }
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<SensorResponse> GetByIdAsync(Guid id)
+    public virtual async Task<Shared.Entity.Sensor> GetByIdAsync(Guid id)
     {
         logger.LogDebug("Getting sensor by ID: {Id}", id);
 
@@ -39,12 +40,12 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
         logger.LogInformation("Retrieved sensor {Id}", id);
 
-        return MapToResponse(sensor);
+        return sensor;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<SensorResponse> CreateAsync(SensorRequest request)
+    public virtual async Task<Shared.Entity.Sensor> CreateAsync(SensorRequest request)
     {
         logger.LogDebug("Creating new sensor: {Serial}", request.Serial);
 
@@ -61,12 +62,12 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
         logger.LogInformation("Sensor created successfully with ID: {Id}", createdSensor.Id);
 
-        return MapToResponse(createdSensor);
+        return createdSensor;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<SensorResponse> UpdateAsync(Guid id, SensorRequest request)
+    public virtual async Task<Shared.Entity.Sensor> UpdateAsync(Guid id, SensorRequest request)
     {
         logger.LogDebug("Updating sensor {Id}", id);
 
@@ -88,7 +89,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
         logger.LogInformation("Sensor {Id} updated successfully", id);
 
-        return MapToResponse(updatedSensor);
+        return updatedSensor;
     }
 
     /// <inheritdoc />
@@ -110,14 +111,11 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<PagedResponse<SensorReadingResponse>> GetReadingsAsync(
+    public virtual async Task<(IReadOnlyList<Shared.Entity.SensorReading> Items, int TotalCount)> GetReadingsAsync(
         Guid sensorId,
-        DateTime? fromUtc,
-        DateTime? toUtc,
-        int page,
-        int pageSize)
+        GetSensorReadingsRequest request)
     {
-        logger.LogDebug("Getting readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", sensorId, page, pageSize);
+        logger.LogDebug("Getting readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", sensorId, request.Page, request.PageSize);
 
         var sensor = await sensorRepository.GetByIdAsync(sensorId);
 
@@ -127,56 +125,10 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
             throw new KeyNotFoundException($"Sensor with ID {sensorId} was not found");
         }
 
-        var (items, totalCount) = await sensorReadingRepository.GetBySensorIdAsync(sensorId, fromUtc, toUtc, page, pageSize);
+        var result = await sensorReadingRepository.GetBySensorIdAsync(sensorId, request);
 
-        logger.LogInformation("Retrieved {Count} readings for sensor {SensorId}", items.Count, sensorId);
+        logger.LogInformation("Retrieved {Count} readings for sensor {SensorId}", result.Items.Count, sensorId);
 
-        return new PagedResponse<SensorReadingResponse>
-        {
-            Items = items.Select(MapReadingToResponse).ToList(),
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
-    }
-
-    /// <summary>
-    /// Maps a SensorReading entity to a SensorReadingResponse DTO
-    /// </summary>
-    private static SensorReadingResponse MapReadingToResponse(Shared.Entity.SensorReading reading)
-    {
-        return new SensorReadingResponse
-        {
-            Id = reading.Id,
-            SensorId = reading.SensorId,
-            Value = reading.Value,
-            TimestampUtc = reading.TimestampUtc,
-            Unit = reading.Unit,
-            OrganizationId = reading.OrganizationId,
-            IngestionRunId = reading.IngestionRunId,
-            CreatedAt = reading.CreatedAt
-        };
-    }
-
-    /// <summary>
-    /// Maps a Sensor entity to a SensorResponse DTO
-    /// </summary>
-    private static SensorResponse MapToResponse(Shared.Entity.Sensor sensor)
-    {
-        return new SensorResponse
-        {
-            Id = sensor.Id,
-            Serial = sensor.Serial,
-            Status = sensor.Status,
-            OrganizationId = sensor.OrganizationId,
-            OrganizationName = sensor.Organization?.Name ?? string.Empty,
-            EquipmentId = sensor.EquipmentId,
-            EquipmentName = sensor.Equipment?.Name ?? string.Empty,
-            SensorTypeId = sensor.SensorTypeId,
-            SensorTypeName = sensor.SensorType?.Type.ToString() ?? string.Empty,
-            ThresholdId = sensor.ThresholdId,
-            CreatedAt = sensor.CreatedAt,
-            UpdatedAt = sensor.UpdatedAt
-        };
+        return result;
     }
 }

@@ -1,4 +1,4 @@
-namespace Modules.Sensors.Dto;
+namespace Modules.Equipment.Dto;
 
 /// <summary>
 /// Paginated response wrapper

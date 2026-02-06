@@ -1,3 +1,5 @@
+using Modules.Sensors.Dto;
+
 namespace Modules.Sensors.Repository;
 
 /// <summary>
@@ -10,15 +12,9 @@ public interface ISensorReadingRepository
     /// Uses indexes (SensorId, TimestampUtc) for efficient time-series queries.
     /// </summary>
     /// <param name="sensorId">Sensor ID</param>
-    /// <param name="fromUtc">Optional start of time range (inclusive)</param>
-    /// <param name="toUtc">Optional end of time range (inclusive)</param>
-    /// <param name="page">1-based page number</param>
-    /// <param name="pageSize">Page size</param>
+    /// <param name="request">Query parameters (pagination + time range)</param>
     /// <returns>Readings and total count</returns>
     Task<(IReadOnlyList<Shared.Entity.SensorReading> Items, int TotalCount)> GetBySensorIdAsync(
         Guid sensorId,
-        DateTime? fromUtc,
-        DateTime? toUtc,
-        int page,
-        int pageSize);
+        GetSensorReadingsRequest request);
 }

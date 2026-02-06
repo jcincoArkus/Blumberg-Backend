@@ -1,4 +1,4 @@
-namespace Modules.Sensors.Dto;
+namespace Modules.Admins.Dto;
 
 /// <summary>
 /// Paginated response wrapper

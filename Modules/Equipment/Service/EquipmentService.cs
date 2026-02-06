@@ -2,7 +2,7 @@ using Adapters.Telemetry;
 using Microsoft.Extensions.Logging;
 using Modules.Equipment.Dto;
 using Modules.Equipment.Repository;
-using Shared.Entity;
+using Shared.Dto;
 
 namespace Modules.Equipment.Service;
 
@@ -13,20 +13,20 @@ public class EquipmentService(IEquipmentRepository equipmentRepository, ILogger<
 {
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<EquipmentResponse>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Shared.Entity.Equipment> Items, int TotalCount)> GetAllAsync(PaginationRequest request)
     {
-        logger.LogDebug("Getting all equipment from repository");
+        logger.LogDebug("Getting equipment page {Page}, pageSize {PageSize}", request.Page, request.PageSize);
 
-        var equipment = await equipmentRepository.GetAllAsync();
+        var result = await equipmentRepository.GetPagedAsync(request);
 
-        logger.LogInformation("Retrieved {Count} equipment", equipment.Count);
+        logger.LogInformation("Retrieved {Count} equipment (total: {TotalCount})", result.Items.Count, result.TotalCount);
 
-        return equipment.Select(MapToResponse).ToList();
+        return result;
     }
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<EquipmentResponse> GetByIdAsync(Guid id)
+    public virtual async Task<Shared.Entity.Equipment> GetByIdAsync(Guid id)
     {
         logger.LogDebug("Getting equipment by ID: {Id}", id);
 
@@ -40,12 +40,12 @@ public class EquipmentService(IEquipmentRepository equipmentRepository, ILogger<
 
         logger.LogInformation("Retrieved equipment {Id}", id);
 
-        return MapToResponse(equipment);
+        return equipment;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<EquipmentResponse> CreateAsync(EquipmentRequest request)
+    public virtual async Task<Shared.Entity.Equipment> CreateAsync(EquipmentRequest request)
     {
         logger.LogDebug("Creating new equipment: {Name}", request.Name);
 
@@ -60,12 +60,12 @@ public class EquipmentService(IEquipmentRepository equipmentRepository, ILogger<
 
         logger.LogInformation("Equipment created successfully with ID: {Id}", createdEquipment.Id);
 
-        return MapToResponse(createdEquipment);
+        return createdEquipment;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<EquipmentResponse> UpdateAsync(Guid id, EquipmentRequest request)
+    public virtual async Task<Shared.Entity.Equipment> UpdateAsync(Guid id, EquipmentRequest request)
     {
         logger.LogDebug("Updating equipment {Id}", id);
 
@@ -85,7 +85,7 @@ public class EquipmentService(IEquipmentRepository equipmentRepository, ILogger<
 
         logger.LogInformation("Equipment {Id} updated successfully", id);
 
-        return MapToResponse(updatedEquipment);
+        return updatedEquipment;
     }
 
     /// <inheritdoc />
@@ -103,24 +103,5 @@ public class EquipmentService(IEquipmentRepository equipmentRepository, ILogger<
         }
 
         logger.LogInformation("Equipment {Id} deleted successfully", id);
-    }
-
-    /// <summary>
-    /// Maps an Equipment entity to an EquipmentResponse DTO
-    /// </summary>
-    private static EquipmentResponse MapToResponse(Shared.Entity.Equipment equipment)
-    {
-        return new EquipmentResponse
-        {
-            Id = equipment.Id,
-            Name = equipment.Name,
-            EquipmentType = equipment.EquipmentType,
-            OrganizationId = equipment.OrganizationId,
-            OrganizationName = equipment.Organization?.Name ?? string.Empty,
-            SiteId = equipment.SiteId,
-            SiteName = equipment.Site?.Name ?? string.Empty,
-            CreatedAt = equipment.CreatedAt,
-            UpdatedAt = equipment.UpdatedAt
-        };
     }
 }

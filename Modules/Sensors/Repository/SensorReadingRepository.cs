@@ -2,6 +2,7 @@ using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Modules.Sensors.Dto;
 
 namespace Modules.Sensors.Repository;
 
@@ -10,33 +11,28 @@ namespace Modules.Sensors.Repository;
 /// </summary>
 public class SensorReadingRepository(ApplicationDbContext context, ILogger<SensorReadingRepository> logger) : ISensorReadingRepository
 {
-    private readonly ApplicationDbContext _context = context;
-
     /// <inheritdoc />
     [Span]
     public virtual async Task<(IReadOnlyList<Shared.Entity.SensorReading> Items, int TotalCount)> GetBySensorIdAsync(
         Guid sensorId,
-        DateTime? fromUtc,
-        DateTime? toUtc,
-        int page,
-        int pageSize)
+        GetSensorReadingsRequest request)
     {
-        logger.LogDebug("Querying sensor readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", sensorId, page, pageSize);
+        logger.LogDebug("Querying sensor readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", sensorId, request.Page, request.PageSize);
 
-        var query = _context.SensorReadings
+        var query = context.SensorReadings
             .Where(r => r.SensorId == sensorId);
 
-        if (fromUtc.HasValue)
-            query = query.Where(r => r.TimestampUtc >= fromUtc.Value);
-        if (toUtc.HasValue)
-            query = query.Where(r => r.TimestampUtc <= toUtc.Value);
+        if (request.From.HasValue)
+            query = query.Where(r => r.TimestampUtc >= request.From.Value);
+        if (request.To.HasValue)
+            query = query.Where(r => r.TimestampUtc <= request.To.Value);
 
         var totalCount = await query.CountAsync();
 
         var items = await query
             .OrderByDescending(r => r.TimestampUtc)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync();
 
         logger.LogInformation("Retrieved {Count} sensor readings from database (total: {TotalCount})", items.Count, totalCount);

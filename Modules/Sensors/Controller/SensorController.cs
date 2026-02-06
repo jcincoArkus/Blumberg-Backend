@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Modules.Sensors.Service;
-using Modules.Sensors.Dto;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Modules.Sensors.Dto;
+using Modules.Sensors.Service;
+using Shared.Dto;
 
 namespace Modules.Sensors.Controller;
 
@@ -17,20 +18,27 @@ namespace Modules.Sensors.Controller;
 public class SensorController(ISensorService sensorService, ILogger<SensorController> logger) : ControllerBase
 {
     /// <summary>
-    /// Gets all sensors
+    /// Gets paginated sensors
     /// </summary>
-    /// <returns>List of sensors</returns>
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated list of sensors</returns>
     [HttpGet(Name = "GetAllSensorsV1")]
-    [ProducesResponseType(typeof(List<SensorResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<SensorResponse>>> GetAll()
+    [ProducesResponseType(typeof(PagedResponse<SensorResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<SensorResponse>>> GetAll([FromQuery] PaginationRequest request)
     {
         logger.LogDebug("Getting all sensors");
 
         try
         {
-            var sensors = await sensorService.GetAllAsync();
-            logger.LogInformation("Retrieved {Count} sensors", sensors.Count);
-            return Ok(sensors);
+            var (items, totalCount) = await sensorService.GetAllAsync(request);
+            logger.LogInformation("Retrieved {Count} sensors", items.Count);
+            return Ok(new PagedResponse<SensorResponse>
+            {
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                Page = request.Page,
+                PageSize = request.PageSize
+            });
         }
         catch (Exception ex)
         {
@@ -43,32 +51,28 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
     /// Gets paginated readings for a sensor
     /// </summary>
     /// <param name="id">Sensor ID</param>
-    /// <param name="from">Optional start of time range (UTC, inclusive)</param>
-    /// <param name="to">Optional end of time range (UTC, inclusive)</param>
-    /// <param name="page">1-based page number (default 1)</param>
-    /// <param name="pageSize">Page size (default 20)</param>
+    /// <param name="request">Query parameters (pagination + time range)</param>
     /// <returns>Paginated readings</returns>
     [HttpGet("{id}/readings", Name = "GetSensorReadingsV1")]
     [ProducesResponseType(typeof(PagedResponse<SensorReadingResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResponse<SensorReadingResponse>>> GetReadings(
         Guid id,
-        [FromQuery] DateTime? from = null,
-        [FromQuery] DateTime? to = null,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] GetSensorReadingsRequest request)
     {
-        logger.LogDebug("Getting readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", id, page, pageSize);
+        logger.LogDebug("Getting readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", id, request.Page, request.PageSize);
 
         try
         {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 20;
-            if (pageSize > 100) pageSize = 100;
-
-            var result = await sensorService.GetReadingsAsync(id, from, to, page, pageSize);
-            logger.LogInformation("Retrieved {Count} readings for sensor {SensorId}", result.Items.Count, id);
-            return Ok(result);
+            var (items, totalCount) = await sensorService.GetReadingsAsync(id, request);
+            logger.LogInformation("Retrieved {Count} readings for sensor {SensorId}", items.Count, id);
+            return Ok(new PagedResponse<SensorReadingResponse>
+            {
+                Items = items.Select(MapReadingToResponse).ToList(),
+                TotalCount = totalCount,
+                Page = request.Page,
+                PageSize = request.PageSize
+            });
         }
         catch (KeyNotFoundException ex)
         {
@@ -98,7 +102,7 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
         {
             var sensor = await sensorService.GetByIdAsync(id);
             logger.LogInformation("Retrieved sensor {Id}", id);
-            return Ok(sensor);
+            return Ok(MapToResponse(sensor));
         }
         catch (KeyNotFoundException ex)
         {
@@ -127,8 +131,9 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
         try
         {
             var newSensor = await sensorService.CreateAsync(request);
-            logger.LogInformation("Sensor created successfully with ID: {Id}", newSensor.Id);
-            return CreatedAtAction(nameof(GetById), new { id = newSensor.Id }, newSensor);
+            var response = MapToResponse(newSensor);
+            logger.LogInformation("Sensor created successfully with ID: {Id}", response.Id);
+            return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
         }
         catch (InvalidOperationException ex)
         {
@@ -160,7 +165,7 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
         {
             var updatedSensor = await sensorService.UpdateAsync(id, request);
             logger.LogInformation("Sensor {Id} updated successfully", id);
-            return Ok(updatedSensor);
+            return Ok(MapToResponse(updatedSensor));
         }
         catch (KeyNotFoundException ex)
         {
@@ -207,5 +212,45 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
             logger.LogError(ex, "Error deleting sensor {Id}", id);
             return StatusCode(500, new { message = "An error occurred while deleting sensor" });
         }
+    }
+
+    /// <summary>
+    /// Maps a Sensor entity to a SensorResponse DTO
+    /// </summary>
+    private static SensorResponse MapToResponse(Shared.Entity.Sensor sensor)
+    {
+        return new SensorResponse
+        {
+            Id = sensor.Id,
+            Serial = sensor.Serial,
+            Status = sensor.Status,
+            OrganizationId = sensor.OrganizationId,
+            OrganizationName = sensor.Organization?.Name ?? string.Empty,
+            EquipmentId = sensor.EquipmentId,
+            EquipmentName = sensor.Equipment?.Name ?? string.Empty,
+            SensorTypeId = sensor.SensorTypeId,
+            SensorTypeName = sensor.SensorType?.Type.ToString() ?? string.Empty,
+            ThresholdId = sensor.ThresholdId,
+            CreatedAt = sensor.CreatedAt,
+            UpdatedAt = sensor.UpdatedAt
+        };
+    }
+
+    /// <summary>
+    /// Maps a SensorReading entity to a SensorReadingResponse DTO
+    /// </summary>
+    private static SensorReadingResponse MapReadingToResponse(Shared.Entity.SensorReading reading)
+    {
+        return new SensorReadingResponse
+        {
+            Id = reading.Id,
+            SensorId = reading.SensorId,
+            Value = reading.Value,
+            TimestampUtc = reading.TimestampUtc,
+            Unit = reading.Unit,
+            OrganizationId = reading.OrganizationId,
+            IngestionRunId = reading.IngestionRunId,
+            CreatedAt = reading.CreatedAt
+        };
     }
 }

@@ -15,9 +15,10 @@ public static class EquipmentModule
     /// </summary>
     /// <param name="services">Service collection</param>
     /// <returns>Service collection for chaining</returns>
-    public static void AddEquipmentModule(this IServiceCollection services)
+    public static IServiceCollection AddEquipmentModule(this IServiceCollection services)
     {
         services.AddScopedWithSpan<IEquipmentRepository, EquipmentRepository>();
         services.AddScopedWithSpan<IEquipmentService, EquipmentService>();
+        return services;
     }
 }

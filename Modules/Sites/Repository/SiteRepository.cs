@@ -2,6 +2,7 @@ using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Shared.Dto;
 using Shared.Entity;
 
 namespace Modules.Sites.Repository;
@@ -11,22 +12,33 @@ namespace Modules.Sites.Repository;
 /// </summary>
 public class SiteRepository(ApplicationDbContext context, ILogger<SiteRepository> logger) : ISiteRepository
 {
-    private readonly ApplicationDbContext _context = context;
-
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<Site>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Site> Items, int TotalCount)> GetPagedAsync(PaginationRequest request)
     {
-        logger.LogDebug("Querying all sites");
+        logger.LogDebug("Querying sites page {Page}, pageSize {PageSize}, search '{Search}'", request.Page, request.PageSize, request.Search);
 
-        var sites = await _context.Sites
+        IQueryable<Site> query = context.Sites
             .Where(s => s.DeletedAt == null)
+            .Include(s => s.Organization);
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim().ToLower();
+            query = query.Where(s => s.Name.ToLower().Contains(search));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
             .OrderBy(s => s.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync();
 
-        logger.LogInformation("Retrieved {Count} sites from database", sites.Count);
+        logger.LogInformation("Retrieved {Count} sites from database (total: {TotalCount})", items.Count, totalCount);
 
-        return sites;
+        return (items, totalCount);
     }
 
     /// <inheritdoc />
@@ -35,7 +47,8 @@ public class SiteRepository(ApplicationDbContext context, ILogger<SiteRepository
     {
         logger.LogDebug("Querying site by ID: {Id}", id);
 
-        var site = await _context.Sites
+        var site = await context.Sites
+            .Include(s => s.Organization)
             .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
 
         if (site != null)
@@ -57,8 +70,8 @@ public class SiteRepository(ApplicationDbContext context, ILogger<SiteRepository
         site.UpdatedAt = null;
         site.DeletedAt = null;
 
-        _context.Sites.Add(site);
-        await _context.SaveChangesAsync();
+        context.Sites.Add(site);
+        await context.SaveChangesAsync();
 
         logger.LogInformation("Site created in database with ID: {Id}", site.Id);
 
@@ -73,8 +86,8 @@ public class SiteRepository(ApplicationDbContext context, ILogger<SiteRepository
 
         site.UpdatedAt = DateTime.UtcNow;
 
-        _context.Sites.Update(site);
-        await _context.SaveChangesAsync();
+        context.Sites.Update(site);
+        await context.SaveChangesAsync();
 
         logger.LogInformation("Site {Id} updated in database", site.Id);
 
@@ -97,7 +110,7 @@ public class SiteRepository(ApplicationDbContext context, ILogger<SiteRepository
         site.DeletedAt = DateTime.UtcNow;
         site.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         logger.LogInformation("Site {Id} soft deleted in database", id);
 
