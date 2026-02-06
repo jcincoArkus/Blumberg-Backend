@@ -5,38 +5,28 @@ description: Pattern for creating feature modules with Controller, Service, Repo
 
 # Module Pattern
 
-## Overview
+Each feature is a self-contained module under `Modules/{Feature}/`.
 
-Pattern for creating **feature modules** in a modular monolith architecture with **ASP.NET Core**. Each module contains Controller, Service, Repository, DTOs, and DI registration.
-
-## Key Principles
-
-1. **Self-Contained**: Each module owns its Controller, Service, Repository, and DTOs
-2. **Interface-Based**: Services and repositories have interfaces for testability
-3. **DI Registration**: Each module has a static extension method for registration
-4. **Span Instrumentation**: Use `AddScopedWithSpan<>` for automatic tracing
-
-## Module Structure
+## Folder Structure
 
 ```
-Modules/
-└── Items/
-    ├── ItemModule.cs              # DI registration
-    ├── Controller/
-    │   └── ItemController.cs      # HTTP endpoints
-    ├── Service/
-    │   ├── IItemService.cs        # Interface
-    │   └── ItemService.cs         # Implementation
-    ├── Repository/
-    │   ├── IItemRepository.cs     # Interface
-    │   └── ItemRepository.cs      # Implementation
-    └── Dto/
-        ├── ItemRequest.cs         # Input DTO
-        ├── ItemResponse.cs        # Output DTO
-        └── PagedResponse.cs       # Pagination wrapper
+Modules/{Feature}/
+├── {Feature}Module.cs          # DI registration
+├── Controller/
+│   └── {Feature}Controller.cs
+├── Service/
+│   ├── I{Feature}Service.cs
+│   └── {Feature}Service.cs
+├── Repository/
+│   ├── I{Feature}Repository.cs
+│   └── {Feature}Repository.cs
+└── Dto/
+    ├── {Feature}Request.cs
+    ├── {Feature}Response.cs
+    └── PagedResponse.cs        # Only if module needs pagination
 ```
 
-## Template: Module Registration (ItemModule.cs)
+## Module Registration
 
 ```csharp
 using Adapters.Telemetry;
@@ -46,67 +36,54 @@ using Modules.Items.Service;
 
 namespace Modules.Items;
 
-/// <summary>
-/// Extension methods for registering Items module services
-/// </summary>
 public static class ItemModule
 {
-    /// <summary>
-    /// Adds Items module services to the service collection
-    /// </summary>
     public static IServiceCollection AddItemModule(this IServiceCollection services)
     {
         services.AddScopedWithSpan<IItemRepository, ItemRepository>();
         services.AddScopedWithSpan<IItemService, ItemService>();
-
         return services;
     }
 }
 ```
 
-## Template: Register in ModulesSetup.cs
+## Register in ModulesSetup.cs
+
+Add two things in `Modules/ModulesSetup.cs`:
+
+1. Call `services.AddItemModule()` in `AddApplicationModules()`
+2. Yield the controller assembly in `GetControllerAssemblies()`
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
-
-namespace Modules;
-
-public static class ModulesSetup
+public static IServiceCollection AddApplicationModules(this IServiceCollection services)
 {
-    public static IServiceCollection AddApplicationModules(this IServiceCollection services)
-    {
-        services.AddAuthModule();
-        services.AddItemModule();  // Add new module here
-        // ... other modules
+    // ... existing modules
+    services.AddItemModule();
+    return services;
+}
 
-        return services;
-    }
+public static IEnumerable<Assembly> GetControllerAssemblies()
+{
+    // ... existing assemblies
+    yield return typeof(Items.Controller.ItemController).Assembly;
 }
 ```
 
-## Checklist: Creating a New Module
+## Checklist
 
-1. Create folder structure under `Modules/{ModuleName}/`
-2. Create `I{ModuleName}Repository.cs` interface
-3. Create `{ModuleName}Repository.cs` implementation
-4. Create `I{ModuleName}Service.cs` interface
-5. Create `{ModuleName}Service.cs` implementation
-6. Create `{ModuleName}Request.cs` DTO
-7. Create `{ModuleName}Response.cs` DTO
-8. Create `{ModuleName}Controller.cs`
-9. Create `{ModuleName}Module.cs` with DI registration
-10. Register module in `ModulesSetup.cs`
+1. Create entity in `Shared/Entity/` (see entity-pattern skill)
+2. Add `DbSet<T>` + global query filters in `ApplicationDbContext` (see ef-configuration-pattern skill)
+3. Create folder structure under `Modules/{Feature}/`
+4. Create Repository interface + implementation
+5. Create Service interface + implementation
+6. Create Request/Response DTOs
+7. Create Controller
+8. Create `{Feature}Module.cs` with DI registration using `AddScopedWithSpan<>`
+9. Register in `ModulesSetup.cs`
+10. Add EF migration: `dotnet ef migrations add AddItem --project Adapters/Database --startup-project Apps/API`
 
-## Best Practices
+## Key Rules
 
-✅ **DO:**
-- Use `AddScopedWithSpan<>` for automatic OpenTelemetry instrumentation
-- Keep modules self-contained with all related code together
-- Use interfaces for all services and repositories
-- Follow naming convention: `I{Name}Service`, `{Name}Service`
-
-❌ **DON'T:**
-- Reference other modules directly (use shared abstractions)
-- Put business logic in controllers
-- Skip the interface (needed for testing and span interception)
-- Forget to register the module in `ModulesSetup.cs`
+- **Always use `AddScopedWithSpan<>`** — not `AddScoped<>` — for automatic OpenTelemetry proxying
+- **All interfaces required** — Castle.DynamicProxy needs interfaces to create proxies
+- **Don't cross-reference modules directly** — use shared abstractions in `Shared/`
