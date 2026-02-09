@@ -53,7 +53,12 @@ public class IngestionRun : BaseEntity
     public Organization Organization { get; set; } = null!;
 
     /// <summary>
-    /// Sensor readings produced by this run
+    /// Sensor readings produced by this run (accepted)
     /// </summary>
     public ICollection<SensorReading> SensorReadings { get; set; } = new List<SensorReading>();
+
+    /// <summary>
+    /// Rejected readings in this run (per-reading results)
+    /// </summary>
+    public ICollection<IngestionRejectedReading> RejectedReadings { get; set; } = new List<IngestionRejectedReading>();
 }
