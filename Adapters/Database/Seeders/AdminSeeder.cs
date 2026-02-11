@@ -53,7 +53,7 @@ public class AdminSeeder(ILoggerFactory loggerFactory) : ISeeder
         var created = 0;
         foreach (var data in Admins)
         {
-            if (context.Admins.Any(a => a.Email == data.Email))
+            if (context.Admins.IgnoreQueryFilters().Any(a => a.Email == data.Email))
             {
                 _logger.LogDebug("Admin '{Email}' already exists, skipping", data.Email);
                 continue;

@@ -1,5 +1,6 @@
 using Adapters.Config;
 using Adapters.Database;
+using Adapters.Database.Seeders;
 using Adapters.Jwt;
 using Adapters.Logger;
 using Adapters.Telemetry;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 using Modules;
 
@@ -114,6 +116,12 @@ public class ApiServer
         {
             // Initialize permission system (migrations, policies, role metadata)
             InitializePermissionSystemAsync(app.Services).GetAwaiter().GetResult();
+
+            // Dev only: run seeders so DB has org, sites, equipment, sensors, readings, admins (idempotent)
+            if (app.Environment.IsDevelopment())
+            {
+                RunSeedersIfDevelopmentAsync(app.Services).GetAwaiter().GetResult();
+            }
         }
 
         // Request logging (must be early in pipeline)
@@ -146,6 +154,23 @@ public class ApiServer
     private static async Task InitializePermissionSystemAsync(IServiceProvider serviceProvider)
     {
         await serviceProvider.InitializePermissionSystemAsync();
+    }
+
+    /// <summary>
+    /// Runs all seeders in Development using design-time context (no tenant).
+    /// Seeders are idempotent and skip when data already exists.
+    /// Each seeder logs whether it created data or skipped (already present).
+    /// </summary>
+    private static async Task RunSeedersIfDevelopmentAsync(IServiceProvider serviceProvider)
+    {
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("ApiServer");
+        logger.LogInformation("Dev seed: running (idempotent — seeders log created/skipped below)");
+
+        await using var context = ApplicationDbContextFactory.Create();
+        var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+        await SeederRunner.RunSeedersAsync(context, loggerFactory);
+
+        logger.LogInformation("Dev seed: finished");
     }
 
     public void Run() => _app.Run();
