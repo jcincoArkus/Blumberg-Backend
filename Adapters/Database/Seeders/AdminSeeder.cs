@@ -34,6 +34,7 @@ public class AdminSeeder(ILoggerFactory loggerFactory) : ISeeder
         new("jibarra@blumberg.com", "Admin123.", "Juan", "Ibarra"),
         new("jlopez@blumberg.com", "Admin123.", "Jose", "Lopez"),
         new("fgonzalez@blumberg.com", "Admin123.", "Fernanda", "Gonzalez"),
+        new("jlopez@arkusnexus.com", "Admin123.", "Eduardo", "Lopez"),
 
         // Add new admins below (one per line, create a PR to add)
         // new("email@example.com", "Password123!", "FirstName", "LastName"),
