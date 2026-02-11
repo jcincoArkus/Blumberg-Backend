@@ -3,6 +3,7 @@ using System;
 using Adapters.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Adapters.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260209190928_AddIngestionRunFields")]
+    partial class AddIngestionRunFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -229,36 +232,6 @@ namespace Adapters.Database.Migrations
                         .HasDatabaseName("ix_equipment_site_id");
 
                     b.ToTable("equipment", (string)null);
-                });
-
-            modelBuilder.Entity("Shared.Entity.IngestionRejectedReading", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("IngestionRunId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("ingestion_run_id");
-
-                    b.Property<string>("RejectionReason")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("rejection_reason");
-
-                    b.Property<int>("RowIndex")
-                        .HasColumnType("integer")
-                        .HasColumnName("row_index");
-
-                    b.HasKey("Id")
-                        .HasName("pk_ingestion_run_rejected_readings_id");
-
-                    b.HasIndex("IngestionRunId")
-                        .HasDatabaseName("ix_ingestion_run_rejected_readings_ingestion_run_id");
-
-                    b.ToTable("ingestion_run_rejected_readings", (string)null);
                 });
 
             modelBuilder.Entity("Shared.Entity.IngestionRun", b =>
@@ -768,18 +741,6 @@ namespace Adapters.Database.Migrations
                     b.Navigation("Site");
                 });
 
-            modelBuilder.Entity("Shared.Entity.IngestionRejectedReading", b =>
-                {
-                    b.HasOne("Shared.Entity.IngestionRun", "IngestionRun")
-                        .WithMany("RejectedReadings")
-                        .HasForeignKey("IngestionRunId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_ingestion_run_rejected_readings_ingestion_run_id");
-
-                    b.Navigation("IngestionRun");
-                });
-
             modelBuilder.Entity("Shared.Entity.IngestionRun", b =>
                 {
                     b.HasOne("Shared.Entity.Organization", "Organization")
@@ -879,8 +840,6 @@ namespace Adapters.Database.Migrations
 
             modelBuilder.Entity("Shared.Entity.IngestionRun", b =>
                 {
-                    b.Navigation("RejectedReadings");
-
                     b.Navigation("SensorReadings");
                 });
 
