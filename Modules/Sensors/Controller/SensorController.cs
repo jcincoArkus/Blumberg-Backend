@@ -18,6 +18,64 @@ namespace Modules.Sensors.Controller;
 public class SensorController(ISensorService sensorService, ILogger<SensorController> logger) : ControllerBase
 {
     /// <summary>
+    /// Gets paginated sensor health list with optional filters (siteId, equipmentId, status, healthStatus).
+    /// </summary>
+    /// <param name="request">Filters and pagination</param>
+    /// <returns>Paginated list of sensors with health status, lastSeenAt, reliability</returns>
+    [HttpGet("health", Name = "GetSensorHealthListV1")]
+    [ProducesResponseType(typeof(PagedResponse<SensorHealthListItemResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<SensorHealthListItemResponse>>> GetHealthList([FromQuery] GetSensorHealthRequest request)
+    {
+        logger.LogDebug("Getting sensor health list, page {Page}, pageSize {PageSize}", request.Page, request.PageSize);
+
+        try
+        {
+            var (items, totalCount) = await sensorService.GetHealthListAsync(request);
+            return Ok(new PagedResponse<SensorHealthListItemResponse>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = request.Page,
+                PageSize = request.PageSize
+            });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting sensor health list");
+            return StatusCode(500, new { message = "An error occurred while getting sensor health list" });
+        }
+    }
+
+    /// <summary>
+    /// Gets detailed health for a single sensor (current value, freshness, reliability, recent readings, expected vs actual).
+    /// </summary>
+    /// <param name="id">Sensor ID</param>
+    /// <returns>Health detail</returns>
+    [HttpGet("{id}/health", Name = "GetSensorHealthByIdV1")]
+    [ProducesResponseType(typeof(SensorHealthDetailResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SensorHealthDetailResponse>> GetHealthById(Guid id)
+    {
+        logger.LogDebug("Getting sensor health for {Id}", id);
+
+        try
+        {
+            var detail = await sensorService.GetHealthDetailAsync(id);
+            return Ok(detail);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            logger.LogWarning("Sensor not found with ID: {Id}", id);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting sensor health for {Id}", id);
+            return StatusCode(500, new { message = "An error occurred while getting sensor health" });
+        }
+    }
+
+    /// <summary>
     /// Gets paginated sensors
     /// </summary>
     /// <param name="request">Pagination parameters</param>

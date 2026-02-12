@@ -2,6 +2,7 @@ using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Modules.Sensors.Dto;
 using Shared.Dto;
 
 namespace Modules.Sensors.Repository;
@@ -41,6 +42,34 @@ public class SensorRepository(ApplicationDbContext context, ILogger<SensorReposi
         logger.LogInformation("Retrieved {Count} sensors from database (total: {TotalCount})", items.Count, totalCount);
 
         return (items, totalCount);
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<IReadOnlyList<Shared.Entity.Sensor>> GetForHealthListAsync(GetSensorHealthRequest request)
+    {
+        IQueryable<Shared.Entity.Sensor> query = context.Sensors
+            .Where(s => s.DeletedAt == null)
+            .Include(s => s.Organization)
+            .Include(s => s.Equipment)
+            .Include(s => s.SensorType)
+            .Include(s => s.Threshold);
+
+        if (request.SiteId.HasValue)
+            query = query.Where(s => s.Equipment.SiteId == request.SiteId.Value);
+        if (request.EquipmentId.HasValue)
+            query = query.Where(s => s.EquipmentId == request.EquipmentId.Value);
+        if (request.Status.HasValue)
+            query = query.Where(s => s.Status == request.Status.Value);
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim().ToLower();
+            query = query.Where(s => s.Serial.ToLower().Contains(search));
+        }
+
+        var items = await query.OrderBy(s => s.CreatedAt).ToListAsync();
+        logger.LogDebug("Retrieved {Count} sensors for health list (filters applied)", items.Count);
+        return items;
     }
 
     /// <inheritdoc />
