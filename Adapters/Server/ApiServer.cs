@@ -127,22 +127,24 @@ public class ApiServer
         // Request logging (must be early in pipeline)
         app.UseStructuredRequestLogging();
 
+        // Swagger and Swagger UI first so /swagger and /swagger/v1/swagger.json are served
+        // before auth (avoids 403 Forbidden when opening Swagger UI unauthenticated)
+        app.UseSwagger();
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blumberg API v1");
             });
         }
-        else
+
+        // CORS before Auth so preflight gets headers; skip HTTPS redirect in Dev so http://localhost works
+        app.UseCors("AllowAll");
+        if (!app.Environment.IsDevelopment())
         {
-            // Always enable Swagger for OpenAPI generation
-            app.UseSwagger();
+            app.UseHttpsRedirection();
         }
 
-        app.UseHttpsRedirection();
-        app.UseCors("AllowAll");
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
