@@ -8,25 +8,34 @@ paths:
       tags:
         - Admins
       operationId: GetAllAdminsV1
+      parameters:
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
       responses:
         '200':
           description: OK
           content:
             text/plain:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AdminResponse'
+                $ref: '#/components/schemas/AdminResponsePagedResponse'
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AdminResponse'
+                $ref: '#/components/schemas/AdminResponsePagedResponse'
             text/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AdminResponse'
+                $ref: '#/components/schemas/AdminResponsePagedResponse'
         '500':
           description: Internal Server Error
       security:
@@ -235,25 +244,34 @@ paths:
       tags:
         - Equipment
       operationId: GetAllEquipmentV1
+      parameters:
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
       responses:
         '200':
           description: OK
           content:
             text/plain:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EquipmentResponse'
+                $ref: '#/components/schemas/EquipmentResponsePagedResponse'
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EquipmentResponse'
+                $ref: '#/components/schemas/EquipmentResponsePagedResponse'
             text/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EquipmentResponse'
+                $ref: '#/components/schemas/EquipmentResponsePagedResponse'
       security:
         - Bearer: [ ]
     post:
@@ -414,6 +432,183 @@ paths:
           description: OK
         '404':
           description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  /api/v1/ingestion/readings:
+    post:
+      tags:
+        - Ingestion
+      operationId: IngestReadingsV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/IngestReadingItem'
+          text/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/IngestReadingItem'
+          application/*+json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/IngestReadingItem'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/IngestReadingsResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestReadingsResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/IngestReadingsResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  /api/v1/ingestion/runs:
+    get:
+      tags:
+        - Ingestion
+      operationId: GetIngestionRunsV1
+      parameters:
+        - name: Status
+          in: query
+          schema:
+            $ref: '#/components/schemas/IngestionStatus'
+        - name: Source
+          in: query
+          schema:
+            $ref: '#/components/schemas/IngestionSource'
+        - name: From
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: To
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/IngestionRunListResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionRunListResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/IngestionRunListResponsePagedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/ingestion/runs/{id}':
+    get:
+      tags:
+        - Ingestion
+      operationId: GetIngestionRunByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/IngestionRunDetailResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionRunDetailResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/IngestionRunDetailResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
           content:
             text/plain:
               schema:
@@ -791,30 +986,232 @@ paths:
                 $ref: '#/components/schemas/RoleUsersResponse'
       security:
         - Bearer: [ ]
-  /api/v1/sensors:
+  /api/v1/sensor-types:
     get:
       tags:
-        - Sensors
-      operationId: GetAllSensorsV1
+        - Sensor Types
+      operationId: GetAllSensorTypesV1
+      parameters:
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
       responses:
         '200':
           description: OK
           content:
             text/plain:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SensorResponse'
+                $ref: '#/components/schemas/SensorTypeResponsePagedResponse'
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SensorResponse'
+                $ref: '#/components/schemas/SensorTypeResponsePagedResponse'
             text/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SensorResponse'
+                $ref: '#/components/schemas/SensorTypeResponsePagedResponse'
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - Sensor Types
+      operationId: CreateSensorTypeV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SensorTypeRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SensorTypeRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SensorTypeRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/sensor-types/{id}':
+    get:
+      tags:
+        - Sensor Types
+      operationId: GetSensorTypeByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - Sensor Types
+      operationId: UpdateSensorTypeV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SensorTypeRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SensorTypeRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SensorTypeRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorTypeResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - Sensor Types
+      operationId: DeleteSensorTypeV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  /api/v1/sensors:
+    get:
+      tags:
+        - Sensors
+      operationId: GetAllSensorsV1
+      parameters:
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponsePagedResponse'
       security:
         - Bearer: [ ]
     post:
@@ -871,28 +1268,30 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: from
+        - name: From
           in: query
           schema:
             type: string
             format: date-time
-        - name: to
+        - name: To
           in: query
           schema:
             type: string
             format: date-time
-        - name: page
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
           in: query
           schema:
             type: integer
             format: int32
-            default: 1
-        - name: pageSize
+        - name: PageSize
           in: query
           schema:
             type: integer
             format: int32
-            default: 20
       responses:
         '200':
           description: OK
@@ -1053,25 +1452,34 @@ paths:
       tags:
         - Sites
       operationId: GetAllSitesV1
+      parameters:
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
       responses:
         '200':
           description: OK
           content:
             text/plain:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SiteResponse'
+                $ref: '#/components/schemas/SiteResponsePagedResponse'
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SiteResponse'
+                $ref: '#/components/schemas/SiteResponsePagedResponse'
             text/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SiteResponse'
+                $ref: '#/components/schemas/SiteResponsePagedResponse'
       security:
         - Bearer: [ ]
     post:
@@ -1244,6 +1652,199 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
       security:
         - Bearer: [ ]
+  /api/v1/thresholds:
+    get:
+      tags:
+        - Thresholds
+      operationId: GetAllThresholdsV1
+      parameters:
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponsePagedResponse'
+      security:
+        - Bearer: [ ]
+    post:
+      tags:
+        - Thresholds
+      operationId: CreateThresholdV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThresholdRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ThresholdRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ThresholdRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/thresholds/{id}':
+    get:
+      tags:
+        - Thresholds
+      operationId: GetThresholdByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    put:
+      tags:
+        - Thresholds
+      operationId: UpdateThresholdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThresholdRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ThresholdRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ThresholdRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    delete:
+      tags:
+        - Thresholds
+      operationId: DeleteThresholdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
   '/api/users/{userId}/roles':
     get:
       tags:
@@ -1362,20 +1963,30 @@ components:
           nullable: true
       additionalProperties: false
     AdminRequest:
+      required:
+        - email
+        - firstName
+        - lastName
+        - password
       type: object
       properties:
         email:
+          maxLength: 255
+          minLength: 0
           type: string
-          nullable: true
+          format: email
         password:
+          maxLength: 128
+          minLength: 8
           type: string
-          nullable: true
         firstName:
+          maxLength: 100
+          minLength: 0
           type: string
-          nullable: true
         lastName:
+          maxLength: 100
+          minLength: 0
           type: string
-          nullable: true
       additionalProperties: false
     AdminResponse:
       type: object
@@ -1399,6 +2010,28 @@ components:
           type: string
           format: date-time
           nullable: true
+      additionalProperties: false
+    AdminResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
       additionalProperties: false
     AssignPermissionsToRoleRequest:
       required:
@@ -1489,14 +2122,20 @@ components:
           type: boolean
       additionalProperties: false
     EquipmentRequest:
+      required:
+        - equipmentType
+        - name
+        - siteId
       type: object
       properties:
         name:
+          maxLength: 200
+          minLength: 0
           type: string
-          nullable: true
         equipmentType:
+          maxLength: 100
+          minLength: 0
           type: string
-          nullable: true
         siteId:
           type: string
           format: uuid
@@ -1533,6 +2172,197 @@ components:
           format: date-time
           nullable: true
       additionalProperties: false
+    EquipmentResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EquipmentResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    IngestReadingItem:
+      type: object
+      properties:
+        sensorId:
+          type: string
+          format: uuid
+        value:
+          type: number
+          format: double
+        timestampUtc:
+          type: string
+          format: date-time
+        unit:
+          $ref: '#/components/schemas/Unit'
+      additionalProperties: false
+    IngestReadingsResponse:
+      type: object
+      properties:
+        runId:
+          type: string
+          format: uuid
+        totalRecords:
+          type: integer
+          format: int32
+        acceptedRecords:
+          type: integer
+          format: int32
+        rejectedRecords:
+          type: integer
+          format: int32
+        status:
+          type: string
+          nullable: true
+      additionalProperties: false
+    IngestionReadingResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        value:
+          type: number
+          format: double
+        timestampUtc:
+          type: string
+          format: date-time
+        unit:
+          type: string
+          nullable: true
+      additionalProperties: false
+    IngestionRunDetailResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          $ref: '#/components/schemas/IngestionSource'
+        status:
+          $ref: '#/components/schemas/IngestionStatus'
+        totalRecords:
+          type: integer
+          format: int32
+        acceptedRecords:
+          type: integer
+          format: int32
+        rejectedRecords:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        organizationId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        acceptedReadings:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestionReadingResult'
+          nullable: true
+        rejectedReadings:
+          type: array
+          items:
+            $ref: '#/components/schemas/RejectedReadingResult'
+          nullable: true
+      additionalProperties: false
+    IngestionRunListResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          $ref: '#/components/schemas/IngestionSource'
+        status:
+          $ref: '#/components/schemas/IngestionStatus'
+        totalRecords:
+          type: integer
+          format: int32
+        acceptedRecords:
+          type: integer
+          format: int32
+        rejectedRecords:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        organizationId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    IngestionRunListResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestionRunListResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    IngestionSource:
+      enum:
+        - 0
+        - 1
+        - 2
+      type: integer
+      format: int32
+    IngestionStatus:
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+      type: integer
+      format: int32
     LoginRequest:
       required:
         - email
@@ -1567,6 +2397,16 @@ components:
           type: string
           nullable: true
       additionalProperties: { }
+    RejectedReadingResult:
+      type: object
+      properties:
+        rowIndex:
+          type: integer
+          format: int32
+        rejectionReason:
+          type: string
+          nullable: true
+      additionalProperties: false
     RemovePermissionsFromRoleRequest:
       required:
         - permissions
@@ -1752,11 +2592,18 @@ components:
           readOnly: true
       additionalProperties: false
     SensorRequest:
+      required:
+        - equipmentId
+        - sensorTypeId
+        - serial
+        - status
+        - thresholdId
       type: object
       properties:
         serial:
+          maxLength: 100
+          minLength: 0
           type: string
-          nullable: true
         status:
           $ref: '#/components/schemas/SensorStatus'
         equipmentId:
@@ -1809,6 +2656,28 @@ components:
           format: date-time
           nullable: true
       additionalProperties: false
+    SensorResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SensorResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
     SensorStatus:
       enum:
         - 0
@@ -1817,27 +2686,102 @@ components:
         - 3
       type: integer
       format: int32
+    SensorTypeKind:
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+      type: integer
+      format: int32
+    SensorTypeRequest:
+      required:
+        - type
+        - unit
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SensorTypeKind'
+        unit:
+          $ref: '#/components/schemas/Unit'
+      additionalProperties: false
+    SensorTypeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/SensorTypeKind'
+        unit:
+          $ref: '#/components/schemas/Unit'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    SensorTypeResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SensorTypeResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
     SiteRequest:
+      required:
+        - address
+        - city
+        - country
+        - name
+        - postalCode
+        - state
       type: object
       properties:
         name:
+          maxLength: 200
+          minLength: 0
           type: string
-          nullable: true
         address:
+          maxLength: 500
+          minLength: 0
           type: string
-          nullable: true
         city:
+          maxLength: 100
+          minLength: 0
           type: string
-          nullable: true
         state:
+          maxLength: 100
+          minLength: 0
           type: string
-          nullable: true
         postalCode:
+          maxLength: 20
+          minLength: 0
           type: string
-          nullable: true
         country:
+          maxLength: 100
+          minLength: 0
           type: string
-          nullable: true
       additionalProperties: false
     SiteResponse:
       type: object
@@ -1876,6 +2820,92 @@ components:
           type: string
           format: date-time
           nullable: true
+      additionalProperties: false
+    SiteResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    ThresholdRequest:
+      required:
+        - durationSeconds
+        - max
+        - min
+      type: object
+      properties:
+        min:
+          type: number
+          format: double
+        max:
+          type: number
+          format: double
+        durationSeconds:
+          maximum: 2147483647
+          minimum: 0
+          type: integer
+          format: int32
+      additionalProperties: false
+    ThresholdResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        min:
+          type: number
+          format: double
+        max:
+          type: number
+          format: double
+        durationSeconds:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    ThresholdResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThresholdResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
       additionalProperties: false
     Unit:
       enum:
@@ -1934,10 +2964,13 @@ tags:
   - name: Admins
   - name: Authentication
   - name: Equipment
+  - name: Ingestion
   - name: Permissions
   - name: RolePermissions
   - name: Roles
   - name: RoleUsers
+  - name: Sensor Types
   - name: Sensors
   - name: Sites
+  - name: Thresholds
   - name: UserRoles

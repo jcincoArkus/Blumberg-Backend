@@ -6,7 +6,9 @@ using Modules.Equipment;
 using Modules.Ingestion;
 using Modules.Permissions;
 using Modules.Sensors;
+using Modules.SensorTypes;
 using Modules.Sites;
+using Modules.Thresholds;
 
 namespace Modules;
 
@@ -27,6 +29,8 @@ public static class ModulesSetup
         services.AddSitesModule();
         services.AddEquipmentModule();
         services.AddSensorModule();
+        services.AddSensorTypesModule();
+        services.AddThresholdsModule();
         services.AddIngestionModule();
         services.AddPermissionsModule();
         return services;
