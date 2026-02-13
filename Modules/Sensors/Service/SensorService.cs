@@ -1,8 +1,10 @@
+using System.Collections.Frozen;
 using Adapters.Telemetry;
 using Microsoft.Extensions.Logging;
 using Modules.Sensors.Dto;
 using Modules.Sensors.Repository;
 using Shared.Dto;
+using Shared.Enums;
 
 namespace Modules.Sensors.Service;
 
@@ -131,4 +133,118 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
         return result;
     }
+
+    // Aligned with frontend mock (sensor-health.ts): expectedInterval 300s, warning 600s, critical 1800s
+    private const int WarningStaleSeconds = 600;       // 10 min — same as warningThresholdSeconds
+    private const int CriticalStaleSeconds = 1800;     // 30 min — same as criticalThresholdSeconds
+    private const int ReliabilityWindowHours = 24;
+    private const int ExpectedReadingsPerHour = 12;    // 300s interval = 12 readings/hour
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<(IReadOnlyList<SensorHealthListItemResponse> Items, int TotalCount)> GetHealthListAsync(GetSensorHealthRequest request)
+    {
+        var sensors = await sensorRepository.GetForHealthListAsync(request);
+        if (sensors.Count == 0)
+            return ([], 0);
+
+        var sensorIds = sensors.Select(s => s.Id).ToList();
+        var latestReadings = await sensorReadingRepository.GetLatestBySensorIdsAsync(sensorIds);
+        var readingBySensor = latestReadings.ToFrozenDictionary(r => r.SensorId);
+
+        var windowEnd = DateTime.UtcNow;
+        var windowStart = windowEnd.AddHours(-ReliabilityWindowHours);
+        var countsBySensor = await sensorReadingRepository.GetReadingCountsBySensorIdsInWindowAsync(sensorIds, windowStart, windowEnd);
+        var expectedPerSensor = ReliabilityWindowHours * ExpectedReadingsPerHour;
+
+        var list = new List<SensorHealthListItemResponse>();
+        foreach (var sensor in sensors)
+        {
+            readingBySensor.TryGetValue(sensor.Id, out var reading);
+            var healthStatus = ComputeHealthStatus(sensor, reading);
+            if (request.HealthStatus.HasValue && healthStatus != request.HealthStatus.Value)
+                continue;
+
+            var lastSeenAt = reading?.TimestampUtc;
+            countsBySensor.TryGetValue(sensor.Id, out var received);
+            var reliability = expectedPerSensor > 0
+                ? Math.Round(Math.Min(100.0, (received / (double)expectedPerSensor) * 100.0), 1)
+                : 100.0;
+
+            list.Add(new SensorHealthListItemResponse
+            {
+                Id = sensor.Id,
+                Name = sensor.Serial,
+                SensorType = sensor.SensorType?.Type.ToString() ?? string.Empty,
+                HealthStatus = healthStatus,
+                LastSeenAt = lastSeenAt,
+                ReliabilityScore = reliability
+            });
+        }
+
+        var totalCount = list.Count;
+        var skip = (request.Page - 1) * request.PageSize;
+        var items = list.Skip(skip).Take(request.PageSize).ToList();
+
+        logger.LogInformation("Health list: {Count} items (total: {TotalCount})", items.Count, totalCount);
+        return (items, totalCount);
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<SensorHealthDetailResponse> GetHealthDetailAsync(Guid id)
+    {
+        var sensor = await sensorRepository.GetByIdAsync(id);
+        if (sensor == null)
+            throw new KeyNotFoundException($"Sensor with ID {id} was not found");
+
+        var latestList = await sensorReadingRepository.GetLatestBySensorIdsAsync([id]);
+        var reading = latestList.FirstOrDefault();
+
+        var healthStatus = ComputeHealthStatus(sensor, reading);
+        var now = DateTime.UtcNow;
+        var lastSeenAt = reading?.TimestampUtc;
+        var freshnessSeconds = lastSeenAt.HasValue ? (now - lastSeenAt.Value).TotalSeconds : (double?)null;
+
+        var windowEnd = now;
+        var windowStart = now.AddHours(-ReliabilityWindowHours);
+        var receivedPoints = await sensorReadingRepository.CountBySensorIdInWindowAsync(id, windowStart, windowEnd);
+        var expectedPoints = ReliabilityWindowHours * ExpectedReadingsPerHour;
+        var reliabilityScore = expectedPoints > 0
+            ? Math.Min(100.0, (receivedPoints / (double)expectedPoints) * 100.0)
+            : 100.0;
+
+        return new SensorHealthDetailResponse
+        {
+            SensorId = sensor.Id,
+            Name = sensor.Serial,
+            HealthStatus = healthStatus,
+            LastSeenAt = lastSeenAt,
+            ReliabilityScore = Math.Round(reliabilityScore, 1),
+            LastValue = reading != null ? (double)reading.Value : null,
+            Unit = reading != null ? reading.Unit.ToString() : (sensor.SensorType != null ? sensor.SensorType.Unit.ToString() : string.Empty),
+            FreshnessSeconds = freshnessSeconds.HasValue ? Math.Round(freshnessSeconds.Value, 1) : null,
+            RecentReadingsCount = receivedPoints,
+            ExpectedPoints = expectedPoints,
+            ReceivedPoints = receivedPoints
+        };
+    }
+
+    private static SensorHealthStatus ComputeHealthStatus(Shared.Entity.Sensor sensor, Shared.Entity.SensorReading? latestReading)
+    {
+        if (sensor.Status == SensorStatus.Inactive)
+            return SensorHealthStatus.Offline;
+
+        if (latestReading == null)
+            return SensorHealthStatus.Stale;
+
+        var ageSeconds = (DateTime.UtcNow - latestReading.TimestampUtc).TotalSeconds;
+        if (ageSeconds >= CriticalStaleSeconds)
+            return SensorHealthStatus.Offline;
+        if (ageSeconds >= WarningStaleSeconds)
+            return SensorHealthStatus.Stale;
+
+        return SensorHealthStatus.Healthy;
+    }
+
 }
