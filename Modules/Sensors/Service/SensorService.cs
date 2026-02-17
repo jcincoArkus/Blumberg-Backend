@@ -178,7 +178,13 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
                 SensorType = sensor.SensorType?.Type.ToString() ?? string.Empty,
                 HealthStatus = healthStatus,
                 LastSeenAt = lastSeenAt,
-                ReliabilityScore = reliability
+                ReliabilityScore = reliability,
+                SiteId = sensor.Equipment?.SiteId ?? Guid.Empty,
+                SiteName = sensor.Equipment?.Site?.Name ?? string.Empty,
+                EquipmentId = sensor.EquipmentId,
+                EquipmentName = sensor.Equipment?.Name ?? string.Empty,
+                LastValue = reading != null ? (double)reading.Value : null,
+                Unit = reading != null ? reading.Unit.ToString() : (sensor.SensorType != null ? sensor.SensorType.Unit.ToString() : string.Empty)
             });
         }
 
