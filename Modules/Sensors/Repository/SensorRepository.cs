@@ -52,6 +52,7 @@ public class SensorRepository(ApplicationDbContext context, ILogger<SensorReposi
             .Where(s => s.DeletedAt == null)
             .Include(s => s.Organization)
             .Include(s => s.Equipment)
+                .ThenInclude(e => e.Site)
             .Include(s => s.SensorType)
             .Include(s => s.Threshold);
 

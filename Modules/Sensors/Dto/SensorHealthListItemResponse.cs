@@ -24,4 +24,22 @@ public class SensorHealthListItemResponse
 
     /// <summary>Reliability score 0–100.</summary>
     public double ReliabilityScore { get; set; }
+
+    /// <summary>Site ID the sensor belongs to (via Equipment).</summary>
+    public Guid SiteId { get; set; }
+
+    /// <summary>Site name.</summary>
+    public string SiteName { get; set; } = string.Empty;
+
+    /// <summary>Equipment ID the sensor is attached to.</summary>
+    public Guid EquipmentId { get; set; }
+
+    /// <summary>Equipment name.</summary>
+    public string EquipmentName { get; set; } = string.Empty;
+
+    /// <summary>Most recent reading value.</summary>
+    public double? LastValue { get; set; }
+
+    /// <summary>Unit of the last reading (e.g. Celsius).</summary>
+    public string Unit { get; set; } = string.Empty;
 }

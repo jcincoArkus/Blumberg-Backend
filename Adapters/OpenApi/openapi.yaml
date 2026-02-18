@@ -1078,11 +1078,6 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
       security:
         - Bearer: [ ]
-  /api/v1/sensors:
-    get:
-      tags:
-        - Sensors
-      operationId: GetAllSensorsV1
   /api/v1/sensor-types:
     get:
       tags:
@@ -1109,13 +1104,6 @@ paths:
           content:
             text/plain:
               schema:
-                $ref: '#/components/schemas/SensorResponsePagedResponse'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SensorResponsePagedResponse'
-            text/json:
-              schema:
-                $ref: '#/components/schemas/SensorResponsePagedResponse'
                 $ref: '#/components/schemas/SensorTypeResponsePagedResponse'
             application/json:
               schema:
@@ -2356,197 +2344,6 @@ components:
           type: string
           nullable: true
       additionalProperties: false
-    EquipmentRequest:
-      required:
-        - equipmentType
-        - name
-        - siteId
-      type: object
-      properties:
-        name:
-          maxLength: 200
-          minLength: 0
-          type: string
-        equipmentType:
-          maxLength: 100
-          minLength: 0
-          type: string
-        siteId:
-    IngestionReadingResult:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        sensorId:
-          type: string
-          format: uuid
-        value:
-          type: number
-          format: double
-        timestampUtc:
-          type: string
-          format: date-time
-        unit:
-          type: string
-          nullable: true
-      additionalProperties: false
-    IngestionRunDetailResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        source:
-          $ref: '#/components/schemas/IngestionSource'
-        status:
-          $ref: '#/components/schemas/IngestionStatus'
-        totalRecords:
-          type: integer
-          format: int32
-        acceptedRecords:
-          type: integer
-          format: int32
-        rejectedRecords:
-          type: integer
-          format: int32
-        startedAt:
-          type: string
-          format: date-time
-          nullable: true
-        completedAt:
-          type: string
-          format: date-time
-          nullable: true
-        organizationId:
-          type: string
-          format: uuid
-        createdAt:
-          type: string
-          format: date-time
-        acceptedReadings:
-          type: array
-          items:
-            $ref: '#/components/schemas/IngestionReadingResult'
-          nullable: true
-        rejectedReadings:
-          type: array
-          items:
-            $ref: '#/components/schemas/RejectedReadingResult'
-          nullable: true
-      additionalProperties: false
-    IngestionRunListResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        source:
-          $ref: '#/components/schemas/IngestionSource'
-        status:
-          $ref: '#/components/schemas/IngestionStatus'
-        totalRecords:
-          type: integer
-          format: int32
-        acceptedRecords:
-          type: integer
-          format: int32
-        rejectedRecords:
-          type: integer
-          format: int32
-        startedAt:
-          type: string
-          format: date-time
-          nullable: true
-        completedAt:
-          type: string
-          format: date-time
-          nullable: true
-        organizationId:
-          type: string
-          format: uuid
-        createdAt:
-          type: string
-          format: date-time
-      additionalProperties: false
-    IngestionRunListResponsePagedResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/IngestionRunListResponse'
-          nullable: true
-        totalCount:
-          type: integer
-          format: int32
-        page:
-          type: integer
-          format: int32
-        pageSize:
-          type: integer
-          format: int32
-        totalPages:
-          type: integer
-          format: int32
-          readOnly: true
-      additionalProperties: false
-    EquipmentResponsePagedResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/EquipmentResponse'
-          nullable: true
-        totalCount:
-          type: integer
-          format: int32
-        page:
-          type: integer
-          format: int32
-        pageSize:
-          type: integer
-          format: int32
-        totalPages:
-          type: integer
-          format: int32
-          readOnly: true
-      additionalProperties: false
-    IngestReadingItem:
-      type: object
-      properties:
-        sensorId:
-          type: string
-          format: uuid
-        value:
-          type: number
-          format: double
-        timestampUtc:
-          type: string
-          format: date-time
-        unit:
-          $ref: '#/components/schemas/Unit'
-      additionalProperties: false
-    IngestReadingsResponse:
-      type: object
-      properties:
-        runId:
-          type: string
-          format: uuid
-        totalRecords:
-          type: integer
-          format: int32
-        acceptedRecords:
-          type: integer
-          format: int32
-        rejectedRecords:
-          type: integer
-          format: int32
-        status:
-          type: string
-          nullable: true
-      additionalProperties: false
     IngestionReadingResult:
       type: object
       properties:
@@ -2920,6 +2717,25 @@ components:
         reliabilityScore:
           type: number
           format: double
+        siteId:
+          type: string
+          format: uuid
+        siteName:
+          type: string
+          nullable: true
+        equipmentId:
+          type: string
+          format: uuid
+        equipmentName:
+          type: string
+          nullable: true
+        lastValue:
+          type: number
+          format: double
+          nullable: true
+        unit:
+          type: string
+          nullable: true
       additionalProperties: false
     SensorHealthListItemResponsePagedResponse:
       type: object
