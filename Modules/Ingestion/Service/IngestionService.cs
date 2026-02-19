@@ -16,6 +16,11 @@ public class IngestionService(
     ISensorRepository sensorRepository,
     ILogger<IngestionService> logger) : IIngestionService
 {
+    /// <summary>
+    /// Maximum number of readings per batch (API abuse prevention).
+    /// </summary>
+    private const int MaxBatchSize = 5000;
+
     /// <inheritdoc />
     [Span]
     public virtual async Task<IngestReadingsResponse> IngestReadingsAsync(
@@ -26,16 +31,10 @@ public class IngestionService(
         logger.LogDebug("Ingesting {Count} readings for organization {OrgId}", readings.Count, organizationId);
 
         if (readings.Count == 0)
-        {
-            return new IngestReadingsResponse
-            {
-                RunId = Guid.Empty,
-                TotalRecords = 0,
-                AcceptedRecords = 0,
-                RejectedRecords = 0,
-                Status = IngestionStatus.Failed.ToString()
-            };
-        }
+            throw new InvalidOperationException("At least one reading is required");
+
+        if (readings.Count > MaxBatchSize)
+            throw new InvalidOperationException($"Batch size cannot exceed {MaxBatchSize}.");
 
         var run = new IngestionRun
         {

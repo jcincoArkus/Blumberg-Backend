@@ -55,6 +55,11 @@ public class IngestionController(
                 response.RunId, response.AcceptedRecords, response.RejectedRecords);
             return Ok(response);
         }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning("Ingest readings validation failed: {Message}", ex.Message);
+            return BadRequest(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error ingesting readings");

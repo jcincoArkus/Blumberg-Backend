@@ -11,9 +11,10 @@ public interface IIngestionService
     /// Accepts a batch of readings, creates an ingestion run, validates and processes each reading
     /// </summary>
     /// <param name="organizationId">Current organization (from tenant context)</param>
-    /// <param name="readings">Batch of readings to ingest</param>
+    /// <param name="readings">Batch of readings to ingest (1 to 5000 items)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Run ID and summary (total, accepted, rejected, status)</returns>
+    /// <exception cref="InvalidOperationException">When batch is empty or exceeds max size</exception>
     Task<IngestReadingsResponse> IngestReadingsAsync(
         Guid organizationId,
         IReadOnlyList<IngestReadingItem> readings,
