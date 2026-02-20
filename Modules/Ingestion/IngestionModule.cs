@@ -18,7 +18,9 @@ public static class IngestionModule
     public static IServiceCollection AddIngestionModule(this IServiceCollection services)
     {
         services.AddScopedWithSpan<IIngestionRunRepository, IngestionRunRepository>();
+        services.AddScopedWithSpan<IApiKeyRepository, ApiKeyRepository>();
         services.AddScopedWithSpan<IIngestionService, IngestionService>();
+        services.AddScopedWithSpan<IApiKeyService, ApiKeyService>();
 
         return services;
     }

@@ -80,6 +80,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<IngestionRejectedReading> IngestionRejectedReadings => Set<IngestionRejectedReading>();
 
     /// <summary>
+    /// Gets or sets the API keys DbSet (no global filter; used for auth lookup by hash)
+    /// </summary>
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+
+    /// <summary>
     /// Gets or sets the CasbinRules DbSet for authorization policies
     /// </summary>
     public DbSet<CasbinRule> CasbinRules => Set<CasbinRule>();

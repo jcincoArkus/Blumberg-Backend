@@ -16,7 +16,7 @@ namespace Modules.Ingestion.Controller;
 [ApiController]
 [Route("api/v1/ingestion")]
 [Tags("Ingestion")]
-[Authorize]
+[Authorize(AuthenticationSchemes = "Bearer,ApiKey")]
 public class IngestionController(
     IIngestionService ingestionService,
     ITenantContext tenantContext,
