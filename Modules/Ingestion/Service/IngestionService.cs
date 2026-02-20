@@ -127,6 +127,17 @@ public class IngestionService(
         return run;
     }
 
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<IngestionStatsResponse> GetStatsAsync(
+        Guid organizationId,
+        GetIngestionRunsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Getting ingestion stats for organization {OrgId}", organizationId);
+        return await ingestionRunRepository.GetStatsAsync(request, cancellationToken);
+    }
+
     private async Task<(SensorReading? Accepted, string? RejectionReason)> ValidateAndBuildReadingAsync(
         Guid organizationId,
         IngestReadingItem item,

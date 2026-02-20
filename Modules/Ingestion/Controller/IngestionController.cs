@@ -107,6 +107,38 @@ public class IngestionController(
     }
 
     /// <summary>
+    /// Get aggregated stats (total/accepted/rejected records) for ingestion runs in a time range (e.g. last 24h)
+    /// </summary>
+    /// <param name="request">Filter (status, source, from, to)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Aggregated stats</returns>
+    [HttpGet("stats", Name = "GetIngestionStatsV1")]
+    [ProducesResponseType(typeof(IngestionStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IngestionStatsResponse>> GetStats(
+        [FromQuery] GetIngestionRunsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = tenantContext.CurrentOrganizationId;
+        if (orgId == null)
+        {
+            logger.LogWarning("Get ingestion stats called without tenant context");
+            return Unauthorized(new { message = "Organization context is required" });
+        }
+
+        try
+        {
+            var stats = await ingestionService.GetStatsAsync(orgId.Value, request, cancellationToken);
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting ingestion stats");
+            return StatusCode(500, new { message = "An error occurred while getting ingestion stats" });
+        }
+    }
+
+    /// <summary>
     /// Get run details including per-reading results (accepted/rejected)
     /// </summary>
     /// <param name="id">Run ID</param>

@@ -37,4 +37,14 @@ public interface IIngestionRunRepository
     Task<(IReadOnlyList<Shared.Entity.IngestionRun> Items, int TotalCount)> GetPagedAsync(
         GetIngestionRunsRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets aggregated stats (total/accepted/rejected records) for runs matching the filter
+    /// </summary>
+    /// <param name="request">Filter (status, source, date range); pagination is ignored</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Aggregated stats</returns>
+    Task<Modules.Ingestion.Dto.IngestionStatsResponse> GetStatsAsync(
+        GetIngestionRunsRequest request,
+        CancellationToken cancellationToken = default);
 }

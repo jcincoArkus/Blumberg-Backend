@@ -104,4 +104,37 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
 
         return (items, totalCount);
     }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<IngestionStatsResponse> GetStatsAsync(
+        GetIngestionRunsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Getting ingestion stats for date range");
+
+        IQueryable<IngestionRun> query = context.IngestionRuns
+            .Where(e => e.DeletedAt == null);
+
+        if (request.Status.HasValue)
+            query = query.Where(e => e.Status == request.Status.Value);
+        if (request.Source.HasValue)
+            query = query.Where(e => e.Source == request.Source.Value);
+        if (request.From.HasValue)
+            query = query.Where(e => e.CreatedAt >= request.From.Value);
+        if (request.To.HasValue)
+            query = query.Where(e => e.CreatedAt <= request.To.Value);
+
+        var stats = await query
+            .GroupBy(e => 1)
+            .Select(g => new IngestionStatsResponse
+            {
+                TotalRecords = g.Sum(e => e.TotalRecords),
+                AcceptedRecords = g.Sum(e => e.AcceptedRecords),
+                RejectedRecords = g.Sum(e => e.RejectedRecords),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return stats ?? new IngestionStatsResponse();
+    }
 }

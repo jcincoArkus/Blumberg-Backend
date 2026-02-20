@@ -44,4 +44,16 @@ public interface IIngestionService
         Guid organizationId,
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets aggregated stats (total/accepted/rejected records) for runs matching the filter (e.g. last 24h)
+    /// </summary>
+    /// <param name="organizationId">Current organization</param>
+    /// <param name="request">Filter (status, source, date range)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Aggregated stats</returns>
+    Task<Modules.Ingestion.Dto.IngestionStatsResponse> GetStatsAsync(
+        Guid organizationId,
+        GetIngestionRunsRequest request,
+        CancellationToken cancellationToken = default);
 }

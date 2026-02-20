@@ -570,6 +570,57 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
       security:
         - Bearer: [ ]
+  /api/v1/ingestion/stats:
+    get:
+      tags:
+        - Ingestion
+      operationId: GetIngestionStatsV1
+      parameters:
+        - name: Status
+          in: query
+          schema:
+            $ref: '#/components/schemas/IngestionStatus'
+        - name: Source
+          in: query
+          schema:
+            $ref: '#/components/schemas/IngestionSource'
+        - name: From
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: To
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/IngestionStatsResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionStatsResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/IngestionStatsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
   '/api/v1/ingestion/runs/{id}':
     get:
       tags:
@@ -2479,6 +2530,19 @@ components:
         - 4
       type: integer
       format: int32
+    IngestionStatsResponse:
+      type: object
+      properties:
+        totalRecords:
+          type: integer
+          format: int32
+        acceptedRecords:
+          type: integer
+          format: int32
+        rejectedRecords:
+          type: integer
+          format: int32
+      additionalProperties: false
     LoginRequest:
       required:
         - email
