@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using Adapters.Config;
 using Adapters.Database;
 using Adapters.Logger;
@@ -45,7 +45,10 @@ rootCommand.AddCommand(PermissionCommands.GeneratePermissions(loggerFactory));
 rootCommand.AddCommand(PermissionCommands.InitializePermissions(serviceProvider, loggerFactory));
 rootCommand.AddCommand(PermissionCommands.VerifyPermissions(serviceProvider, loggerFactory));
 
-// 9. Run
+// 9. Add Ingestion simulator (dev)
+rootCommand.AddCommand(IngestionCommands.Simulate(loggerFactory, config));
+
+// 10. Run
 try { return await rootCommand.InvokeAsync(args); }
 finally
 {
