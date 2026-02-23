@@ -11,9 +11,10 @@ public interface IIngestionService
     /// Accepts a batch of readings, creates an ingestion run, validates and processes each reading
     /// </summary>
     /// <param name="organizationId">Current organization (from tenant context)</param>
-    /// <param name="readings">Batch of readings to ingest</param>
+    /// <param name="readings">Batch of readings to ingest (1 to 5000 items)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Run ID and summary (total, accepted, rejected, status)</returns>
+    /// <exception cref="InvalidOperationException">When batch is empty or exceeds max size</exception>
     Task<IngestReadingsResponse> IngestReadingsAsync(
         Guid organizationId,
         IReadOnlyList<IngestReadingItem> readings,
@@ -42,5 +43,17 @@ public interface IIngestionService
     Task<Shared.Entity.IngestionRun> GetRunByIdAsync(
         Guid organizationId,
         Guid id,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets aggregated stats (total/accepted/rejected records) for runs matching the filter (e.g. last 24h)
+    /// </summary>
+    /// <param name="organizationId">Current organization</param>
+    /// <param name="request">Filter (status, source, date range)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Aggregated stats</returns>
+    Task<Modules.Ingestion.Dto.IngestionStatsResponse> GetStatsAsync(
+        Guid organizationId,
+        GetIngestionRunsRequest request,
         CancellationToken cancellationToken = default);
 }

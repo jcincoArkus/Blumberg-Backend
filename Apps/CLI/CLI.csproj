@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\Adapters\Config\Adapters.Config.csproj" />
     <ProjectReference Include="..\..\Adapters\Database\Adapters.Database.csproj" />
     <ProjectReference Include="..\..\Adapters\Server\Adapters.Server.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.csproj" />
   </ItemGroup>
 
 </Project>

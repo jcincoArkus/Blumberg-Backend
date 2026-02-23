@@ -16,6 +16,11 @@ public class IngestionService(
     ISensorRepository sensorRepository,
     ILogger<IngestionService> logger) : IIngestionService
 {
+    /// <summary>
+    /// Maximum number of readings per batch (API abuse prevention).
+    /// </summary>
+    private const int MaxBatchSize = 5000;
+
     /// <inheritdoc />
     [Span]
     public virtual async Task<IngestReadingsResponse> IngestReadingsAsync(
@@ -26,16 +31,10 @@ public class IngestionService(
         logger.LogDebug("Ingesting {Count} readings for organization {OrgId}", readings.Count, organizationId);
 
         if (readings.Count == 0)
-        {
-            return new IngestReadingsResponse
-            {
-                RunId = Guid.Empty,
-                TotalRecords = 0,
-                AcceptedRecords = 0,
-                RejectedRecords = 0,
-                Status = IngestionStatus.Failed.ToString()
-            };
-        }
+            throw new InvalidOperationException("At least one reading is required");
+
+        if (readings.Count > MaxBatchSize)
+            throw new InvalidOperationException($"Batch size cannot exceed {MaxBatchSize}.");
 
         var run = new IngestionRun
         {
@@ -126,6 +125,17 @@ public class IngestionService(
         }
 
         return run;
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<IngestionStatsResponse> GetStatsAsync(
+        Guid organizationId,
+        GetIngestionRunsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Getting ingestion stats for organization {OrgId}", organizationId);
+        return await ingestionRunRepository.GetStatsAsync(request, cancellationToken);
     }
 
     private async Task<(SensorReading? Accepted, string? RejectionReason)> ValidateAndBuildReadingAsync(

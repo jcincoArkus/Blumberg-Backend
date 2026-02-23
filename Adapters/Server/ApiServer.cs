@@ -64,7 +64,7 @@ public class ApiServer
         }
         services.AddEndpointsApiExplorer();
 
-        // Swagger with JWT security
+        // Swagger with JWT and API key security
         services.AddSwaggerGen(options =>
         {
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -75,6 +75,13 @@ public class ApiServer
                 Type = SecuritySchemeType.Http,
                 BearerFormat = "JWT",
                 Scheme = "Bearer"
+            });
+            options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+            {
+                In = ParameterLocation.Header,
+                Name = "X-Api-Key",
+                Type = SecuritySchemeType.ApiKey,
+                Description = "API key for ingestion (machine-to-machine). Use header X-Api-Key."
             });
             options.OperationFilter<AuthorizeCheckOperationFilter>();
         });
@@ -87,8 +94,8 @@ public class ApiServer
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(config.Database.GetConnectionString()));
 
-        // JWT Authentication
-        services.AddJwtAuthentication(config);
+        // JWT + API key authentication (API key for ingestion / M2M)
+        services.AddJwtAuthentication(config).AddApiKeyAuthentication();
 
         // Casbin Authorization
         services.AddCasbinAuthorization();

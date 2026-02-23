@@ -16,7 +16,7 @@ namespace Modules.Ingestion.Controller;
 [ApiController]
 [Route("api/v1/ingestion")]
 [Tags("Ingestion")]
-[Authorize]
+[Authorize(AuthenticationSchemes = "Bearer,ApiKey")]
 public class IngestionController(
     IIngestionService ingestionService,
     ITenantContext tenantContext,
@@ -54,6 +54,11 @@ public class IngestionController(
             logger.LogInformation("Ingestion run {RunId} created: {Accepted} accepted, {Rejected} rejected",
                 response.RunId, response.AcceptedRecords, response.RejectedRecords);
             return Ok(response);
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning("Ingest readings validation failed: {Message}", ex.Message);
+            return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -98,6 +103,39 @@ public class IngestionController(
         {
             logger.LogError(ex, "Error getting ingestion runs");
             return StatusCode(500, new { message = "An error occurred while getting ingestion runs" });
+        }
+    }
+
+    /// <summary>
+    /// Get aggregated stats (total/accepted/rejected records) for ingestion runs in a time range (e.g. last 24h)
+    /// </summary>
+    /// <param name="request">Filter (status, source, from, to)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Aggregated stats</returns>
+    [HttpGet("stats", Name = "GetIngestionStatsV1")]
+    [ProducesResponseType(typeof(IngestionStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IngestionStatsResponse>> GetStats(
+        [FromQuery] GetIngestionRunsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = tenantContext.CurrentOrganizationId;
+        if (orgId == null)
+        {
+            logger.LogWarning("Get ingestion stats called without tenant context");
+            return Unauthorized(new { message = "Organization context is required" });
+        }
+
+        try
+        {
+            var stats = await ingestionService.GetStatsAsync(orgId.Value, request, cancellationToken);
+            logger.LogInformation("Retrieved ingestion stats for range");
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting ingestion stats");
+            return StatusCode(500, new { message = "An error occurred while getting ingestion stats" });
         }
     }
 
