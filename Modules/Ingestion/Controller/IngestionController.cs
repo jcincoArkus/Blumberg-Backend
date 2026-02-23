@@ -129,6 +129,7 @@ public class IngestionController(
         try
         {
             var stats = await ingestionService.GetStatsAsync(orgId.Value, request, cancellationToken);
+            logger.LogInformation("Retrieved ingestion stats for range");
             return Ok(stats);
         }
         catch (Exception ex)

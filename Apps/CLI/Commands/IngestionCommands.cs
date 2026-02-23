@@ -53,6 +53,10 @@ public static class IngestionCommands
             ["--batch-size", "-b"],
             getDefaultValue: () => 5,
             "Readings per batch (default: 5, max 5000).");
+        var rejectChanceOption = new Option<double>(
+            ["--reject-chance", "-r"],
+            getDefaultValue: () => 0.2,
+            "Chance (0.0–1.0) that one reading in each batch is invalid (invalid unit or unknown sensor). Default: 0.2.");
 
         command.AddOption(baseUrlOption);
         command.AddOption(apiKeyOption);
@@ -60,8 +64,9 @@ public static class IngestionCommands
         command.AddOption(sensorIdsOption);
         command.AddOption(intervalOption);
         command.AddOption(batchSizeOption);
+        command.AddOption(rejectChanceOption);
 
-        command.SetHandler(async (string baseUrl, string? apiKey, string? orgIdStr, string? sensorIdsStr, int interval, int batchSize) =>
+        command.SetHandler(async (string baseUrl, string? apiKey, string? orgIdStr, string? sensorIdsStr, int interval, int batchSize, double rejectChance) =>
         {
             using var cts = new CancellationTokenSource();
             Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
@@ -105,9 +110,10 @@ public static class IngestionCommands
 
             batchSize = Math.Clamp(batchSize, 1, 5000);
             var readingsPerBatch = Math.Min(batchSize, sensorInfos.Count);
+            rejectChance = Math.Clamp(rejectChance, 0, 1);
 
-            logger.LogInformation("Ingestion simulator started. Base URL: {BaseUrl}, sensors: {Count}, interval: {Interval}s. Press Ctrl+C to stop.",
-                baseUrl, sensorInfos.Count, interval);
+            logger.LogInformation("Ingestion simulator started. Base URL: {BaseUrl}, sensors: {Count}, interval: {Interval}s, reject chance: {RejectChance:P0}. Press Ctrl+C to stop.",
+                baseUrl, sensorInfos.Count, interval, rejectChance);
 
             using var http = new HttpClient();
             http.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
@@ -130,6 +136,34 @@ public static class IngestionCommands
                         TimestampUtc = DateTime.UtcNow,
                         Unit = (int)info.Unit
                     });
+                }
+
+                // Optionally replace one reading with a bad one to trigger rejection (invalid unit or sensor not found)
+                if (rejectChance > 0 && random.NextDouble() < rejectChance && readings.Count > 0)
+                {
+                    var badIndex = random.Next(readings.Count);
+                    if (random.Next(2) == 0)
+                    {
+                        readings[badIndex] = new SimulateReadingDto
+                        {
+                            SensorId = readings[badIndex].SensorId,
+                            Value = readings[badIndex].Value,
+                            TimestampUtc = readings[badIndex].TimestampUtc,
+                            Unit = 99 // Invalid unit -> "Invalid unit"
+                        };
+                        logger.LogDebug("Run {Run}: injected invalid unit (Unit=99) at index {Index}.", run, badIndex);
+                    }
+                    else
+                    {
+                        readings[badIndex] = new SimulateReadingDto
+                        {
+                            SensorId = Guid.Empty, // Non-existent sensor -> "Sensor not found or access denied"
+                            Value = 0,
+                            TimestampUtc = DateTime.UtcNow,
+                            Unit = 0
+                        };
+                        logger.LogDebug("Run {Run}: injected unknown sensor (SensorId=Empty) at index {Index}.", run, badIndex);
+                    }
                 }
 
                 var url = $"{baseUrl}/api/v1/ingestion/readings";
@@ -177,7 +211,8 @@ public static class IngestionCommands
             orgIdOption,
             sensorIdsOption,
             intervalOption,
-            batchSizeOption);
+            batchSizeOption,
+            rejectChanceOption);
 
         return command;
     }

@@ -444,6 +444,148 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
       security:
         - Bearer: [ ]
+  /api/v1/ingestion/api-keys:
+    post:
+      tags:
+        - Ingestion
+      operationId: CreateIngestionApiKeyV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/CreateApiKeyResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateApiKeyResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/CreateApiKeyResponse'
+        '400':
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+    get:
+      tags:
+        - Ingestion
+      operationId: ListIngestionApiKeysV1
+      parameters:
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ApiKeyListResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyListResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyListResponsePagedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/ingestion/api-keys/{id}':
+    delete:
+      tags:
+        - Ingestion
+      operationId: RevokeIngestionApiKeyV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
   /api/v1/ingestion/readings:
     post:
       tags:
@@ -594,6 +736,20 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
       responses:
         '200':
           description: OK
@@ -1037,98 +1193,6 @@ paths:
                 $ref: '#/components/schemas/RoleUsersResponse'
       security:
         - Bearer: [ ]
-  /api/v1/sensors/health:
-    get:
-      tags:
-        - Sensors
-      operationId: GetSensorHealthListV1
-      parameters:
-        - name: SiteId
-          in: query
-          schema:
-            type: string
-            format: uuid
-        - name: EquipmentId
-          in: query
-          schema:
-            type: string
-            format: uuid
-        - name: Status
-          in: query
-          schema:
-            $ref: '#/components/schemas/SensorStatus'
-        - name: HealthStatus
-          in: query
-          schema:
-            $ref: '#/components/schemas/SensorHealthStatus'
-        - name: Search
-          in: query
-          schema:
-            type: string
-        - name: Page
-          in: query
-          schema:
-            type: integer
-            format: int32
-        - name: PageSize
-          in: query
-          schema:
-            type: integer
-            format: int32
-      responses:
-        '200':
-          description: OK
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/SensorHealthListItemResponsePagedResponse'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SensorHealthListItemResponsePagedResponse'
-            text/json:
-              schema:
-                $ref: '#/components/schemas/SensorHealthListItemResponsePagedResponse'
-      security:
-        - Bearer: [ ]
-  '/api/v1/sensors/{id}/health':
-    get:
-      tags:
-        - Sensors
-      operationId: GetSensorHealthByIdV1
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/SensorHealthDetailResponse'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SensorHealthDetailResponse'
-            text/json:
-              schema:
-                $ref: '#/components/schemas/SensorHealthDetailResponse'
-        '404':
-          description: Not Found
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-            text/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-      security:
-        - Bearer: [ ]
   /api/v1/sensor-types:
     get:
       tags:
@@ -1218,30 +1282,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: From
-          in: query
-          schema:
-            type: string
-            format: date-time
-        - name: To
-          in: query
-          schema:
-            type: string
-            format: date-time
-        - name: Search
-          in: query
-          schema:
-            type: string
-        - name: Page
-          in: query
-          schema:
-            type: integer
-            format: int32
-        - name: PageSize
-          in: query
-          schema:
-            type: integer
-            format: int32
       responses:
         '200':
           description: OK
@@ -1332,6 +1372,98 @@ paths:
       responses:
         '200':
           description: OK
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  /api/v1/sensors/health:
+    get:
+      tags:
+        - Sensors
+      operationId: GetSensorHealthListV1
+      parameters:
+        - name: SiteId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: EquipmentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: Status
+          in: query
+          schema:
+            $ref: '#/components/schemas/SensorStatus'
+        - name: HealthStatus
+          in: query
+          schema:
+            $ref: '#/components/schemas/SensorHealthStatus'
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorHealthListItemResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorHealthListItemResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorHealthListItemResponsePagedResponse'
+      security:
+        - Bearer: [ ]
+  '/api/v1/sensors/{id}/health':
+    get:
+      tags:
+        - Sensors
+      operationId: GetSensorHealthByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/SensorHealthDetailResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorHealthDetailResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/SensorHealthDetailResponse'
         '404':
           description: Not Found
           content:
@@ -2200,6 +2332,45 @@ components:
           format: int32
           readOnly: true
       additionalProperties: false
+    ApiKeyListResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    ApiKeyListResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKeyListResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
     AssignPermissionsToRoleRequest:
       required:
         - permissions
@@ -2264,6 +2435,32 @@ components:
       properties:
         hasPermission:
           type: boolean
+      additionalProperties: false
+    CreateApiKeyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+      additionalProperties: false
+    CreateApiKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        organizationId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        key:
+          type: string
+          nullable: true
       additionalProperties: false
     CreateRoleRequest:
       required:
@@ -2521,15 +2718,6 @@ components:
         - 2
       type: integer
       format: int32
-    IngestionStatus:
-      enum:
-        - 0
-        - 1
-        - 2
-        - 3
-        - 4
-      type: integer
-      format: int32
     IngestionStatsResponse:
       type: object
       properties:
@@ -2543,6 +2731,15 @@ components:
           type: integer
           format: int32
       additionalProperties: false
+    IngestionStatus:
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+      type: integer
+      format: int32
     LoginRequest:
       required:
         - email
@@ -3251,6 +3448,11 @@ components:
       description: Enter the JWT token
       scheme: Bearer
       bearerFormat: JWT
+    ApiKey:
+      type: apiKey
+      description: API key for ingestion (machine-to-machine). Use header X-Api-Key.
+      name: X-Api-Key
+      in: header
 tags:
   - name: Admins
   - name: Authentication
