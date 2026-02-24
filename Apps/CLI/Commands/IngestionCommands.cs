@@ -73,20 +73,22 @@ public static class IngestionCommands
 
         command.SetHandler(async (string baseUrl, string? apiKey, string? orgIdStr, string? sensorIdsStr, int interval, int batchSize, double rejectChance, bool noVariety) =>
         {
-            using var cts = new CancellationTokenSource();
-            Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
-            var ct = cts.Token;
-
-            baseUrl = baseUrl.TrimEnd('/');
-            if (string.IsNullOrWhiteSpace(apiKey))
+            try
             {
-                logger.LogError("API key is required. Set INGESTION_SIMULATOR_API_KEY or pass --api-key.");
-                Environment.Exit(1);
-            }
+                using var cts = new CancellationTokenSource();
+                Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+                var ct = cts.Token;
 
-            List<SensorReadingInfo> sensorInfos;
+                baseUrl = baseUrl.TrimEnd('/');
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    logger.LogError("API key is required. Set INGESTION_SIMULATOR_API_KEY or pass --api-key.");
+                    Environment.Exit(1);
+                }
 
-            if (!string.IsNullOrWhiteSpace(orgIdStr) && Guid.TryParse(orgIdStr, out var orgId))
+                List<SensorReadingInfo> sensorInfos;
+
+                if (!string.IsNullOrWhiteSpace(orgIdStr) && Guid.TryParse(orgIdStr, out var orgId))
             {
                 // Load sensors from DB for this org (bypass tenant filter)
                 sensorInfos = await LoadSensorsFromDatabaseAsync(orgId, logger, ct);
@@ -228,7 +230,13 @@ public static class IngestionCommands
                 }
             }
 
-            logger.LogInformation("Ingestion simulator stopped after {Runs} run(s).", run);
+                logger.LogInformation("Ingestion simulator stopped after {Runs} run(s).", run);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Ingestion simulator failed");
+                Environment.Exit(1);
+            }
         },
             baseUrlOption,
             apiKeyOption,

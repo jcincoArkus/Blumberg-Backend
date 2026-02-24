@@ -50,10 +50,10 @@ public class IngestionController(
 
         try
         {
-            var response = await ingestionService.IngestReadingsAsync(orgId.Value, readings, cancellationToken);
+            var run = await ingestionService.IngestReadingsAsync(orgId.Value, readings, cancellationToken);
             logger.LogInformation("Ingestion run {RunId} created: {Accepted} accepted, {Rejected} rejected",
-                response.RunId, response.AcceptedRecords, response.RejectedRecords);
-            return Ok(response);
+                run.Id, run.AcceptedRecords, run.RejectedRecords);
+            return Ok(MapToIngestReadingsResponse(run));
         }
         catch (InvalidOperationException ex)
         {
@@ -211,6 +211,18 @@ public class IngestionController(
             logger.LogError(ex, "Error getting ingestion run {Id}", id);
             return StatusCode(500, new { message = "An error occurred while getting ingestion run" });
         }
+    }
+
+    private static IngestReadingsResponse MapToIngestReadingsResponse(IngestionRun run)
+    {
+        return new IngestReadingsResponse
+        {
+            RunId = run.Id,
+            TotalRecords = run.TotalRecords,
+            AcceptedRecords = run.AcceptedRecords,
+            RejectedRecords = run.RejectedRecords,
+            Status = run.Status.ToString()
+        };
     }
 
     private static IngestionRunListResponse MapToListResponse(IngestionRun run)

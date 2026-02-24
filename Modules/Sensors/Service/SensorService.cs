@@ -143,7 +143,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<(IReadOnlyList<SensorHealthListItemResponse> Items, int TotalCount)> GetHealthListAsync(GetSensorHealthRequest request)
+    public virtual async Task<(IReadOnlyList<SensorHealthListResult> Items, int TotalCount)> GetHealthListAsync(GetSensorHealthRequest request)
     {
         var sensors = await sensorRepository.GetForHealthListAsync(request);
         if (sensors.Count == 0)
@@ -158,7 +158,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
         var countsBySensor = await sensorReadingRepository.GetReadingCountsBySensorIdsInWindowAsync(sensorIds, windowStart, windowEnd);
         var expectedPerSensor = ReliabilityWindowHours * ExpectedReadingsPerHour;
 
-        var list = new List<SensorHealthListItemResponse>();
+        var list = new List<SensorHealthListResult>();
         foreach (var sensor in sensors)
         {
             readingBySensor.TryGetValue(sensor.Id, out var reading);
@@ -171,7 +171,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
             if (request.HealthStatus.HasValue && healthStatus != request.HealthStatus.Value)
                 continue;
 
-            list.Add(new SensorHealthListItemResponse
+            list.Add(new SensorHealthListResult
             {
                 Id = sensor.Id,
                 Name = sensor.Serial,
@@ -199,7 +199,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<SensorHealthDetailResponse> GetHealthDetailAsync(Guid id)
+    public virtual async Task<SensorHealthDetailResult> GetHealthDetailAsync(Guid id)
     {
         var sensor = await sensorRepository.GetByIdAsync(id);
         if (sensor == null)
@@ -221,7 +221,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
             : 100.0;
         var healthStatus = ComputeHealthStatus(sensor, reading, reliabilityScore);
 
-        return new SensorHealthDetailResponse
+        return new SensorHealthDetailResult
         {
             SensorId = sensor.Id,
             Name = sensor.Serial,

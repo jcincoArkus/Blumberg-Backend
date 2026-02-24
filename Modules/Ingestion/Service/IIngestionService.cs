@@ -13,9 +13,9 @@ public interface IIngestionService
     /// <param name="organizationId">Current organization (from tenant context)</param>
     /// <param name="readings">Batch of readings to ingest (1 to 5000 items)</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Run ID and summary (total, accepted, rejected, status)</returns>
+    /// <returns>The created ingestion run entity</returns>
     /// <exception cref="InvalidOperationException">When batch is empty or exceeds max size</exception>
-    Task<IngestReadingsResponse> IngestReadingsAsync(
+    Task<Shared.Entity.IngestionRun> IngestReadingsAsync(
         Guid organizationId,
         IReadOnlyList<IngestReadingItem> readings,
         CancellationToken cancellationToken = default);

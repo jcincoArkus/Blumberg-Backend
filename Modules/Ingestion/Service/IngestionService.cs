@@ -23,7 +23,7 @@ public class IngestionService(
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<IngestReadingsResponse> IngestReadingsAsync(
+    public virtual async Task<IngestionRun> IngestReadingsAsync(
         Guid organizationId,
         IReadOnlyList<IngestReadingItem> readings,
         CancellationToken cancellationToken = default)
@@ -87,14 +87,7 @@ public class IngestionService(
         logger.LogInformation("Ingestion run {RunId} completed: {Accepted} accepted, {Rejected} rejected",
             run.Id, run.AcceptedRecords, run.RejectedRecords);
 
-        return new IngestReadingsResponse
-        {
-            RunId = run.Id,
-            TotalRecords = run.TotalRecords,
-            AcceptedRecords = run.AcceptedRecords,
-            RejectedRecords = run.RejectedRecords,
-            Status = run.Status.ToString()
-        };
+        return run;
     }
 
     /// <inheritdoc />
