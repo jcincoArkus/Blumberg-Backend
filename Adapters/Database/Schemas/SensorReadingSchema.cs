@@ -70,11 +70,5 @@ public class SensorReadingSchema : IEntityTypeConfiguration<SensorReading>
             .HasConstraintName("fk_sensor_readings_ingestion_run_id")
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Relationships: SensorReading triggers many Alerts
-        builder.HasMany(e => e.Alerts)
-            .WithOne(e => e.SensorReading)
-            .HasForeignKey(e => e.SensorReadingId)
-            .HasConstraintName("fk_alerts_sensor_reading_id")
-            .OnDelete(DeleteBehavior.Restrict);
     }
 }

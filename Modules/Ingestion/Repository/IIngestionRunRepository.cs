@@ -8,16 +8,18 @@ namespace Modules.Ingestion.Repository;
 public interface IIngestionRunRepository
 {
     /// <summary>
-    /// Creates an ingestion run with its rejected readings and accepted sensor readings in one transaction
+    /// Creates an ingestion run with its rejected readings, accepted sensor readings, and new alerts in one transaction
     /// </summary>
-    /// <param name="run">The run entity (with Id set); will be updated with AcceptedRecords, RejectedRecords, Status, CompletedAt after insert</param>
+    /// <param name="run">The run entity (with Id set)</param>
     /// <param name="rejectedReadings">Rejected readings to attach to the run</param>
     /// <param name="acceptedReadings">Sensor readings to insert (with IngestionRunId set to run.Id)</param>
+    /// <param name="newAlerts">New alerts to create atomically with the run</param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task CreateRunAsync(
         Shared.Entity.IngestionRun run,
         IReadOnlyList<Shared.Entity.IngestionRejectedReading> rejectedReadings,
         IReadOnlyList<Shared.Entity.SensorReading> acceptedReadings,
+        IReadOnlyList<Shared.Entity.Alert> newAlerts,
         CancellationToken cancellationToken = default);
 
     /// <summary>

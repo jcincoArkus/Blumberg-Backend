@@ -113,7 +113,9 @@ public class ApplicationDbContext : DbContext
             typeof(Unit),
             typeof(IngestionSource),
             typeof(IngestionStatus),
-            typeof(SensorHealthStatus)
+            typeof(SensorHealthStatus),
+            typeof(AlertSeverity),
+            typeof(AlertStatus)
         };
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -140,7 +142,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Organization>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<SensorType>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Threshold>().HasQueryFilter(e => e.DeletedAt == null);
-        modelBuilder.Entity<Alert>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<Alert>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
         // IngestionRun: tenant-scoped by OrganizationId
         modelBuilder.Entity<IngestionRun>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
     }
@@ -171,6 +173,8 @@ public class ApplicationDbContext : DbContext
                     ValidateAndSetTenant(sr.OrganizationId, () => sr.OrganizationId = orgId!.Value, orgId, nameof(SensorReading));
                 else if (entry.Entity is IngestionRun run)
                     ValidateAndSetTenant(run.OrganizationId, () => run.OrganizationId = orgId!.Value, orgId, nameof(IngestionRun));
+                else if (entry.Entity is Alert alert)
+                    ValidateAndSetTenant(alert.OrganizationId, () => alert.OrganizationId = orgId!.Value, orgId, nameof(Alert));
             }
         }
 

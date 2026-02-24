@@ -1,0 +1,22 @@
+using Shared.Enums;
+
+namespace Modules.Alerts.Dto;
+
+/// <summary>
+/// Response DTO for an alert
+/// </summary>
+public class AlertResponse
+{
+    public Guid Id { get; set; }
+    public Guid SensorId { get; set; }
+    public Guid EquipmentId { get; set; }
+    public Guid SiteId { get; set; }
+    public string Severity { get; set; } = string.Empty;
+    public decimal TriggeredValue { get; set; }
+    public decimal ThresholdMin { get; set; }
+    public decimal ThresholdMax { get; set; }
+    public DateTime TriggeredAt { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime? ResolvedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}

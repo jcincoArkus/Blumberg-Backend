@@ -1,5 +1,6 @@
 using Adapters.Telemetry;
 using Microsoft.Extensions.Logging;
+using Modules.Alerts.Repository;
 using Modules.Ingestion.Dto;
 using Modules.Ingestion.Repository;
 using Modules.Sensors.Repository;
@@ -14,6 +15,7 @@ namespace Modules.Ingestion.Service;
 public class IngestionService(
     IIngestionRunRepository ingestionRunRepository,
     ISensorRepository sensorRepository,
+    IAlertRepository alertRepository,
     ILogger<IngestionService> logger) : IIngestionService
 {
     /// <summary>
@@ -52,13 +54,17 @@ public class IngestionService(
         var acceptedReadings = new List<SensorReading>();
         var rejectedReadings = new List<IngestionRejectedReading>();
 
+        // Track sensor context for accepted readings to use during alert evaluation
+        var sensorByReadingIndex = new Dictionary<int, Sensor>();
+
         for (var i = 0; i < readings.Count; i++)
         {
             var item = readings[i];
-            var (accepted, rejectionReason) = await ValidateAndBuildReadingAsync(organizationId, item, cancellationToken);
-            if (accepted != null)
+            var (accepted, sensor, rejectionReason) = await ValidateAndBuildReadingAsync(organizationId, item, cancellationToken);
+            if (accepted != null && sensor != null)
             {
                 acceptedReadings.Add(accepted);
+                sensorByReadingIndex[acceptedReadings.Count - 1] = sensor;
             }
             else
             {
@@ -82,10 +88,12 @@ public class IngestionService(
                 ? IngestionStatus.Failed
                 : IngestionStatus.PartialSuccess;
 
-        await ingestionRunRepository.CreateRunAsync(run, rejectedReadings, acceptedReadings, cancellationToken);
+        var newAlerts = await BuildNewAlertsAsync(organizationId, acceptedReadings, sensorByReadingIndex, cancellationToken);
 
-        logger.LogInformation("Ingestion run {RunId} completed: {Accepted} accepted, {Rejected} rejected",
-            run.Id, run.AcceptedRecords, run.RejectedRecords);
+        await ingestionRunRepository.CreateRunAsync(run, rejectedReadings, acceptedReadings, newAlerts, cancellationToken);
+
+        logger.LogInformation("Ingestion run {RunId} completed: {Accepted} accepted, {Rejected} rejected, {Alerts} alerts",
+            run.Id, run.AcceptedRecords, run.RejectedRecords, newAlerts.Count);
 
         return run;
     }
@@ -155,19 +163,19 @@ public class IngestionService(
         };
     }
 
-    private async Task<(SensorReading? Accepted, string? RejectionReason)> ValidateAndBuildReadingAsync(
+    private async Task<(SensorReading? Accepted, Sensor? Sensor, string? RejectionReason)> ValidateAndBuildReadingAsync(
         Guid organizationId,
         IngestReadingItem item,
         CancellationToken cancellationToken)
     {
         var sensor = await sensorRepository.GetByIdAsync(item.SensorId);
         if (sensor == null)
-            return (null, "Sensor not found or access denied");
+            return (null, null, "Sensor not found or access denied");
         if (sensor.OrganizationId != organizationId)
-            return (null, "Sensor not found or access denied");
+            return (null, null, "Sensor not found or access denied");
 
         if (!Enum.IsDefined(typeof(Unit), item.Unit))
-            return (null, "Invalid unit");
+            return (null, null, "Invalid unit");
 
         var reading = new SensorReading
         {
@@ -177,6 +185,64 @@ public class IngestionService(
             Unit = item.Unit,
             OrganizationId = organizationId
         };
-        return (reading, null);
+        return (reading, sensor, null);
+    }
+
+    private async Task<List<Alert>> BuildNewAlertsAsync(
+        Guid organizationId,
+        List<SensorReading> acceptedReadings,
+        Dictionary<int, Sensor> sensorByReadingIndex,
+        CancellationToken cancellationToken)
+    {
+        var newAlerts = new List<Alert>();
+        // Track sensor IDs that already have a new alert in this batch to avoid duplicates
+        var alertedSensorIds = new HashSet<Guid>();
+
+        for (var i = 0; i < acceptedReadings.Count; i++)
+        {
+            var reading = acceptedReadings[i];
+            if (!sensorByReadingIndex.TryGetValue(i, out var sensor))
+                continue;
+
+            var threshold = sensor.Threshold;
+            if (threshold == null)
+                continue;
+
+            var isOutOfRange = reading.Value < threshold.Min || reading.Value > threshold.Max;
+            if (!isOutOfRange)
+                continue;
+
+            if (alertedSensorIds.Contains(sensor.Id))
+                continue;
+
+            var existingActive = await alertRepository.GetActiveBySensorIdAsync(sensor.Id);
+            if (existingActive != null)
+                continue;
+
+            var severity = reading.Value > threshold.Max ? AlertSeverity.Critical : AlertSeverity.Warning;
+
+            newAlerts.Add(new Alert
+            {
+                Id = Guid.NewGuid(),
+                SensorId = sensor.Id,
+                EquipmentId = sensor.EquipmentId,
+                SiteId = sensor.Equipment.SiteId,
+                OrganizationId = organizationId,
+                Severity = severity,
+                TriggeredValue = reading.Value,
+                ThresholdMin = threshold.Min,
+                ThresholdMax = threshold.Max,
+                TriggeredAt = reading.TimestampUtc,
+                Status = AlertStatus.Active,
+                ResolvedAt = null,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = null,
+                DeletedAt = null
+            });
+
+            alertedSensorIds.Add(sensor.Id);
+        }
+
+        return newAlerts;
     }
 }

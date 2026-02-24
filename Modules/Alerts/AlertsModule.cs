@@ -1,0 +1,22 @@
+using Adapters.Telemetry;
+using Microsoft.Extensions.DependencyInjection;
+using Modules.Alerts.Repository;
+using Modules.Alerts.Service;
+
+namespace Modules.Alerts;
+
+/// <summary>
+/// Extension methods for registering Alerts module services
+/// </summary>
+public static class AlertsModule
+{
+    /// <summary>
+    /// Adds Alerts module services to the service collection
+    /// </summary>
+    public static IServiceCollection AddAlertsModule(this IServiceCollection services)
+    {
+        services.AddScopedWithSpan<IAlertRepository, AlertRepository>();
+        services.AddScopedWithSpan<IAlertService, AlertService>();
+        return services;
+    }
+}
