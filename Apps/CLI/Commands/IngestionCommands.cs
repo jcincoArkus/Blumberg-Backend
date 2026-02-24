@@ -252,8 +252,8 @@ public static class IngestionCommands
         public IReadOnlyList<SensorReadingInfo> Healthy { get; init; } = []; // rest: send with Now, optional reject chance
     }
 
-    private const int StaleDelayMinutes = 11;  // Backend warning threshold 10 min -> last seen 11 min = stale
-    private const int SilentDelayMinutes = 31; // Backend critical 30 min -> last seen 31 min = offline/silent
+    private const int StaleDelayMinutes = 11;  // Backend Stale > 2×5min=10min -> last seen 11 min = stale
+    private const int SilentDelayMinutes = 26; // Backend Offline > 5×5min=25min -> last seen 26 min = offline
 
     private static SensorPartition BuildPartition(List<SensorReadingInfo> sensorInfos)
     {
@@ -372,6 +372,8 @@ public static class IngestionCommands
             .IgnoreQueryFilters()
             .Where(s => s.DeletedAt == null && s.OrganizationId == organizationId)
             .Include(s => s.SensorType)
+            .OrderBy(s => s.CreatedAt)
+            .ThenBy(s => s.Id)
             .AsNoTracking()
             .ToListAsync(ct);
 

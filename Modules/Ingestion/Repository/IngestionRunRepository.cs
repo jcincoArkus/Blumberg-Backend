@@ -90,13 +90,14 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
     /// <inheritdoc />
     [Span]
     public virtual async Task<(IReadOnlyList<IngestionRun> Items, int TotalCount)> GetPagedAsync(
+        Guid organizationId,
         GetIngestionRunsRequest request,
         CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Querying ingestion runs page {Page}, pageSize {PageSize}", request.Page, request.PageSize);
 
         IQueryable<IngestionRun> query = context.IngestionRuns
-            .Where(e => e.DeletedAt == null);
+            .Where(e => e.DeletedAt == null && e.OrganizationId == organizationId);
 
         if (request.Status.HasValue)
             query = query.Where(e => e.Status == request.Status.Value);
@@ -123,13 +124,14 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
     /// <inheritdoc />
     [Span]
     public virtual async Task<IngestionStatsResponse> GetStatsAsync(
+        Guid organizationId,
         GetIngestionRunsRequest request,
         CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Getting ingestion stats for date range");
+        logger.LogDebug("Getting ingestion stats for organization {OrgId}", organizationId);
 
         IQueryable<IngestionRun> query = context.IngestionRuns
-            .Where(e => e.DeletedAt == null);
+            .Where(e => e.DeletedAt == null && e.OrganizationId == organizationId);
 
         if (request.Status.HasValue)
             query = query.Where(e => e.Status == request.Status.Value);

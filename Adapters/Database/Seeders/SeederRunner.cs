@@ -18,7 +18,7 @@ public static class SeederRunner
         yield return new SiteSeeder(loggerFactory);
         yield return new EquipmentSeeder(loggerFactory);
         yield return new SensorSeeder(loggerFactory);
-        yield return new SensorReadingSeeder(loggerFactory);
+        // yield return new SensorReadingSeeder(loggerFactory);
         yield return new AdminSeeder(loggerFactory);
     }
 

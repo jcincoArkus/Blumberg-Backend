@@ -105,7 +105,7 @@ public class IngestionService(
         CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Getting ingestion runs for organization {OrgId}", organizationId);
-        return await ingestionRunRepository.GetPagedAsync(request, cancellationToken);
+        return await ingestionRunRepository.GetPagedAsync(organizationId, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -136,7 +136,7 @@ public class IngestionService(
         CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Getting ingestion stats for organization {OrgId}", organizationId);
-        return await ingestionRunRepository.GetStatsAsync(request, cancellationToken);
+        return await ingestionRunRepository.GetStatsAsync(organizationId, request, cancellationToken);
     }
 
     /// <inheritdoc />

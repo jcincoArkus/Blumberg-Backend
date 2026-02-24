@@ -18,6 +18,9 @@ public enum SensorHealthStatus
     /// <summary>Sensor data is stale (no recent readings).</summary>
     Stale,
 
+    /// <summary>Sensor has not reported (no readings / beyond critical threshold).</summary>
+    Silent,
+
     /// <summary>Sensor is offline or unreachable.</summary>
     Offline
 }

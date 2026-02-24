@@ -29,22 +29,26 @@ public interface IIngestionRunRepository
     Task<Shared.Entity.IngestionRun?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets paginated ingestion runs with optional filters
+    /// Gets paginated ingestion runs with optional filters (scoped to organization).
     /// </summary>
+    /// <param name="organizationId">Organization scope</param>
     /// <param name="request">Query parameters (pagination, status, source, date range)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Runs and total count</returns>
     Task<(IReadOnlyList<Shared.Entity.IngestionRun> Items, int TotalCount)> GetPagedAsync(
+        Guid organizationId,
         GetIngestionRunsRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets aggregated stats (total/accepted/rejected records) for runs matching the filter
+    /// Gets aggregated stats (total/accepted/rejected records) for runs matching the filter (scoped to organization).
     /// </summary>
+    /// <param name="organizationId">Organization scope</param>
     /// <param name="request">Filter (status, source, date range); pagination is ignored</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Aggregated stats</returns>
     Task<Modules.Ingestion.Dto.IngestionStatsResponse> GetStatsAsync(
+        Guid organizationId,
         GetIngestionRunsRequest request,
         CancellationToken cancellationToken = default);
 

@@ -50,6 +50,7 @@ public class SensorReadingRepository(ApplicationDbContext context, ILogger<Senso
         logger.LogDebug("Querying latest reading per sensor for {Count} sensors", sensorIds.Count);
 
         var allRecent = await context.SensorReadings
+            .Include(r => r.IngestionRun)
             .Where(r => sensorIds.Contains(r.SensorId))
             .OrderByDescending(r => r.TimestampUtc)
             .ToListAsync();
