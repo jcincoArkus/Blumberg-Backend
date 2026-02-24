@@ -67,6 +67,7 @@ public class IngestionService(
                     Id = Guid.NewGuid(),
                     IngestionRunId = run.Id,
                     RowIndex = i,
+                    SensorId = item.SensorId,
                     RejectionReason = rejectionReason!
                 });
             }
@@ -136,6 +137,29 @@ public class IngestionService(
     {
         logger.LogDebug("Getting ingestion stats for organization {OrgId}", organizationId);
         return await ingestionRunRepository.GetStatsAsync(request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<SensorRejectionCountResponse> GetSensorRejectionCountAsync(
+        Guid organizationId,
+        Guid sensorId,
+        GetSensorRejectionCountRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Getting rejection count for sensor {SensorId} in organization {OrgId}", sensorId, organizationId);
+
+        var from = request.From ?? DateTime.UtcNow.AddHours(-24);
+        var to = request.To ?? DateTime.UtcNow;
+
+        var count = await ingestionRunRepository.GetRejectedCountBySensorAsync(
+            organizationId, sensorId, from, to, cancellationToken);
+
+        return new SensorRejectionCountResponse
+        {
+            SensorId = sensorId,
+            Count = count
+        };
     }
 
     private async Task<(SensorReading? Accepted, string? RejectionReason)> ValidateAndBuildReadingAsync(

@@ -165,7 +165,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
             if (request.HealthStatus.HasValue && healthStatus != request.HealthStatus.Value)
                 continue;
 
-            var lastSeenAt = reading?.TimestampUtc;
+            var lastSeenAt = sensor.LastSeenAt ?? reading?.TimestampUtc;
             countsBySensor.TryGetValue(sensor.Id, out var received);
             var reliability = expectedPerSensor > 0
                 ? Math.Round(Math.Min(100.0, (received / (double)expectedPerSensor) * 100.0), 1)
@@ -209,7 +209,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
         var healthStatus = ComputeHealthStatus(sensor, reading);
         var now = DateTime.UtcNow;
-        var lastSeenAt = reading?.TimestampUtc;
+        var lastSeenAt = sensor.LastSeenAt ?? reading?.TimestampUtc;
         var freshnessSeconds = lastSeenAt.HasValue ? (now - lastSeenAt.Value).TotalSeconds : (double?)null;
 
         var windowEnd = now;

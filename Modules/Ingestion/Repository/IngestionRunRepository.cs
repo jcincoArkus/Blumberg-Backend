@@ -48,6 +48,21 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
 
         context.IngestionRuns.Add(run);
         context.SensorReadings.AddRange(acceptedReadings);
+
+        // Update Sensor.LastSeenAt for each sensor in the batch (max reading timestamp per sensor)
+        var maxTimestampBySensor = acceptedReadings
+            .GroupBy(r => r.SensorId)
+            .ToDictionary(g => g.Key, g => g.Max(r => r.TimestampUtc));
+        foreach (var (sensorId, timestampUtc) in maxTimestampBySensor)
+        {
+            var sensor = await context.Sensors.FindAsync([sensorId], cancellationToken);
+            if (sensor != null)
+            {
+                if (!sensor.LastSeenAt.HasValue || sensor.LastSeenAt.Value < timestampUtc)
+                    sensor.LastSeenAt = timestampUtc;
+            }
+        }
+
         await context.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Created ingestion run {RunId} with {Accepted} accepted, {Rejected} rejected",
@@ -136,5 +151,26 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
             .FirstOrDefaultAsync(cancellationToken);
 
         return stats ?? new IngestionStatsResponse();
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<int> GetRejectedCountBySensorAsync(
+        Guid organizationId,
+        Guid sensorId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Getting rejected count for sensor {SensorId} from {From} to {To}", sensorId, from, to);
+
+        var count = await context.IngestionRuns
+            .Where(r => r.OrganizationId == organizationId && r.DeletedAt == null)
+            .Where(r => r.CreatedAt >= from && r.CreatedAt <= to)
+            .SelectMany(r => r.RejectedReadings)
+            .CountAsync(rr => rr.SensorId == sensorId, cancellationToken);
+
+        logger.LogInformation("Sensor {SensorId} has {Count} rejected readings in range", sensorId, count);
+        return count;
     }
 }

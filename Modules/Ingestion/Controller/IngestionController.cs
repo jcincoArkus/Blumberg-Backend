@@ -107,6 +107,41 @@ public class IngestionController(
     }
 
     /// <summary>
+    /// Get rejection count for a specific sensor in runs within a time range (per-sensor tracing).
+    /// </summary>
+    /// <param name="sensorId">Sensor ID</param>
+    /// <param name="request">Time range (From, To); defaults to last 24h if omitted</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Sensor ID and rejection count</returns>
+    [HttpGet("sensors/{sensorId}/rejection-count", Name = "GetSensorRejectionCountV1")]
+    [ProducesResponseType(typeof(SensorRejectionCountResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SensorRejectionCountResponse>> GetSensorRejectionCount(
+        Guid sensorId,
+        [FromQuery] GetSensorRejectionCountRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = tenantContext.CurrentOrganizationId;
+        if (orgId == null)
+        {
+            logger.LogWarning("Get sensor rejection count called without tenant context");
+            return Unauthorized(new { message = "Organization context is required" });
+        }
+
+        try
+        {
+            var response = await ingestionService.GetSensorRejectionCountAsync(orgId.Value, sensorId, request, cancellationToken);
+            logger.LogInformation("Retrieved rejection count {Count} for sensor {SensorId}", response.Count, sensorId);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting rejection count for sensor {SensorId}", sensorId);
+            return StatusCode(500, new { message = "An error occurred while getting sensor rejection count" });
+        }
+    }
+
+    /// <summary>
     /// Get aggregated stats (total/accepted/rejected records) for ingestion runs in a time range (e.g. last 24h)
     /// </summary>
     /// <param name="request">Filter (status, source, from, to)</param>
@@ -220,6 +255,7 @@ public class IngestionController(
             RejectedReadings = run.RejectedReadings.Select(r => new RejectedReadingResult
             {
                 RowIndex = r.RowIndex,
+                SensorId = r.SensorId,
                 RejectionReason = r.RejectionReason
             }).ToList()
         };

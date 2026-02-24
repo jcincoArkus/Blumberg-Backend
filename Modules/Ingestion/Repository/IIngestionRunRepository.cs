@@ -47,4 +47,21 @@ public interface IIngestionRunRepository
     Task<Modules.Ingestion.Dto.IngestionStatsResponse> GetStatsAsync(
         GetIngestionRunsRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the count of rejected readings for a given sensor in runs within the time range (run CreatedAt).
+    /// Only rejections with SensorId set (e.g. invalid sensor id, invalid unit) are traced per sensor.
+    /// </summary>
+    /// <param name="organizationId">Organization scope</param>
+    /// <param name="sensorId">Sensor to count rejections for</param>
+    /// <param name="from">Start of range (UTC, inclusive)</param>
+    /// <param name="to">End of range (UTC, inclusive)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Count of rejected readings for that sensor in the range</returns>
+    Task<int> GetRejectedCountBySensorAsync(
+        Guid organizationId,
+        Guid sensorId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default);
 }
