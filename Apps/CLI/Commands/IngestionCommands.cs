@@ -56,7 +56,11 @@ public static class IngestionCommands
         var rejectChanceOption = new Option<double>(
             ["--reject-chance", "-r"],
             getDefaultValue: () => 0.2,
-            "Chance (0.0–1.0) that one reading in each batch is invalid (invalid unit or unknown sensor). Default: 0.2.");
+            "Chance (0.0–1.0) that one reading in each batch is invalid (invalid unit or unknown sensor). Default: 0.2. Only applies to 'healthy' sensors in variety mode.");
+        var noVarietyOption = new Option<bool>(
+            ["--no-variety"],
+            getDefaultValue: () => false,
+            "Disable health-variety mode: treat all sensors the same (no offline/stale/silent/invalid-unit partitioning).");
 
         command.AddOption(baseUrlOption);
         command.AddOption(apiKeyOption);
@@ -65,8 +69,9 @@ public static class IngestionCommands
         command.AddOption(intervalOption);
         command.AddOption(batchSizeOption);
         command.AddOption(rejectChanceOption);
+        command.AddOption(noVarietyOption);
 
-        command.SetHandler(async (string baseUrl, string? apiKey, string? orgIdStr, string? sensorIdsStr, int interval, int batchSize, double rejectChance) =>
+        command.SetHandler(async (string baseUrl, string? apiKey, string? orgIdStr, string? sensorIdsStr, int interval, int batchSize, double rejectChance, bool noVariety) =>
         {
             using var cts = new CancellationTokenSource();
             Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
@@ -109,11 +114,24 @@ public static class IngestionCommands
             }
 
             batchSize = Math.Clamp(batchSize, 1, 5000);
-            var readingsPerBatch = Math.Min(batchSize, sensorInfos.Count);
             rejectChance = Math.Clamp(rejectChance, 0, 1);
 
-            logger.LogInformation("Ingestion simulator started. Base URL: {BaseUrl}, sensors: {Count}, interval: {Interval}s, reject chance: {RejectChance:P0}. Press Ctrl+C to stop.",
-                baseUrl, sensorInfos.Count, interval, rejectChance);
+            // Health-variety mode: partition sensors into offline / invalid / stale / silent / healthy (only when using org-id and enough sensors)
+            SensorPartition? partition = null;
+            if (!noVariety && !string.IsNullOrWhiteSpace(orgIdStr) && sensorInfos.Count >= 5)
+            {
+                partition = BuildPartition(sensorInfos);
+                logger.LogInformation(
+                    "Health variety mode: 1 offline (no data), 1 invalid unit (always rejected), {Stale} stale (~11 min), {Silent} silent (~31 min), {Healthy} healthy (every {Interval}s).",
+                    partition.Stale.Count, partition.Silent.Count, partition.Healthy.Count, interval);
+            }
+            else
+            {
+                logger.LogInformation("Ingestion simulator started. Base URL: {BaseUrl}, sensors: {Count}, interval: {Interval}s, reject chance: {RejectChance:P0}. Press Ctrl+C to stop.",
+                    baseUrl, sensorInfos.Count, interval, rejectChance);
+            }
+
+            var readingsPerBatch = Math.Min(batchSize, sensorInfos.Count);
 
             using var http = new HttpClient();
             http.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
@@ -124,45 +142,51 @@ public static class IngestionCommands
             while (!ct.IsCancellationRequested)
             {
                 run++;
-                var readings = new List<SimulateReadingDto>();
-                for (var i = 0; i < readingsPerBatch; i++)
-                {
-                    var info = sensorInfos[i % sensorInfos.Count];
-                    var value = GeneratePlausibleValue(info.Kind, random);
-                    readings.Add(new SimulateReadingDto
-                    {
-                        SensorId = info.SensorId,
-                        Value = value,
-                        TimestampUtc = DateTime.UtcNow,
-                        Unit = (int)info.Unit
-                    });
-                }
+                List<SimulateReadingDto> readings;
 
-                // Optionally replace one reading with a bad one to trigger rejection (invalid unit or sensor not found)
-                if (rejectChance > 0 && random.NextDouble() < rejectChance && readings.Count > 0)
+                if (partition != null)
                 {
-                    var badIndex = random.Next(readings.Count);
-                    if (random.Next(2) == 0)
+                    readings = BuildVarietyBatch(partition, random, rejectChance, run, logger);
+                }
+                else
+                {
+                    readings = new List<SimulateReadingDto>();
+                    for (var i = 0; i < readingsPerBatch; i++)
                     {
-                        readings[badIndex] = new SimulateReadingDto
+                        var info = sensorInfos[i % sensorInfos.Count];
+                        var value = GeneratePlausibleValue(info.Kind, random);
+                        readings.Add(new SimulateReadingDto
                         {
-                            SensorId = readings[badIndex].SensorId,
-                            Value = readings[badIndex].Value,
-                            TimestampUtc = readings[badIndex].TimestampUtc,
-                            Unit = 99 // Invalid unit -> "Invalid unit"
-                        };
-                        logger.LogDebug("Run {Run}: injected invalid unit (Unit=99) at index {Index}.", run, badIndex);
-                    }
-                    else
-                    {
-                        readings[badIndex] = new SimulateReadingDto
-                        {
-                            SensorId = Guid.Empty, // Non-existent sensor -> "Sensor not found or access denied"
-                            Value = 0,
+                            SensorId = info.SensorId,
+                            Value = value,
                             TimestampUtc = DateTime.UtcNow,
-                            Unit = 0
-                        };
-                        logger.LogDebug("Run {Run}: injected unknown sensor (SensorId=Empty) at index {Index}.", run, badIndex);
+                            Unit = (int)info.Unit
+                        });
+                    }
+
+                    if (rejectChance > 0 && random.NextDouble() < rejectChance && readings.Count > 0)
+                    {
+                        var badIndex = random.Next(readings.Count);
+                        if (random.Next(2) == 0)
+                        {
+                            readings[badIndex] = new SimulateReadingDto
+                            {
+                                SensorId = readings[badIndex].SensorId,
+                                Value = readings[badIndex].Value,
+                                TimestampUtc = readings[badIndex].TimestampUtc,
+                                Unit = 99
+                            };
+                        }
+                        else
+                        {
+                            readings[badIndex] = new SimulateReadingDto
+                            {
+                                SensorId = Guid.Empty,
+                                Value = 0,
+                                TimestampUtc = DateTime.UtcNow,
+                                Unit = 0
+                            };
+                        }
                     }
                 }
 
@@ -212,9 +236,131 @@ public static class IngestionCommands
             sensorIdsOption,
             intervalOption,
             batchSizeOption,
-            rejectChanceOption);
+            rejectChanceOption,
+            noVarietyOption);
 
         return command;
+    }
+
+    /// <summary>Stable partition of sensors for health-variety mode. Index 0=offline, 1=invalid, 2-4=stale, 5-7=silent, 8+=healthy.</summary>
+    private sealed class SensorPartition
+    {
+        public SensorReadingInfo Offline { get; init; }   // 1 sensor: never send
+        public SensorReadingInfo InvalidUnit { get; init; } // 1 sensor: always send with Unit=99 (rejected)
+        public IReadOnlyList<SensorReadingInfo> Stale { get; init; } = [];   // up to 3: send with timestamp -11 min
+        public IReadOnlyList<SensorReadingInfo> Silent { get; init; } = []; // up to 3: send with timestamp -31 min
+        public IReadOnlyList<SensorReadingInfo> Healthy { get; init; } = []; // rest: send with Now, optional reject chance
+    }
+
+    private const int StaleDelayMinutes = 11;  // Backend warning threshold 10 min -> last seen 11 min = stale
+    private const int SilentDelayMinutes = 31; // Backend critical 30 min -> last seen 31 min = offline/silent
+
+    private static SensorPartition BuildPartition(List<SensorReadingInfo> sensorInfos)
+    {
+        var list = sensorInfos; // stable order: 0=offline, 1=invalid, 2-4=stale, 5-7=silent, 8+=healthy
+        var offline = list[0];
+        var invalidUnit = list[1];
+        var staleCount = Math.Min(3, Math.Max(0, list.Count - 2));
+        var stale = list.Skip(2).Take(staleCount).ToList();
+        var silentCount = Math.Min(3, Math.Max(0, list.Count - 2 - staleCount));
+        var silent = list.Skip(2 + staleCount).Take(silentCount).ToList();
+        var healthy = list.Skip(2 + staleCount + silentCount).ToList();
+        return new SensorPartition
+        {
+            Offline = offline,
+            InvalidUnit = invalidUnit,
+            Stale = stale,
+            Silent = silent,
+            Healthy = healthy
+        };
+    }
+
+    private static List<SimulateReadingDto> BuildVarietyBatch(
+        SensorPartition partition,
+        Random random,
+        double rejectChance,
+        int run,
+        ILogger logger)
+    {
+        var now = DateTime.UtcNow;
+        var staleTs = now.AddMinutes(-StaleDelayMinutes);
+        var silentTs = now.AddMinutes(-SilentDelayMinutes);
+        var readings = new List<SimulateReadingDto>();
+
+        // Invalid unit: one reading with valid SensorId but Unit=99 -> always rejected, sensor shows ingestion errors and no LastSeenAt
+        readings.Add(new SimulateReadingDto
+        {
+            SensorId = partition.InvalidUnit.SensorId,
+            Value = GeneratePlausibleValue(partition.InvalidUnit.Kind, random),
+            TimestampUtc = now,
+            Unit = 99
+        });
+
+        // Stale: send with timestamp 11 min ago
+        foreach (var info in partition.Stale)
+        {
+            readings.Add(new SimulateReadingDto
+            {
+                SensorId = info.SensorId,
+                Value = GeneratePlausibleValue(info.Kind, random),
+                TimestampUtc = staleTs,
+                Unit = (int)info.Unit
+            });
+        }
+
+        // Silent: send with timestamp 31 min ago
+        foreach (var info in partition.Silent)
+        {
+            readings.Add(new SimulateReadingDto
+            {
+                SensorId = info.SensorId,
+                Value = GeneratePlausibleValue(info.Kind, random),
+                TimestampUtc = silentTs,
+                Unit = (int)info.Unit
+            });
+        }
+
+        // Healthy: send with Now; optionally corrupt one with reject chance
+        foreach (var info in partition.Healthy)
+        {
+            readings.Add(new SimulateReadingDto
+            {
+                SensorId = info.SensorId,
+                Value = GeneratePlausibleValue(info.Kind, random),
+                TimestampUtc = now,
+                Unit = (int)info.Unit
+            });
+        }
+
+        if (partition.Healthy.Count > 0 && rejectChance > 0 && random.NextDouble() < rejectChance)
+        {
+            var healthyReadings = readings.Count - partition.Healthy.Count;
+            var badIndex = healthyReadings + random.Next(partition.Healthy.Count);
+            if (random.Next(2) == 0)
+            {
+                readings[badIndex] = new SimulateReadingDto
+                {
+                    SensorId = readings[badIndex].SensorId,
+                    Value = readings[badIndex].Value,
+                    TimestampUtc = readings[badIndex].TimestampUtc,
+                    Unit = 99
+                };
+                logger.LogDebug("Run {Run}: injected invalid unit in healthy batch at index {Index}.", run, badIndex);
+            }
+            else
+            {
+                readings[badIndex] = new SimulateReadingDto
+                {
+                    SensorId = Guid.Empty,
+                    Value = 0,
+                    TimestampUtc = now,
+                    Unit = 0
+                };
+                logger.LogDebug("Run {Run}: injected unknown sensor in healthy batch at index {Index}.", run, badIndex);
+            }
+        }
+
+        return readings;
     }
 
     private sealed record SensorReadingInfo(Guid SensorId, SensorTypeKind Kind, Unit Unit);
