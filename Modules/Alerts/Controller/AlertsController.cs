@@ -62,7 +62,34 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
         }
     }
 
-    /// <summary>Resolve an active alert</summary>
+    /// <summary>Acknowledge an active alert</summary>
+    [HttpPatch("{id}/acknowledge", Name = "AcknowledgeAlertV1")]
+    [ProducesResponseType(typeof(AlertResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<AlertResponse>> Acknowledge(Guid id)
+    {
+        try
+        {
+            var entity = await service.AcknowledgeAsync(id);
+            return Ok(MapToResponse(entity));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = $"Alert with ID {id} was not found" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error acknowledging alert {Id}", id);
+            return StatusCode(500, new { message = "An error occurred while acknowledging alert" });
+        }
+    }
+
+    /// <summary>Resolve an active or acknowledged alert</summary>
     [HttpPatch("{id}/resolve", Name = "ResolveAlertV1")]
     [ProducesResponseType(typeof(AlertResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

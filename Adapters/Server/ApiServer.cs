@@ -145,7 +145,10 @@ public class ApiServer
             });
         }
 
-        // CORS before Auth so preflight gets headers; skip HTTPS redirect in Dev so http://localhost works
+        // Routing must run before CORS so the CORS middleware can apply the policy correctly (required for preflight and CORS headers on responses)
+        app.UseRouting();
+
+        // CORS after Routing, before Auth — so preflight OPTIONS and all responses get Access-Control-Allow-Origin; skip HTTPS redirect in Dev so http://localhost works
         app.UseCors("AllowAll");
         if (!app.Environment.IsDevelopment())
         {

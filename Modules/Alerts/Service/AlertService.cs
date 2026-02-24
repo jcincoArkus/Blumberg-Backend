@@ -40,6 +40,27 @@ public class AlertService(
 
     /// <inheritdoc />
     [Span]
+    public virtual async Task<Alert> AcknowledgeAsync(Guid id)
+    {
+        logger.LogDebug("Acknowledging alert {Id}", id);
+
+        var alert = await alertRepository.GetByIdAsync(id);
+        if (alert == null)
+        {
+            logger.LogWarning("Alert not found: {Id}", id);
+            throw new KeyNotFoundException($"Alert with ID {id} was not found");
+        }
+
+        if (alert.Status != AlertStatus.Active)
+            throw new InvalidOperationException($"Alert {id} is not active and cannot be acknowledged");
+
+        alert.Status = AlertStatus.Acknowledged;
+
+        return await alertRepository.UpdateAsync(alert);
+    }
+
+    /// <inheritdoc />
+    [Span]
     public virtual async Task<Alert> ResolveAsync(Guid id)
     {
         logger.LogDebug("Resolving alert {Id}", id);
@@ -51,8 +72,8 @@ public class AlertService(
             throw new KeyNotFoundException($"Alert with ID {id} was not found");
         }
 
-        if (alert.Status != AlertStatus.Active)
-            throw new InvalidOperationException($"Alert {id} is not active and cannot be resolved");
+        if (alert.Status != AlertStatus.Active && alert.Status != AlertStatus.Acknowledged)
+            throw new InvalidOperationException($"Alert {id} is not active or acknowledged and cannot be resolved");
 
         alert.Status = AlertStatus.Resolved;
         alert.ResolvedAt = DateTime.UtcNow;

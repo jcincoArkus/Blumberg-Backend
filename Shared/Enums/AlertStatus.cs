@@ -6,5 +6,6 @@ namespace Shared.Enums;
 public enum AlertStatus
 {
     Active,
+    Acknowledged,
     Resolved
 }

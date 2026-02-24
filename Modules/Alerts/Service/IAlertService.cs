@@ -19,7 +19,12 @@ public interface IAlertService
     Task<Alert> GetByIdAsync(Guid id);
 
     /// <summary>
-    /// Resolves an active alert, throws KeyNotFoundException if not found or InvalidOperationException if not active
+    /// Acknowledges an active alert, throws KeyNotFoundException if not found or InvalidOperationException if not active
+    /// </summary>
+    Task<Alert> AcknowledgeAsync(Guid id);
+
+    /// <summary>
+    /// Resolves an active or acknowledged alert, throws KeyNotFoundException if not found or InvalidOperationException if not active/acknowledged
     /// </summary>
     Task<Alert> ResolveAsync(Guid id);
 }
