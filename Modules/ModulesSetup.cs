@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Modules.Admins;
+using Modules.Alerts;
 using Modules.Auth;
 using Modules.Equipment;
 using Modules.Ingestion;
@@ -31,6 +32,7 @@ public static class ModulesSetup
         services.AddSensorModule();
         services.AddSensorTypesModule();
         services.AddThresholdsModule();
+        services.AddAlertsModule();
         services.AddIngestionModule();
         services.AddPermissionsModule();
         return services;
@@ -49,6 +51,7 @@ public static class ModulesSetup
         yield return typeof(Sensors.Controller.SensorController).Assembly;
         yield return typeof(Ingestion.Controller.IngestionController).Assembly;
         yield return typeof(Permissions.Controller.RolesController).Assembly;
+        yield return typeof(Alerts.Controller.AlertsController).Assembly;
     }
 }
 

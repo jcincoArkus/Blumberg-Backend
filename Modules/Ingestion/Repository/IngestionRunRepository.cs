@@ -18,10 +18,11 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
         IngestionRun run,
         IReadOnlyList<IngestionRejectedReading> rejectedReadings,
         IReadOnlyList<SensorReading> acceptedReadings,
+        IReadOnlyList<Alert> newAlerts,
         CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Creating ingestion run with {Rejected} rejected and {Accepted} accepted readings",
-            rejectedReadings.Count, acceptedReadings.Count);
+        logger.LogDebug("Creating ingestion run with {Rejected} rejected, {Accepted} accepted readings, {Alerts} alerts",
+            rejectedReadings.Count, acceptedReadings.Count, newAlerts.Count);
 
         if (run.Id == Guid.Empty)
             run.Id = Guid.NewGuid();
@@ -63,10 +64,11 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
             }
         }
 
+        context.Alerts.AddRange(newAlerts);
         await context.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Created ingestion run {RunId} with {Accepted} accepted, {Rejected} rejected",
-            run.Id, run.AcceptedRecords, run.RejectedRecords);
+        logger.LogInformation("Created ingestion run {RunId} with {Accepted} accepted, {Rejected} rejected, {Alerts} alerts",
+            run.Id, run.AcceptedRecords, run.RejectedRecords, newAlerts.Count);
     }
 
     /// <inheritdoc />

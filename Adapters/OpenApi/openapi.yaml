@@ -198,6 +198,201 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
       security:
         - Bearer: [ ]
+  /api/v1/alerts:
+    get:
+      tags:
+        - Alerts
+      operationId: GetAllAlertsV1
+      parameters:
+        - name: Status
+          in: query
+          schema:
+            $ref: '#/components/schemas/AlertStatus'
+        - name: SensorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: EquipmentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: SiteId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: Search
+          in: query
+          schema:
+            type: string
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/AlertResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponsePagedResponse'
+      security:
+        - Bearer: [ ]
+  '/api/v1/alerts/{id}':
+    get:
+      tags:
+        - Alerts
+      operationId: GetAlertByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/alerts/{id}/acknowledge':
+    patch:
+      tags:
+        - Alerts
+      operationId: AcknowledgeAlertV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
+  '/api/v1/alerts/{id}/resolve':
+    patch:
+      tags:
+        - Alerts
+      operationId: ResolveAlertV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - Bearer: [ ]
   /api/v1/auth/login:
     post:
       tags:
@@ -2332,6 +2527,76 @@ components:
           format: int32
           readOnly: true
       additionalProperties: false
+    AlertResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        equipmentId:
+          type: string
+          format: uuid
+        siteId:
+          type: string
+          format: uuid
+        severity:
+          type: string
+          nullable: true
+        triggeredValue:
+          type: number
+          format: double
+        thresholdMin:
+          type: number
+          format: double
+        thresholdMax:
+          type: number
+          format: double
+        triggeredAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          nullable: true
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    AlertResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    AlertStatus:
+      enum:
+        - 0
+        - 1
+        - 2
+      type: integer
+      format: int32
     ApiKeyListResponse:
       type: object
       properties:
@@ -3455,6 +3720,7 @@ components:
       in: header
 tags:
   - name: Admins
+  - name: Alerts
   - name: Authentication
   - name: Equipment
   - name: Ingestion

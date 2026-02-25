@@ -52,8 +52,4 @@ public class SensorReading : BaseEntity
     /// </summary>
     public IngestionRun? IngestionRun { get; set; }
 
-    /// <summary>
-    /// Alerts triggered by this sensor reading
-    /// </summary>
-    public ICollection<Alert> Alerts { get; set; } = new List<Alert>();
 }
