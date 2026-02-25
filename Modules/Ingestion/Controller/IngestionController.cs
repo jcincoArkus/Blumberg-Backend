@@ -50,10 +50,10 @@ public class IngestionController(
 
         try
         {
-            var response = await ingestionService.IngestReadingsAsync(orgId.Value, readings, cancellationToken);
+            var run = await ingestionService.IngestReadingsAsync(orgId.Value, readings, cancellationToken);
             logger.LogInformation("Ingestion run {RunId} created: {Accepted} accepted, {Rejected} rejected",
-                response.RunId, response.AcceptedRecords, response.RejectedRecords);
-            return Ok(response);
+                run.Id, run.AcceptedRecords, run.RejectedRecords);
+            return Ok(MapToIngestReadingsResponse(run));
         }
         catch (InvalidOperationException ex)
         {
@@ -103,6 +103,41 @@ public class IngestionController(
         {
             logger.LogError(ex, "Error getting ingestion runs");
             return StatusCode(500, new { message = "An error occurred while getting ingestion runs" });
+        }
+    }
+
+    /// <summary>
+    /// Get rejection count for a specific sensor in runs within a time range (per-sensor tracing).
+    /// </summary>
+    /// <param name="sensorId">Sensor ID</param>
+    /// <param name="request">Time range (From, To); defaults to last 24h if omitted</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Sensor ID and rejection count</returns>
+    [HttpGet("sensors/{sensorId}/rejection-count", Name = "GetSensorRejectionCountV1")]
+    [ProducesResponseType(typeof(SensorRejectionCountResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SensorRejectionCountResponse>> GetSensorRejectionCount(
+        Guid sensorId,
+        [FromQuery] GetSensorRejectionCountRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = tenantContext.CurrentOrganizationId;
+        if (orgId == null)
+        {
+            logger.LogWarning("Get sensor rejection count called without tenant context");
+            return Unauthorized(new { message = "Organization context is required" });
+        }
+
+        try
+        {
+            var response = await ingestionService.GetSensorRejectionCountAsync(orgId.Value, sensorId, request, cancellationToken);
+            logger.LogInformation("Retrieved rejection count {Count} for sensor {SensorId}", response.Count, sensorId);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting rejection count for sensor {SensorId}", sensorId);
+            return StatusCode(500, new { message = "An error occurred while getting sensor rejection count" });
         }
     }
 
@@ -178,6 +213,18 @@ public class IngestionController(
         }
     }
 
+    private static IngestReadingsResponse MapToIngestReadingsResponse(IngestionRun run)
+    {
+        return new IngestReadingsResponse
+        {
+            RunId = run.Id,
+            TotalRecords = run.TotalRecords,
+            AcceptedRecords = run.AcceptedRecords,
+            RejectedRecords = run.RejectedRecords,
+            Status = run.Status.ToString()
+        };
+    }
+
     private static IngestionRunListResponse MapToListResponse(IngestionRun run)
     {
         return new IngestionRunListResponse
@@ -220,6 +267,7 @@ public class IngestionController(
             RejectedReadings = run.RejectedReadings.Select(r => new RejectedReadingResult
             {
                 RowIndex = r.RowIndex,
+                SensorId = r.SensorId,
                 RejectionReason = r.RejectionReason
             }).ToList()
         };

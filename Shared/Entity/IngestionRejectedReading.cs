@@ -26,6 +26,11 @@ public class IngestionRejectedReading
     public int RowIndex { get; set; }
 
     /// <summary>
+    /// Sensor ID from the ingestion payload (when available). Enables per-sensor rejection tracing.
+    /// </summary>
+    public Guid? SensorId { get; set; }
+
+    /// <summary>
     /// Reason the reading was rejected
     /// </summary>
     public string RejectionReason { get; set; } = string.Empty;

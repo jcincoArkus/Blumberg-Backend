@@ -13,9 +13,9 @@ public interface IIngestionService
     /// <param name="organizationId">Current organization (from tenant context)</param>
     /// <param name="readings">Batch of readings to ingest (1 to 5000 items)</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Run ID and summary (total, accepted, rejected, status)</returns>
+    /// <returns>The created ingestion run entity</returns>
     /// <exception cref="InvalidOperationException">When batch is empty or exceeds max size</exception>
-    Task<IngestReadingsResponse> IngestReadingsAsync(
+    Task<Shared.Entity.IngestionRun> IngestReadingsAsync(
         Guid organizationId,
         IReadOnlyList<IngestReadingItem> readings,
         CancellationToken cancellationToken = default);
@@ -55,5 +55,19 @@ public interface IIngestionService
     Task<Modules.Ingestion.Dto.IngestionStatsResponse> GetStatsAsync(
         Guid organizationId,
         GetIngestionRunsRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the count of rejected readings for a sensor in runs within the time range (for per-sensor tracing).
+    /// </summary>
+    /// <param name="organizationId">Current organization</param>
+    /// <param name="sensorId">Sensor to get rejection count for</param>
+    /// <param name="request">Time range (From, To)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Sensor ID and rejection count in the range</returns>
+    Task<SensorRejectionCountResponse> GetSensorRejectionCountAsync(
+        Guid organizationId,
+        Guid sensorId,
+        GetSensorRejectionCountRequest request,
         CancellationToken cancellationToken = default);
 }

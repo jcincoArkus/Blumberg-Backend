@@ -58,6 +58,11 @@ public class Sensor : BaseEntity
     public Threshold Threshold { get; set; } = null!;
 
     /// <summary>
+    /// UTC timestamp of the most recent reading received for this sensor. Updated on each ingestion.
+    /// </summary>
+    public DateTime? LastSeenAt { get; set; }
+
+    /// <summary>
     /// Sensor readings produced by this sensor
     /// </summary>
     public ICollection<SensorReading> SensorReadings { get; set; } = new List<SensorReading>();

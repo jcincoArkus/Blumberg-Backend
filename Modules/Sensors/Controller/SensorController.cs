@@ -33,7 +33,7 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
             var (items, totalCount) = await sensorService.GetHealthListAsync(request);
             return Ok(new PagedResponse<SensorHealthListItemResponse>
             {
-                Items = items,
+                Items = items.Select(MapHealthListToResponse).ToList(),
                 TotalCount = totalCount,
                 Page = request.Page,
                 PageSize = request.PageSize
@@ -60,8 +60,8 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
 
         try
         {
-            var detail = await sensorService.GetHealthDetailAsync(id);
-            return Ok(detail);
+            var result = await sensorService.GetHealthDetailAsync(id);
+            return Ok(MapHealthDetailToResponse(result));
         }
         catch (KeyNotFoundException ex)
         {
@@ -309,6 +309,44 @@ public class SensorController(ISensorService sensorService, ILogger<SensorContro
             OrganizationId = reading.OrganizationId,
             IngestionRunId = reading.IngestionRunId,
             CreatedAt = reading.CreatedAt
+        };
+    }
+
+    private static SensorHealthListItemResponse MapHealthListToResponse(SensorHealthListResult result)
+    {
+        return new SensorHealthListItemResponse
+        {
+            Id = result.Id,
+            Name = result.Name,
+            SensorType = result.SensorType,
+            HealthStatus = result.HealthStatus,
+            LastSeenAt = result.LastSeenAt,
+            ReliabilityScore = result.ReliabilityScore,
+            SiteId = result.SiteId,
+            SiteName = result.SiteName,
+            EquipmentId = result.EquipmentId,
+            EquipmentName = result.EquipmentName,
+            LastValue = result.LastValue,
+            Unit = result.Unit,
+            IngestionSource = result.IngestionSource
+        };
+    }
+
+    private static SensorHealthDetailResponse MapHealthDetailToResponse(SensorHealthDetailResult result)
+    {
+        return new SensorHealthDetailResponse
+        {
+            SensorId = result.SensorId,
+            Name = result.Name,
+            HealthStatus = result.HealthStatus,
+            LastSeenAt = result.LastSeenAt,
+            ReliabilityScore = result.ReliabilityScore,
+            LastValue = result.LastValue,
+            Unit = result.Unit,
+            FreshnessSeconds = result.FreshnessSeconds,
+            RecentReadingsCount = result.RecentReadingsCount,
+            ExpectedPoints = result.ExpectedPoints,
+            ReceivedPoints = result.ReceivedPoints
         };
     }
 }

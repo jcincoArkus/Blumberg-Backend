@@ -23,7 +23,7 @@ public class IngestionService(
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<IngestReadingsResponse> IngestReadingsAsync(
+    public virtual async Task<IngestionRun> IngestReadingsAsync(
         Guid organizationId,
         IReadOnlyList<IngestReadingItem> readings,
         CancellationToken cancellationToken = default)
@@ -67,6 +67,7 @@ public class IngestionService(
                     Id = Guid.NewGuid(),
                     IngestionRunId = run.Id,
                     RowIndex = i,
+                    SensorId = item.SensorId,
                     RejectionReason = rejectionReason!
                 });
             }
@@ -86,14 +87,7 @@ public class IngestionService(
         logger.LogInformation("Ingestion run {RunId} completed: {Accepted} accepted, {Rejected} rejected",
             run.Id, run.AcceptedRecords, run.RejectedRecords);
 
-        return new IngestReadingsResponse
-        {
-            RunId = run.Id,
-            TotalRecords = run.TotalRecords,
-            AcceptedRecords = run.AcceptedRecords,
-            RejectedRecords = run.RejectedRecords,
-            Status = run.Status.ToString()
-        };
+        return run;
     }
 
     /// <inheritdoc />
@@ -104,7 +98,7 @@ public class IngestionService(
         CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Getting ingestion runs for organization {OrgId}", organizationId);
-        return await ingestionRunRepository.GetPagedAsync(request, cancellationToken);
+        return await ingestionRunRepository.GetPagedAsync(organizationId, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -135,7 +129,30 @@ public class IngestionService(
         CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Getting ingestion stats for organization {OrgId}", organizationId);
-        return await ingestionRunRepository.GetStatsAsync(request, cancellationToken);
+        return await ingestionRunRepository.GetStatsAsync(organizationId, request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<SensorRejectionCountResponse> GetSensorRejectionCountAsync(
+        Guid organizationId,
+        Guid sensorId,
+        GetSensorRejectionCountRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Getting rejection count for sensor {SensorId} in organization {OrgId}", sensorId, organizationId);
+
+        var from = request.From ?? DateTime.UtcNow.AddHours(-24);
+        var to = request.To ?? DateTime.UtcNow;
+
+        var count = await ingestionRunRepository.GetRejectedCountBySensorAsync(
+            organizationId, sensorId, from, to, cancellationToken);
+
+        return new SensorRejectionCountResponse
+        {
+            SensorId = sensorId,
+            Count = count
+        };
     }
 
     private async Task<(SensorReading? Accepted, string? RejectionReason)> ValidateAndBuildReadingAsync(

@@ -134,15 +134,16 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
         return result;
     }
 
-    // Aligned with frontend mock (sensor-health.ts): expectedInterval 300s, warning 600s, critical 1800s
-    private const int WarningStaleSeconds = 600;       // 10 min — same as warningThresholdSeconds
-    private const int CriticalStaleSeconds = 1800;     // 30 min — same as criticalThresholdSeconds
+    // Global expected reporting interval (5 min). Freshness: Fresh ≤ 1×, Stale > 2×, Offline > 5×.
+    private const int ExpectedIntervalSeconds = 300;
+    private static readonly int StaleThresholdSeconds = 2 * ExpectedIntervalSeconds;   // 2× expected
+    private static readonly int OfflineThresholdSeconds = 5 * ExpectedIntervalSeconds; // 5× expected (configurable)
     private const int ReliabilityWindowHours = 24;
     private const int ExpectedReadingsPerHour = 12;    // 300s interval = 12 readings/hour
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<(IReadOnlyList<SensorHealthListItemResponse> Items, int TotalCount)> GetHealthListAsync(GetSensorHealthRequest request)
+    public virtual async Task<(IReadOnlyList<SensorHealthListResult> Items, int TotalCount)> GetHealthListAsync(GetSensorHealthRequest request)
     {
         var sensors = await sensorRepository.GetForHealthListAsync(request);
         if (sensors.Count == 0)
@@ -157,21 +158,20 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
         var countsBySensor = await sensorReadingRepository.GetReadingCountsBySensorIdsInWindowAsync(sensorIds, windowStart, windowEnd);
         var expectedPerSensor = ReliabilityWindowHours * ExpectedReadingsPerHour;
 
-        var list = new List<SensorHealthListItemResponse>();
+        var list = new List<SensorHealthListResult>();
         foreach (var sensor in sensors)
         {
             readingBySensor.TryGetValue(sensor.Id, out var reading);
-            var healthStatus = ComputeHealthStatus(sensor, reading);
-            if (request.HealthStatus.HasValue && healthStatus != request.HealthStatus.Value)
-                continue;
-
-            var lastSeenAt = reading?.TimestampUtc;
+            var lastSeenAt = sensor.LastSeenAt ?? reading?.TimestampUtc;
             countsBySensor.TryGetValue(sensor.Id, out var received);
             var reliability = expectedPerSensor > 0
                 ? Math.Round(Math.Min(100.0, (received / (double)expectedPerSensor) * 100.0), 1)
                 : 100.0;
+            var healthStatus = ComputeHealthStatus(sensor, reading, reliability);
+            if (request.HealthStatus.HasValue && healthStatus != request.HealthStatus.Value)
+                continue;
 
-            list.Add(new SensorHealthListItemResponse
+            list.Add(new SensorHealthListResult
             {
                 Id = sensor.Id,
                 Name = sensor.Serial,
@@ -184,7 +184,8 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
                 EquipmentId = sensor.EquipmentId,
                 EquipmentName = sensor.Equipment?.Name ?? string.Empty,
                 LastValue = reading != null ? (double)reading.Value : null,
-                Unit = reading != null ? reading.Unit.ToString() : (sensor.SensorType != null ? sensor.SensorType.Unit.ToString() : string.Empty)
+                Unit = reading != null ? reading.Unit.ToString() : (sensor.SensorType != null ? sensor.SensorType.Unit.ToString() : string.Empty),
+                IngestionSource = reading?.IngestionRun?.Source
             });
         }
 
@@ -198,7 +199,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<SensorHealthDetailResponse> GetHealthDetailAsync(Guid id)
+    public virtual async Task<SensorHealthDetailResult> GetHealthDetailAsync(Guid id)
     {
         var sensor = await sensorRepository.GetByIdAsync(id);
         if (sensor == null)
@@ -207,9 +208,8 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
         var latestList = await sensorReadingRepository.GetLatestBySensorIdsAsync([id]);
         var reading = latestList.FirstOrDefault();
 
-        var healthStatus = ComputeHealthStatus(sensor, reading);
         var now = DateTime.UtcNow;
-        var lastSeenAt = reading?.TimestampUtc;
+        var lastSeenAt = sensor.LastSeenAt ?? reading?.TimestampUtc;
         var freshnessSeconds = lastSeenAt.HasValue ? (now - lastSeenAt.Value).TotalSeconds : (double?)null;
 
         var windowEnd = now;
@@ -219,8 +219,9 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
         var reliabilityScore = expectedPoints > 0
             ? Math.Min(100.0, (receivedPoints / (double)expectedPoints) * 100.0)
             : 100.0;
+        var healthStatus = ComputeHealthStatus(sensor, reading, reliabilityScore);
 
-        return new SensorHealthDetailResponse
+        return new SensorHealthDetailResult
         {
             SensorId = sensor.Id,
             Name = sensor.Serial,
@@ -236,21 +237,34 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
         };
     }
 
-    private static SensorHealthStatus ComputeHealthStatus(Shared.Entity.Sensor sensor, Shared.Entity.SensorReading? latestReading)
+    /// <summary>
+    /// Computes health from freshness (age vs expected interval) and reliability (received vs expected in 24h).
+    /// Fresh: age ≤ 1× expected; Stale: age &gt; 2×; Offline: no reading or age &gt; 5×.
+    /// When Fresh: Healthy if reliability &gt; 90%, Warning if 70–90%, Critical if &lt; 70%.
+    /// </summary>
+    private static SensorHealthStatus ComputeHealthStatus(
+        Shared.Entity.Sensor sensor,
+        Shared.Entity.SensorReading? latestReading,
+        double reliabilityScore)
     {
         if (sensor.Status == SensorStatus.Inactive)
             return SensorHealthStatus.Offline;
 
         if (latestReading == null)
-            return SensorHealthStatus.Stale;
+            return SensorHealthStatus.Offline;
 
         var ageSeconds = (DateTime.UtcNow - latestReading.TimestampUtc).TotalSeconds;
-        if (ageSeconds >= CriticalStaleSeconds)
+        if (ageSeconds > OfflineThresholdSeconds)
             return SensorHealthStatus.Offline;
-        if (ageSeconds >= WarningStaleSeconds)
+        if (ageSeconds > StaleThresholdSeconds)
             return SensorHealthStatus.Stale;
 
-        return SensorHealthStatus.Healthy;
+        // Fresh: derive from reliability
+        if (reliabilityScore > 90.0)
+            return SensorHealthStatus.Healthy;
+        if (reliabilityScore >= 70.0)
+            return SensorHealthStatus.Warning;
+        return SensorHealthStatus.Critical;
     }
 
 }

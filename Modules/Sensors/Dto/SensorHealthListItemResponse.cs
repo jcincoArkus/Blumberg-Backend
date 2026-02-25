@@ -7,6 +7,8 @@ namespace Modules.Sensors.Dto;
 /// </summary>
 public class SensorHealthListItemResponse
 {
+    /// <summary>Source of the last ingestion that produced a reading for this sensor (Api, Csv, or null if none).</summary>
+    public IngestionSource? IngestionSource { get; set; }
     /// <summary>Sensor ID.</summary>
     public Guid Id { get; set; }
 

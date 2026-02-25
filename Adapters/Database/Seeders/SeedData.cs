@@ -48,12 +48,16 @@ public static class EquipmentSeedRows
 /// One sensor row for seed.
 /// Type: temperature | humidity | energy | pressure.
 /// Status: active | offline | stale | warning.
+/// Min/Max: threshold range; alert when value is outside. Duration: time value must remain outside range before triggering alert (minutes).
 /// </summary>
 public record SensorSeedData(
 	string Name,
 	string Type,
 	string EquipmentName,
-	string Status
+	string Status,
+	decimal Min,
+	decimal Max,
+	int DurationMinutes
 );
 
 /// <summary>
@@ -63,20 +67,20 @@ public static class SensorSeedRows
 {
 	public static readonly SensorSeedData[] All =
 	[
-		new("Temp Probe 1", "temperature", "Compressor Unit A", "active"),
-		new("Pressure Gauge 1", "pressure", "Compressor Unit A", "active"),
-		new("Humidity Sensor 1", "humidity", "HVAC System B", "active"),
-		new("Temp Probe 2", "temperature", "HVAC System B", "active"),
-		new("Energy Meter 1", "energy", "HVAC System B", "active"),
-		new("Humidity Sensor 2", "humidity", "Dehumidifier C", "warning"),
-		new("Freezer Temp 1", "temperature", "Freezer Bank 1", "offline"),
-		new("Freezer Temp 2", "temperature", "Freezer Bank 1", "offline"),
-		new("Chiller Temp", "temperature", "Chiller Unit D", "active"),
-		new("Chiller Pressure", "pressure", "Chiller Unit D", "active"),
-		new("Air Handler Temp", "temperature", "Air Handler E", "active"),
-		new("Cold Storage Temp", "temperature", "Cold Storage F", "active"),
-		new("Generator Energy", "energy", "Backup Generator", "stale"),
-		new("Main Freezer Temp", "temperature", "Main Freezer", "warning"),
-		new("PDU Energy", "energy", "Power Distribution Unit", "active"),
+		new("Temp Probe 1", "temperature", "Compressor Unit A", "active", Min: 0, Max: 40, DurationMinutes: 5),
+		new("Pressure Gauge 1", "pressure", "Compressor Unit A", "active", Min: 50, Max: 200, DurationMinutes: 5),
+		new("Humidity Sensor 1", "humidity", "HVAC System B", "active", Min: 30, Max: 70, DurationMinutes: 5),
+		new("Temp Probe 2", "temperature", "HVAC System B", "active", Min: 16, Max: 28, DurationMinutes: 5),
+		new("Energy Meter 1", "energy", "HVAC System B", "active", Min: 0, Max: 500, DurationMinutes: 10),
+		new("Humidity Sensor 2", "humidity", "Dehumidifier C", "active", Min: 25, Max: 65, DurationMinutes: 10),
+		new("Freezer Temp 1", "temperature", "Freezer Bank 1", "active", Min: -25, Max: -15, DurationMinutes: 5),
+		new("Freezer Temp 2", "temperature", "Freezer Bank 1", "active", Min: -25, Max: -15, DurationMinutes: 5),
+		new("Chiller Temp", "temperature", "Chiller Unit D", "active", Min: 2, Max: 8, DurationMinutes: 5),
+		new("Chiller Pressure", "pressure", "Chiller Unit D", "active", Min: 80, Max: 180, DurationMinutes: 5),
+		new("Air Handler Temp", "temperature", "Air Handler E", "active", Min: 15, Max: 30, DurationMinutes: 5),
+		new("Cold Storage Temp", "temperature", "Cold Storage F", "active", Min: -5, Max: 5, DurationMinutes: 5),
+		new("Generator Energy", "energy", "Backup Generator", "active", Min: 0, Max: 1000, DurationMinutes: 15),
+		new("Main Freezer Temp", "temperature", "Main Freezer", "active", Min: -22, Max: -18, DurationMinutes: 5),
+		new("PDU Energy", "energy", "Power Distribution Unit", "active", Min: 0, Max: 800, DurationMinutes: 10),
 	];
 }

@@ -64,9 +64,9 @@ public class SensorSeeder(ILoggerFactory loggerFactory) : ISeeder
 			var threshold = new Threshold
 			{
 				Id = Guid.NewGuid(),
-				Min = 0,
-				Max = 100,
-				Duration = TimeSpan.Zero,
+				Min = row.Min,
+				Max = row.Max,
+				Duration = TimeSpan.FromMinutes(row.DurationMinutes),
 				CreatedAt = now,
 			};
 			context.Thresholds.Add(threshold);

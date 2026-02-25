@@ -89,11 +89,9 @@ Configurations are auto-discovered via `modelBuilder.ApplyConfigurationsFromAsse
 - Prevents cross-tenant writes (throws `InvalidOperationException`)
 - Allows explicit `OrganizationId` for seeders when no tenant context exists
 
-## Migration Command
+## Migrations
 
-```bash
-dotnet ef migrations add <MigrationName> --project Adapters/Database --startup-project Apps/API
-```
+Prefer the project CLI from backend root: `scripts/cli migration:generate <MigrationName>` and `scripts/cli migration:up`. See **migrations-pattern** skill for full workflow (including why each migration needs a .Designer.cs).
 
 ## Conventions
 

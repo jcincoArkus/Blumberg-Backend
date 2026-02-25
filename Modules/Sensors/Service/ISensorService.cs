@@ -63,14 +63,14 @@ public interface ISensorService
     /// Gets paginated sensor health list with optional filters (site, equipment, status, healthStatus).
     /// </summary>
     /// <param name="request">Filters and pagination</param>
-    /// <returns>Health list items and total count (after health filter)</returns>
-    Task<(IReadOnlyList<SensorHealthListItemResponse> Items, int TotalCount)> GetHealthListAsync(GetSensorHealthRequest request);
+    /// <returns>Health list results and total count (after health filter). Controller maps to response DTOs.</returns>
+    Task<(IReadOnlyList<SensorHealthListResult> Items, int TotalCount)> GetHealthListAsync(GetSensorHealthRequest request);
 
     /// <summary>
     /// Gets detailed health for a single sensor (current value, freshness, reliability, recent readings, expected vs actual).
     /// </summary>
     /// <param name="id">Sensor ID</param>
-    /// <returns>Health detail</returns>
+    /// <returns>Health detail result. Controller maps to response DTO.</returns>
     /// <exception cref="KeyNotFoundException">When sensor is not found</exception>
-    Task<SensorHealthDetailResponse> GetHealthDetailAsync(Guid id);
+    Task<SensorHealthDetailResult> GetHealthDetailAsync(Guid id);
 }

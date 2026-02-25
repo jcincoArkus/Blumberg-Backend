@@ -17,6 +17,6 @@ public class GetSensorHealthRequest : PaginationRequest
     /// <summary>Filter by sensor operational status.</summary>
     public SensorStatus? Status { get; set; }
 
-    /// <summary>Filter by computed health status (Healthy, Warning, Critical, Stale, Offline).</summary>
+    /// <summary>Filter by computed health status (Healthy, Warning, Critical, Stale, Silent, Offline).</summary>
     public SensorHealthStatus? HealthStatus { get; set; }
 }
