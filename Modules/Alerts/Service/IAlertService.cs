@@ -9,9 +9,9 @@ namespace Modules.Alerts.Service;
 public interface IAlertService
 {
     /// <summary>
-    /// Gets paginated alerts with optional filters
+    /// Gets paginated alert responses (with display names) for API listing
     /// </summary>
-    Task<(IReadOnlyList<Alert> Items, int TotalCount)> GetAllAsync(GetAlertsRequest request);
+    Task<(IReadOnlyList<AlertResponse> Items, int TotalCount)> GetAllAsync(GetAlertsRequest request);
 
     /// <summary>
     /// Gets an alert by ID, throws KeyNotFoundException if not found

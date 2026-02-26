@@ -9,7 +9,12 @@ namespace Modules.Alerts.Repository;
 public interface IAlertRepository
 {
     /// <summary>
-    /// Gets paginated alerts with optional filters
+    /// Gets paginated alert responses (with equipment name and sensor serial) for API listing
+    /// </summary>
+    Task<(IReadOnlyList<AlertResponse> Items, int TotalCount)> GetPagedResponsesAsync(GetAlertsRequest request);
+
+    /// <summary>
+    /// Gets paginated alerts with optional filters (entity form for internal use)
     /// </summary>
     Task<(IReadOnlyList<Alert> Items, int TotalCount)> GetPagedAsync(GetAlertsRequest request);
 

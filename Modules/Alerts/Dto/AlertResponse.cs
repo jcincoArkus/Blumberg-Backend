@@ -19,4 +19,10 @@ public class AlertResponse
     public string Status { get; set; } = string.Empty;
     public DateTime? ResolvedAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    /// <summary>Display name of the equipment (when loaded)</summary>
+    public string? EquipmentName { get; set; }
+    /// <summary>Display name of the sensor (when loaded)</summary>
+    public string? SensorSerial { get; set; }
+    /// <summary>Sensor type kind/category (e.g. Temperature, Humidity) when loaded</summary>
+    public string? SensorTypeName { get; set; }
 }

@@ -27,7 +27,7 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
             var (items, totalCount) = await service.GetAllAsync(request);
             return Ok(new PagedResponse<AlertResponse>
             {
-                Items = items.Select(MapToResponse).ToList(),
+                Items = items,
                 TotalCount = totalCount,
                 Page = request.Page,
                 PageSize = request.PageSize
@@ -129,6 +129,9 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
         TriggeredAt = entity.TriggeredAt,
         Status = entity.Status.ToString(),
         ResolvedAt = entity.ResolvedAt,
-        CreatedAt = entity.CreatedAt
+        CreatedAt = entity.CreatedAt,
+        EquipmentName = entity.Equipment?.Name,
+        SensorSerial = entity.Sensor?.Serial,
+        SensorTypeName = entity.Sensor?.SensorType?.Type.ToString(),
     };
 }

@@ -16,10 +16,10 @@ public class AlertService(
 {
     /// <inheritdoc />
     [Span]
-    public virtual async Task<(IReadOnlyList<Alert> Items, int TotalCount)> GetAllAsync(GetAlertsRequest request)
+    public virtual async Task<(IReadOnlyList<AlertResponse> Items, int TotalCount)> GetAllAsync(GetAlertsRequest request)
     {
         logger.LogDebug("Getting alerts");
-        return await alertRepository.GetPagedAsync(request);
+        return await alertRepository.GetPagedResponsesAsync(request);
     }
 
     /// <inheritdoc />

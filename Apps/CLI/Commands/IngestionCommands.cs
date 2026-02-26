@@ -1,4 +1,6 @@
 using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.Text;
 using System.Text.Json;
 using Adapters.Config;
@@ -61,6 +63,10 @@ public static class IngestionCommands
             ["--no-variety"],
             getDefaultValue: () => false,
             "Disable health-variety mode: treat all sensors the same (no offline/stale/silent/invalid-unit partitioning).");
+        var alertEveryOption = new Option<int>(
+            ["--alert-every", "-a"],
+            getDefaultValue: () => 2,
+            "Every N batches (default: 5), send one valid reading above or below a sensor threshold to trigger an alert (0 = disabled). Only when using --org-id (sensors with thresholds from DB).");
 
         command.AddOption(baseUrlOption);
         command.AddOption(apiKeyOption);
@@ -70,16 +76,26 @@ public static class IngestionCommands
         command.AddOption(batchSizeOption);
         command.AddOption(rejectChanceOption);
         command.AddOption(noVarietyOption);
+        command.AddOption(alertEveryOption);
 
-        command.SetHandler(async (string baseUrl, string? apiKey, string? orgIdStr, string? sensorIdsStr, int interval, int batchSize, double rejectChance, bool noVariety) =>
+        command.SetHandler(async (InvocationContext invocationContext) =>
         {
+            var pr = invocationContext.ParseResult;
+            var baseUrl = GetOptionValue(pr, baseUrlOption, Environment.GetEnvironmentVariable(EnvBaseUrl) ?? config.Application.Urls.FirstOrDefault() ?? "http://localhost:5000").TrimEnd('/');
+            var apiKey = GetOptionValue(pr, apiKeyOption);
+            var orgIdStr = GetOptionValue(pr, orgIdOption);
+            var sensorIdsStr = GetOptionValue(pr, sensorIdsOption);
+            var interval = GetOptionValue(pr, intervalOption, 30);
+            var batchSize = GetOptionValue(pr, batchSizeOption, 5);
+            var rejectChance = GetOptionValue(pr, rejectChanceOption, 0.2);
+            var noVariety = GetOptionValue(pr, noVarietyOption, false);
+            var alertEvery = GetOptionValue(pr, alertEveryOption, 0);
+
             try
             {
                 using var cts = new CancellationTokenSource();
                 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
                 var ct = cts.Token;
-
-                baseUrl = baseUrl.TrimEnd('/');
                 if (string.IsNullOrWhiteSpace(apiKey))
                 {
                     logger.LogError("API key is required. Set INGESTION_SIMULATOR_API_KEY or pass --api-key.");
@@ -133,6 +149,17 @@ public static class IngestionCommands
                     baseUrl, sensorInfos.Count, interval, rejectChance);
             }
 
+            if (alertEvery > 0 && sensorInfos.All(s => s.ThresholdMin == null || s.ThresholdMax == null))
+            {
+                logger.LogWarning("--alert-every {N} ignored: no sensors with thresholds (use --org-id to load sensors from DB).", alertEvery);
+                alertEvery = 0;
+            }
+            else if (alertEvery > 0)
+            {
+                var withThreshold = sensorInfos.Count(s => s.ThresholdMin != null && s.ThresholdMax != null);
+                logger.LogInformation("Alert trigger: every {N} batch(es) one reading will be sent above/below threshold ({WithThreshold} sensors with thresholds).", alertEvery, withThreshold);
+            }
+
             var readingsPerBatch = Math.Min(batchSize, sensorInfos.Count);
 
             using var http = new HttpClient();
@@ -149,6 +176,8 @@ public static class IngestionCommands
                 if (partition != null)
                 {
                     readings = BuildVarietyBatch(partition, random, rejectChance, run, logger);
+                    if (alertEvery > 0 && run % alertEvery == 0)
+                        InjectAlertReading(readings, partition.Healthy, run, alertEvery, logger);
                 }
                 else
                 {
@@ -165,6 +194,9 @@ public static class IngestionCommands
                             Unit = (int)info.Unit
                         });
                     }
+
+                    if (alertEvery > 0 && run % alertEvery == 0)
+                        InjectAlertReading(readings, sensorInfos, run, alertEvery, logger);
 
                     if (rejectChance > 0 && random.NextDouble() < rejectChance && readings.Count > 0)
                     {
@@ -237,17 +269,96 @@ public static class IngestionCommands
                 logger.LogError(ex, "Ingestion simulator failed");
                 Environment.Exit(1);
             }
-        },
-            baseUrlOption,
-            apiKeyOption,
-            orgIdOption,
-            sensorIdsOption,
-            intervalOption,
-            batchSizeOption,
-            rejectChanceOption,
-            noVarietyOption);
+        });
 
         return command;
+    }
+
+    private static string? GetOptionValue(ParseResult pr, Option<string?> opt)
+    {
+        if (pr.FindResultFor(opt) is OptionResult or && or.Tokens.Count > 0)
+            return or.Tokens[0].Value;
+        return null;
+    }
+
+    private static string GetOptionValue(ParseResult pr, Option<string> opt, string defaultValue)
+    {
+        if (pr.FindResultFor(opt) is OptionResult or && or.Tokens.Count > 0)
+            return or.Tokens[0].Value;
+        return defaultValue;
+    }
+
+    private static int GetOptionValue(ParseResult pr, Option<int> opt, int defaultValue)
+    {
+        if (pr.FindResultFor(opt) is OptionResult or && or.Tokens.Count > 0 && int.TryParse(or.Tokens[0].Value, out var v))
+            return v;
+        return defaultValue;
+    }
+
+    private static double GetOptionValue(ParseResult pr, Option<double> opt, double defaultValue)
+    {
+        if (pr.FindResultFor(opt) is OptionResult or && or.Tokens.Count > 0 && double.TryParse(or.Tokens[0].Value, out var v))
+            return v;
+        return defaultValue;
+    }
+
+    private static bool GetOptionValue(ParseResult pr, Option<bool> opt, bool defaultValue)
+    {
+        if (pr.FindResultFor(opt) is OptionResult or && or.Tokens.Count > 0 && bool.TryParse(or.Tokens[0].Value, out var v))
+            return v;
+        return defaultValue;
+    }
+
+    /// <summary>
+    /// Replaces one reading in the batch with an out-of-threshold value so the ingestion service creates an alert.
+    /// Picks a sensor that has threshold (round-robin by run) and sets value to Max+1 (critical) or Min-1 (warning).
+    /// </summary>
+    private static void InjectAlertReading(
+        List<SimulateReadingDto> readings,
+        IReadOnlyList<SensorReadingInfo> sensorInfosWithThreshold,
+        int run,
+        int alertEvery,
+        ILogger logger)
+    {
+        var alertable = sensorInfosWithThreshold
+            .Where(s => s.ThresholdMin != null && s.ThresholdMax != null)
+            .ToList();
+        if (alertable.Count == 0)
+            return;
+
+        var index = (run / alertEvery) % alertable.Count;
+        var info = alertable[index];
+        var min = info.ThresholdMin!.Value;
+        var max = info.ThresholdMax!.Value;
+        // Alternate above max (critical) vs below min (warning)
+        var aboveMax = (run / alertEvery) % 2 == 0;
+        var value = aboveMax ? max + 1 : min - 1;
+
+        var readingIndex = readings.FindIndex(r => r.SensorId == info.SensorId);
+        if (readingIndex < 0)
+        {
+            readings.Add(new SimulateReadingDto
+            {
+                SensorId = info.SensorId,
+                Value = value,
+                TimestampUtc = DateTime.UtcNow,
+                Unit = (int)info.Unit
+            });
+            logger.LogDebug("Run {Run}: added out-of-threshold reading for sensor {SensorId} (value {Value}, {Variant}).",
+                run, info.SensorId, value, aboveMax ? "above max" : "below min");
+        }
+        else
+        {
+            readings[readingIndex] = new SimulateReadingDto
+            {
+                SensorId = info.SensorId,
+                Value = value,
+                TimestampUtc = readings[readingIndex].TimestampUtc,
+                Unit = (int)info.Unit
+            };
+            logger.LogDebug("Run {Run}: replaced reading at index {Index} with out-of-threshold value for sensor {SensorId} (value {Value}, {Variant}).",
+                run, readingIndex, info.SensorId, value, aboveMax ? "above max" : "below min");
+        }
     }
 
     /// <summary>Stable partition of sensors for health-variety mode. Index 0=offline, 1=invalid, 2-4=stale, 5-7=silent, 8+=healthy.</summary>
@@ -371,7 +482,7 @@ public static class IngestionCommands
         return readings;
     }
 
-    private sealed record SensorReadingInfo(Guid SensorId, SensorTypeKind Kind, Unit Unit);
+    private sealed record SensorReadingInfo(Guid SensorId, SensorTypeKind Kind, Unit Unit, decimal? ThresholdMin, decimal? ThresholdMax);
 
     private static async Task<List<SensorReadingInfo>> LoadSensorsFromDatabaseAsync(Guid organizationId, ILogger logger, CancellationToken ct)
     {
@@ -380,13 +491,19 @@ public static class IngestionCommands
             .IgnoreQueryFilters()
             .Where(s => s.DeletedAt == null && s.OrganizationId == organizationId)
             .Include(s => s.SensorType)
+            .Include(s => s.Threshold)
             .OrderBy(s => s.CreatedAt)
             .ThenBy(s => s.Id)
             .AsNoTracking()
             .ToListAsync(ct);
 
         return sensors
-            .Select(s => new SensorReadingInfo(s.Id, s.SensorType.Type, s.SensorType.Unit))
+            .Select(s => new SensorReadingInfo(
+                s.Id,
+                s.SensorType.Type,
+                s.SensorType.Unit,
+                s.Threshold?.Min,
+                s.Threshold?.Max))
             .ToList();
     }
 
@@ -396,7 +513,7 @@ public static class IngestionCommands
         foreach (var s in sensorIdsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             if (Guid.TryParse(s, out var id))
-                list.Add(new SensorReadingInfo(id, SensorTypeKind.Temperature, Unit.Celsius));
+                list.Add(new SensorReadingInfo(id, SensorTypeKind.Temperature, Unit.Celsius, null, null));
             else
                 logger.LogWarning("Invalid sensor ID skipped: {Value}", s);
         }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Adapters.Config;
 using Adapters.Database;
 using Adapters.Database.Seeders;
@@ -56,8 +57,13 @@ public class ApiServer
 
     private static void ConfigureServices(IServiceCollection services, AppConfig config)
     {
-        // Controllers and API Explorer
-        var mvcBuilder = services.AddControllers();
+        // Controllers and API Explorer (camelCase JSON so frontend receives equipmentName, sensorSerial, etc.)
+        var mvcBuilder = services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+            });
         foreach (var assembly in ModulesSetup.GetControllerAssemblies())
         {
             mvcBuilder.AddApplicationPart(assembly);
