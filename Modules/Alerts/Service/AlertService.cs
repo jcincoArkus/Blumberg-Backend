@@ -55,8 +55,18 @@ public class AlertService(
             throw new InvalidOperationException($"Alert {id} is not active and cannot be acknowledged");
 
         alert.Status = AlertStatus.Acknowledged;
+        var updated = await alertRepository.UpdateAsync(alert);
 
-        return await alertRepository.UpdateAsync(alert);
+        await alertRepository.AddEventAsync(new AlertEvent
+        {
+            AlertId = alert.Id,
+            OrganizationId = alert.OrganizationId,
+            EventType = AlertEventType.Acknowledged,
+            OccurredAt = DateTime.UtcNow,
+            Description = "Alert acknowledged",
+        });
+
+        return updated;
     }
 
     /// <inheritdoc />
@@ -75,9 +85,20 @@ public class AlertService(
         if (alert.Status != AlertStatus.Active && alert.Status != AlertStatus.Acknowledged)
             throw new InvalidOperationException($"Alert {id} is not active or acknowledged and cannot be resolved");
 
+        var resolvedAt = DateTime.UtcNow;
         alert.Status = AlertStatus.Resolved;
-        alert.ResolvedAt = DateTime.UtcNow;
+        alert.ResolvedAt = resolvedAt;
+        var updated = await alertRepository.UpdateAsync(alert);
 
-        return await alertRepository.UpdateAsync(alert);
+        await alertRepository.AddEventAsync(new AlertEvent
+        {
+            AlertId = alert.Id,
+            OrganizationId = alert.OrganizationId,
+            EventType = AlertEventType.Resolved,
+            OccurredAt = resolvedAt,
+            Description = "Alert resolved",
+        });
+
+        return updated;
     }
 }

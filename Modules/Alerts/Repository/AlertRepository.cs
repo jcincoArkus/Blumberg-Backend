@@ -92,6 +92,7 @@ public class AlertRepository(ApplicationDbContext context, ILogger<AlertReposito
         return await context.Alerts
             .Include(e => e.Sensor).ThenInclude(s => s.SensorType)
             .Include(e => e.Equipment)
+            .Include(a => a.Events)
             .FirstOrDefaultAsync(e => e.Id == id && e.DeletedAt == null);
     }
 
@@ -112,9 +113,52 @@ public class AlertRepository(ApplicationDbContext context, ILogger<AlertReposito
         entity.UpdatedAt = null;
         entity.DeletedAt = null;
         context.Alerts.Add(entity);
+
+        var triggeredEvent = new AlertEvent
+        {
+            Id = Guid.NewGuid(),
+            AlertId = entity.Id,
+            OrganizationId = entity.OrganizationId,
+            EventType = AlertEventType.Triggered,
+            OccurredAt = entity.TriggeredAt,
+            Description = "Alert triggered",
+            CreatedAt = DateTime.UtcNow,
+        };
+        context.AlertEvents.Add(triggeredEvent);
+
         await context.SaveChangesAsync();
         logger.LogInformation("Created alert {Id} for sensor {SensorId}", entity.Id, entity.SensorId);
         return entity;
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual void AddRangeWithTriggeredEvents(IEnumerable<Alert> entities)
+    {
+        var list = entities.ToList();
+        foreach (var entity in list)
+        {
+            if (entity.Id == Guid.Empty)
+                entity.Id = Guid.NewGuid();
+            if (entity.CreatedAt == default)
+                entity.CreatedAt = DateTime.UtcNow;
+            entity.UpdatedAt = null;
+            entity.DeletedAt = null;
+            context.Alerts.Add(entity);
+
+            var triggeredEvent = new AlertEvent
+            {
+                Id = Guid.NewGuid(),
+                AlertId = entity.Id,
+                OrganizationId = entity.OrganizationId,
+                EventType = AlertEventType.Triggered,
+                OccurredAt = entity.TriggeredAt,
+                Description = "Alert triggered",
+                CreatedAt = DateTime.UtcNow,
+            };
+            context.AlertEvents.Add(triggeredEvent);
+        }
+        logger.LogDebug("Added {Count} alerts with Triggered events to context (no SaveChanges)", list.Count);
     }
 
     /// <inheritdoc />
@@ -126,5 +170,18 @@ public class AlertRepository(ApplicationDbContext context, ILogger<AlertReposito
         await context.SaveChangesAsync();
         logger.LogInformation("Updated alert {Id}", entity.Id);
         return entity;
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task AddEventAsync(AlertEvent entity)
+    {
+        entity.Id = Guid.NewGuid();
+        entity.CreatedAt = DateTime.UtcNow;
+        entity.UpdatedAt = null;
+        entity.DeletedAt = null;
+        context.AlertEvents.Add(entity);
+        await context.SaveChangesAsync();
+        logger.LogDebug("Added event {EventType} for alert {AlertId}", entity.EventType, entity.AlertId);
     }
 }

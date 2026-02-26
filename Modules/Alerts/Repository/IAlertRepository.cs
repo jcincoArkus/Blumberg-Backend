@@ -29,12 +29,23 @@ public interface IAlertRepository
     Task<Alert?> GetActiveBySensorIdAsync(Guid sensorId);
 
     /// <summary>
-    /// Creates a new alert
+    /// Creates a new alert (and its initial Triggered event) and saves. Preferred way to create a single alert.
     /// </summary>
     Task<Alert> CreateAsync(Alert entity);
+
+    /// <summary>
+    /// Adds alerts and their initial Triggered events to the context without saving.
+    /// Use when another unit of work (e.g. IngestionRunRepository) will call SaveChanges in the same transaction.
+    /// </summary>
+    void AddRangeWithTriggeredEvents(IEnumerable<Alert> entities);
 
     /// <summary>
     /// Updates an existing alert
     /// </summary>
     Task<Alert> UpdateAsync(Alert entity);
+
+    /// <summary>
+    /// Appends a lifecycle event for an alert (e.g. Acknowledged, Resolved)
+    /// </summary>
+    Task AddEventAsync(AlertEvent entity);
 }

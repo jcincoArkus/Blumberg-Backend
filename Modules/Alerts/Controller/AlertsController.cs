@@ -116,22 +116,40 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
         }
     }
 
-    private static AlertResponse MapToResponse(Alert entity) => new()
+    private static AlertResponse MapToResponse(Alert entity)
     {
-        Id = entity.Id,
-        SensorId = entity.SensorId,
-        EquipmentId = entity.EquipmentId,
-        SiteId = entity.SiteId,
-        Severity = entity.Severity.ToString(),
-        TriggeredValue = entity.TriggeredValue,
-        ThresholdMin = entity.ThresholdMin,
-        ThresholdMax = entity.ThresholdMax,
-        TriggeredAt = entity.TriggeredAt,
-        Status = entity.Status.ToString(),
-        ResolvedAt = entity.ResolvedAt,
-        CreatedAt = entity.CreatedAt,
-        EquipmentName = entity.Equipment?.Name,
-        SensorSerial = entity.Sensor?.Serial,
-        SensorTypeName = entity.Sensor?.SensorType?.Type.ToString(),
-    };
+        var response = new AlertResponse
+        {
+            Id = entity.Id,
+            SensorId = entity.SensorId,
+            EquipmentId = entity.EquipmentId,
+            SiteId = entity.SiteId,
+            Severity = entity.Severity.ToString(),
+            TriggeredValue = entity.TriggeredValue,
+            ThresholdMin = entity.ThresholdMin,
+            ThresholdMax = entity.ThresholdMax,
+            TriggeredAt = entity.TriggeredAt,
+            Status = entity.Status.ToString(),
+            ResolvedAt = entity.ResolvedAt,
+            CreatedAt = entity.CreatedAt,
+            EquipmentName = entity.Equipment?.Name,
+            SensorSerial = entity.Sensor?.Serial,
+            SensorTypeName = entity.Sensor?.SensorType?.Type.ToString(),
+        };
+        if (entity.Events?.Count > 0)
+        {
+            response.Events = entity.Events
+                .OrderBy(e => e.OccurredAt)
+                .Select(e => new AlertEventResponse
+                {
+                    Id = e.Id,
+                    EventType = e.EventType.ToString(),
+                    OccurredAt = e.OccurredAt,
+                    Description = e.Description,
+                    ActorId = e.ActorId,
+                })
+                .ToList();
+        }
+        return response;
+    }
 }

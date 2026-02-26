@@ -2,6 +2,7 @@ using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Modules.Alerts.Repository;
 using Modules.Ingestion.Dto;
 using Shared.Entity;
 
@@ -10,7 +11,10 @@ namespace Modules.Ingestion.Repository;
 /// <summary>
 /// Repository implementation for ingestion run operations
 /// </summary>
-public class IngestionRunRepository(ApplicationDbContext context, ILogger<IngestionRunRepository> logger) : IIngestionRunRepository
+public class IngestionRunRepository(
+    ApplicationDbContext context,
+    IAlertRepository alertRepository,
+    ILogger<IngestionRunRepository> logger) : IIngestionRunRepository
 {
     /// <inheritdoc />
     [Span]
@@ -64,7 +68,8 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
             }
         }
 
-        context.Alerts.AddRange(newAlerts);
+        // Alerts and their Triggered events via AlertRepository (single place for alert creation)
+        alertRepository.AddRangeWithTriggeredEvents(newAlerts);
         await context.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Created ingestion run {RunId} with {Accepted} accepted, {Rejected} rejected, {Alerts} alerts",

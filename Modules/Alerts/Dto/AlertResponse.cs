@@ -25,4 +25,6 @@ public class AlertResponse
     public string? SensorSerial { get; set; }
     /// <summary>Sensor type kind/category (e.g. Temperature, Humidity) when loaded</summary>
     public string? SensorTypeName { get; set; }
+    /// <summary>Lifecycle events (triggered, acknowledged, resolved, etc.) when loaded (e.g. GetById)</summary>
+    public List<AlertEventResponse>? Events { get; set; }
 }
