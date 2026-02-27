@@ -9,7 +9,12 @@ namespace Modules.Alerts.Repository;
 public interface IAlertRepository
 {
     /// <summary>
-    /// Gets paginated alerts with optional filters
+    /// Gets paginated alert responses (with equipment name and sensor serial) for API listing
+    /// </summary>
+    Task<(IReadOnlyList<AlertResponse> Items, int TotalCount)> GetPagedResponsesAsync(GetAlertsRequest request);
+
+    /// <summary>
+    /// Gets paginated alerts with optional filters (entity form for internal use)
     /// </summary>
     Task<(IReadOnlyList<Alert> Items, int TotalCount)> GetPagedAsync(GetAlertsRequest request);
 
@@ -24,12 +29,29 @@ public interface IAlertRepository
     Task<Alert?> GetActiveBySensorIdAsync(Guid sensorId);
 
     /// <summary>
-    /// Creates a new alert
+    /// Gets an unresolved alert (Active or Acknowledged) for a sensor, or null if none exists.
+    /// Used to enforce: do not create a new alert until the previous one is Resolved.
+    /// </summary>
+    Task<Alert?> GetUnresolvedBySensorIdAsync(Guid sensorId);
+
+    /// <summary>
+    /// Creates a new alert (and its initial Triggered event) and saves. Preferred way to create a single alert.
     /// </summary>
     Task<Alert> CreateAsync(Alert entity);
+
+    /// <summary>
+    /// Adds alerts and their initial Triggered events to the context without saving.
+    /// Use when another unit of work (e.g. IngestionRunRepository) will call SaveChanges in the same transaction.
+    /// </summary>
+    void AddRangeWithTriggeredEvents(IEnumerable<Alert> entities);
 
     /// <summary>
     /// Updates an existing alert
     /// </summary>
     Task<Alert> UpdateAsync(Alert entity);
+
+    /// <summary>
+    /// Appends a lifecycle event for an alert (e.g. Acknowledged, Resolved)
+    /// </summary>
+    Task AddEventAsync(AlertEvent entity);
 }

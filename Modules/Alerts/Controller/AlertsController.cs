@@ -22,12 +22,14 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
     [ProducesResponseType(typeof(PagedResponse<AlertResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<AlertResponse>>> GetAll([FromQuery] GetAlertsRequest request)
     {
+        logger.LogDebug("Getting alerts page {Page}, size {PageSize}", request.Page, request.PageSize);
         try
         {
             var (items, totalCount) = await service.GetAllAsync(request);
+            logger.LogInformation("Retrieved {Count} alerts (total {Total})", items.Count, totalCount);
             return Ok(new PagedResponse<AlertResponse>
             {
-                Items = items.Select(MapToResponse).ToList(),
+                Items = items,
                 TotalCount = totalCount,
                 Page = request.Page,
                 PageSize = request.PageSize
@@ -46,13 +48,16 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AlertResponse>> GetById(Guid id)
     {
+        logger.LogDebug("Getting alert by ID: {Id}", id);
         try
         {
             var entity = await service.GetByIdAsync(id);
+            logger.LogInformation("Retrieved alert {Id}", id);
             return Ok(MapToResponse(entity));
         }
         catch (KeyNotFoundException)
         {
+            logger.LogWarning("Alert not found with ID: {Id}", id);
             return NotFound(new { message = $"Alert with ID {id} was not found" });
         }
         catch (Exception ex)
@@ -69,17 +74,21 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AlertResponse>> Acknowledge(Guid id)
     {
+        logger.LogDebug("Acknowledging alert {Id}", id);
         try
         {
             var entity = await service.AcknowledgeAsync(id);
+            logger.LogInformation("Alert {Id} acknowledged", id);
             return Ok(MapToResponse(entity));
         }
         catch (KeyNotFoundException)
         {
+            logger.LogWarning("Alert not found with ID: {Id}", id);
             return NotFound(new { message = $"Alert with ID {id} was not found" });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning("Failed to acknowledge alert {Id}: {Message}", id, ex.Message);
             return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
@@ -96,17 +105,21 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AlertResponse>> Resolve(Guid id)
     {
+        logger.LogDebug("Resolving alert {Id}", id);
         try
         {
             var entity = await service.ResolveAsync(id);
+            logger.LogInformation("Alert {Id} resolved", id);
             return Ok(MapToResponse(entity));
         }
         catch (KeyNotFoundException)
         {
+            logger.LogWarning("Alert not found with ID: {Id}", id);
             return NotFound(new { message = $"Alert with ID {id} was not found" });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning("Failed to resolve alert {Id}: {Message}", id, ex.Message);
             return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
@@ -116,19 +129,40 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
         }
     }
 
-    private static AlertResponse MapToResponse(Alert entity) => new()
+    private static AlertResponse MapToResponse(Alert entity)
     {
-        Id = entity.Id,
-        SensorId = entity.SensorId,
-        EquipmentId = entity.EquipmentId,
-        SiteId = entity.SiteId,
-        Severity = entity.Severity.ToString(),
-        TriggeredValue = entity.TriggeredValue,
-        ThresholdMin = entity.ThresholdMin,
-        ThresholdMax = entity.ThresholdMax,
-        TriggeredAt = entity.TriggeredAt,
-        Status = entity.Status.ToString(),
-        ResolvedAt = entity.ResolvedAt,
-        CreatedAt = entity.CreatedAt
-    };
+        var response = new AlertResponse
+        {
+            Id = entity.Id,
+            SensorId = entity.SensorId,
+            EquipmentId = entity.EquipmentId,
+            SiteId = entity.SiteId,
+            Severity = entity.Severity.ToString(),
+            TriggeredValue = entity.TriggeredValue,
+            ThresholdMin = entity.ThresholdMin,
+            ThresholdMax = entity.ThresholdMax,
+            TriggeredAt = entity.TriggeredAt,
+            Status = entity.Status.ToString(),
+            ResolvedAt = entity.ResolvedAt,
+            CreatedAt = entity.CreatedAt,
+            EquipmentName = entity.Equipment?.Name,
+            SensorSerial = entity.Sensor?.Serial,
+            SensorTypeName = entity.Sensor?.SensorType?.Type.ToString(),
+        };
+        if (entity.Events?.Count > 0)
+        {
+            response.Events = entity.Events
+                .OrderBy(e => e.OccurredAt)
+                .Select(e => new AlertEventResponse
+                {
+                    Id = e.Id,
+                    EventType = e.EventType.ToString(),
+                    OccurredAt = e.OccurredAt,
+                    Description = e.Description,
+                    ActorId = e.ActorId,
+                })
+                .ToList();
+        }
+        return response;
+    }
 }

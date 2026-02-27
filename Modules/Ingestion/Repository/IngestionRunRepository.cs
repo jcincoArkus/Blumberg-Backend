@@ -2,6 +2,7 @@ using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Modules.Alerts.Repository;
 using Modules.Ingestion.Dto;
 using Shared.Entity;
 
@@ -10,7 +11,10 @@ namespace Modules.Ingestion.Repository;
 /// <summary>
 /// Repository implementation for ingestion run operations
 /// </summary>
-public class IngestionRunRepository(ApplicationDbContext context, ILogger<IngestionRunRepository> logger) : IIngestionRunRepository
+public class IngestionRunRepository(
+    ApplicationDbContext context,
+    IAlertRepository alertRepository,
+    ILogger<IngestionRunRepository> logger) : IIngestionRunRepository
 {
     /// <inheritdoc />
     [Span]
@@ -19,6 +23,7 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
         IReadOnlyList<IngestionRejectedReading> rejectedReadings,
         IReadOnlyList<SensorReading> acceptedReadings,
         IReadOnlyList<Alert> newAlerts,
+        IReadOnlyDictionary<Guid, DateTime?>? sensorBreachStateUpdates = null,
         CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Creating ingestion run with {Rejected} rejected, {Accepted} accepted readings, {Alerts} alerts",
@@ -50,7 +55,7 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
         context.IngestionRuns.Add(run);
         context.SensorReadings.AddRange(acceptedReadings);
 
-        // Update Sensor.LastSeenAt for each sensor in the batch (max reading timestamp per sensor)
+        // Update Sensor.LastSeenAt and FirstOutOfRangeAt for each sensor in the batch
         var maxTimestampBySensor = acceptedReadings
             .GroupBy(r => r.SensorId)
             .ToDictionary(g => g.Key, g => g.Max(r => r.TimestampUtc));
@@ -61,10 +66,13 @@ public class IngestionRunRepository(ApplicationDbContext context, ILogger<Ingest
             {
                 if (!sensor.LastSeenAt.HasValue || sensor.LastSeenAt.Value < timestampUtc)
                     sensor.LastSeenAt = timestampUtc;
+                if (sensorBreachStateUpdates != null && sensorBreachStateUpdates.TryGetValue(sensorId, out var firstOutOfRangeAt))
+                    sensor.FirstOutOfRangeAt = firstOutOfRangeAt;
             }
         }
 
-        context.Alerts.AddRange(newAlerts);
+        // Alerts and their Triggered events via AlertRepository (single place for alert creation)
+        alertRepository.AddRangeWithTriggeredEvents(newAlerts);
         await context.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Created ingestion run {RunId} with {Accepted} accepted, {Rejected} rejected, {Alerts} alerts",

@@ -81,4 +81,9 @@ public class Alert : BaseEntity
     /// UTC timestamp when the alert was resolved (null if still active)
     /// </summary>
     public DateTime? ResolvedAt { get; set; }
+
+    /// <summary>
+    /// Events in this alert's lifecycle (triggered, acknowledged, resolved, notes)
+    /// </summary>
+    public ICollection<AlertEvent> Events { get; set; } = new List<AlertEvent>();
 }

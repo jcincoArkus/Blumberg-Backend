@@ -70,6 +70,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<Alert> Alerts => Set<Alert>();
 
     /// <summary>
+    /// Gets or sets the AlertEvents DbSet (append-only lifecycle events per alert)
+    /// </summary>
+    public DbSet<AlertEvent> AlertEvents => Set<AlertEvent>();
+
+    /// <summary>
     /// Gets or sets the IngestionRuns DbSet
     /// </summary>
     public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
@@ -115,7 +120,8 @@ public class ApplicationDbContext : DbContext
             typeof(IngestionStatus),
             typeof(SensorHealthStatus),
             typeof(AlertSeverity),
-            typeof(AlertStatus)
+            typeof(AlertStatus),
+            typeof(AlertEventType)
         };
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -143,6 +149,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SensorType>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Threshold>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Alert>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+        modelBuilder.Entity<AlertEvent>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
         // IngestionRun: tenant-scoped by OrganizationId
         modelBuilder.Entity<IngestionRun>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
     }
@@ -175,6 +182,8 @@ public class ApplicationDbContext : DbContext
                     ValidateAndSetTenant(run.OrganizationId, () => run.OrganizationId = orgId!.Value, orgId, nameof(IngestionRun));
                 else if (entry.Entity is Alert alert)
                     ValidateAndSetTenant(alert.OrganizationId, () => alert.OrganizationId = orgId!.Value, orgId, nameof(Alert));
+                else if (entry.Entity is AlertEvent alertEvent)
+                    ValidateAndSetTenant(alertEvent.OrganizationId, () => alertEvent.OrganizationId = orgId!.Value, orgId, nameof(AlertEvent));
             }
         }
 
