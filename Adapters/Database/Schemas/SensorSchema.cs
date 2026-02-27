@@ -40,6 +40,7 @@ public class SensorSchema : IEntityTypeConfiguration<Sensor>
         builder.Property(e => e.ThresholdId).HasColumnName("threshold_id").IsRequired();
         builder.HasIndex(e => e.ThresholdId).IsUnique().HasDatabaseName("ix_sensors_threshold_id_unique");
         builder.Property(e => e.LastSeenAt).HasColumnName("last_seen_at");
+        builder.Property(e => e.FirstOutOfRangeAt).HasColumnName("first_out_of_range_at");
 
         // Timestamps
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();

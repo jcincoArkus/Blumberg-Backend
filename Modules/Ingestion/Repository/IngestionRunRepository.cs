@@ -23,6 +23,7 @@ public class IngestionRunRepository(
         IReadOnlyList<IngestionRejectedReading> rejectedReadings,
         IReadOnlyList<SensorReading> acceptedReadings,
         IReadOnlyList<Alert> newAlerts,
+        IReadOnlyDictionary<Guid, DateTime?>? sensorBreachStateUpdates = null,
         CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Creating ingestion run with {Rejected} rejected, {Accepted} accepted readings, {Alerts} alerts",
@@ -54,7 +55,7 @@ public class IngestionRunRepository(
         context.IngestionRuns.Add(run);
         context.SensorReadings.AddRange(acceptedReadings);
 
-        // Update Sensor.LastSeenAt for each sensor in the batch (max reading timestamp per sensor)
+        // Update Sensor.LastSeenAt and FirstOutOfRangeAt for each sensor in the batch
         var maxTimestampBySensor = acceptedReadings
             .GroupBy(r => r.SensorId)
             .ToDictionary(g => g.Key, g => g.Max(r => r.TimestampUtc));
@@ -65,6 +66,8 @@ public class IngestionRunRepository(
             {
                 if (!sensor.LastSeenAt.HasValue || sensor.LastSeenAt.Value < timestampUtc)
                     sensor.LastSeenAt = timestampUtc;
+                if (sensorBreachStateUpdates != null && sensorBreachStateUpdates.TryGetValue(sensorId, out var firstOutOfRangeAt))
+                    sensor.FirstOutOfRangeAt = firstOutOfRangeAt;
             }
         }
 

@@ -88,9 +88,9 @@ public class IngestionService(
                 ? IngestionStatus.Failed
                 : IngestionStatus.PartialSuccess;
 
-        var newAlerts = await BuildNewAlertsAsync(organizationId, acceptedReadings, sensorByReadingIndex, cancellationToken);
+        var (newAlerts, sensorBreachStateUpdates) = await BuildNewAlertsAsync(organizationId, acceptedReadings, sensorByReadingIndex, cancellationToken);
 
-        await ingestionRunRepository.CreateRunAsync(run, rejectedReadings, acceptedReadings, newAlerts, cancellationToken);
+        await ingestionRunRepository.CreateRunAsync(run, rejectedReadings, acceptedReadings, newAlerts, sensorBreachStateUpdates, cancellationToken);
 
         logger.LogInformation("Ingestion run {RunId} completed: {Accepted} accepted, {Rejected} rejected, {Alerts} alerts",
             run.Id, run.AcceptedRecords, run.RejectedRecords, newAlerts.Count);
@@ -188,61 +188,117 @@ public class IngestionService(
         return (reading, sensor, null);
     }
 
-    private async Task<List<Alert>> BuildNewAlertsAsync(
+    /// <summary>
+    /// Builds new alerts respecting threshold duration: only trigger after value stays out of range
+    /// for the configured duration; reset the timer when value returns to normal.
+    /// </summary>
+    private async Task<(List<Alert> newAlerts, IReadOnlyDictionary<Guid, DateTime?> sensorBreachStateUpdates)> BuildNewAlertsAsync(
         Guid organizationId,
         List<SensorReading> acceptedReadings,
         Dictionary<int, Sensor> sensorByReadingIndex,
         CancellationToken cancellationToken)
     {
         var newAlerts = new List<Alert>();
-        // Track sensor IDs that already have a new alert in this batch to avoid duplicates
-        var alertedSensorIds = new HashSet<Guid>();
+        var breachStateUpdates = new Dictionary<Guid, DateTime?>();
 
+        // Group (reading, sensor) by sensor Id and process in timestamp order per sensor
+        var bySensor = new Dictionary<Guid, List<(SensorReading Reading, Sensor Sensor)>>();
         for (var i = 0; i < acceptedReadings.Count; i++)
         {
-            var reading = acceptedReadings[i];
             if (!sensorByReadingIndex.TryGetValue(i, out var sensor))
                 continue;
+            var reading = acceptedReadings[i];
+            if (!bySensor.TryGetValue(sensor.Id, out var list))
+            {
+                list = new List<(SensorReading, Sensor)>();
+                bySensor[sensor.Id] = list;
+            }
+            list.Add((reading, sensor));
+        }
 
+        var alertedSensorIds = new HashSet<Guid>();
+
+        foreach (var (sensorId, readingSensorList) in bySensor)
+        {
+            var sensor = readingSensorList[0].Sensor;
             var threshold = sensor.Threshold;
             if (threshold == null)
                 continue;
 
-            var isOutOfRange = reading.Value < threshold.Min || reading.Value > threshold.Max;
-            if (!isOutOfRange)
-                continue;
+            var duration = threshold.Duration;
+            var readingsInOrder = readingSensorList
+                .Select(x => x.Reading)
+                .OrderBy(r => r.TimestampUtc)
+                .ToList();
 
-            if (alertedSensorIds.Contains(sensor.Id))
-                continue;
+            DateTime? firstOutOfRangeAt = sensor.FirstOutOfRangeAt;
 
-            var existingUnresolved = await alertRepository.GetUnresolvedBySensorIdAsync(sensor.Id);
+            var existingUnresolved = await alertRepository.GetUnresolvedBySensorIdAsync(sensorId);
             if (existingUnresolved != null)
-                continue;
-
-            var severity = reading.Value > threshold.Max ? AlertSeverity.Critical : AlertSeverity.Warning;
-
-            newAlerts.Add(new Alert
             {
-                Id = Guid.NewGuid(),
-                SensorId = sensor.Id,
-                EquipmentId = sensor.EquipmentId,
-                SiteId = sensor.Equipment.SiteId,
-                OrganizationId = organizationId,
-                Severity = severity,
-                TriggeredValue = reading.Value,
-                ThresholdMin = threshold.Min,
-                ThresholdMax = threshold.Max,
-                TriggeredAt = reading.TimestampUtc,
-                Status = AlertStatus.Active,
-                ResolvedAt = null,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = null,
-                DeletedAt = null
-            });
+                // Still update breach state (e.g. in-range clears the timer) but do not create new alerts
+                foreach (var reading in readingsInOrder)
+                {
+                    var isOutOfRange = reading.Value < threshold.Min || reading.Value > threshold.Max;
+                    if (isOutOfRange)
+                    {
+                        if (firstOutOfRangeAt == null)
+                            firstOutOfRangeAt = reading.TimestampUtc;
+                    }
+                    else
+                    {
+                        firstOutOfRangeAt = null;
+                    }
+                }
+                breachStateUpdates[sensorId] = firstOutOfRangeAt;
+                continue;
+            }
 
-            alertedSensorIds.Add(sensor.Id);
+            foreach (var reading in readingsInOrder)
+            {
+                var isOutOfRange = reading.Value < threshold.Min || reading.Value > threshold.Max;
+                if (isOutOfRange)
+                {
+                    if (firstOutOfRangeAt == null)
+                        firstOutOfRangeAt = reading.TimestampUtc;
+
+                    var durationMet = duration <= TimeSpan.Zero
+                        || (reading.TimestampUtc - firstOutOfRangeAt.Value) >= duration;
+
+                    if (durationMet && !alertedSensorIds.Contains(sensorId))
+                    {
+                        var severity = reading.Value > threshold.Max ? AlertSeverity.Critical : AlertSeverity.Warning;
+                        newAlerts.Add(new Alert
+                        {
+                            Id = Guid.NewGuid(),
+                            SensorId = sensor.Id,
+                            EquipmentId = sensor.EquipmentId,
+                            SiteId = sensor.Equipment.SiteId,
+                            OrganizationId = organizationId,
+                            Severity = severity,
+                            TriggeredValue = reading.Value,
+                            ThresholdMin = threshold.Min,
+                            ThresholdMax = threshold.Max,
+                            TriggeredAt = reading.TimestampUtc,
+                            Status = AlertStatus.Active,
+                            ResolvedAt = null,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = null,
+                            DeletedAt = null
+                        });
+                        alertedSensorIds.Add(sensorId);
+                        firstOutOfRangeAt = null;
+                    }
+                }
+                else
+                {
+                    firstOutOfRangeAt = null;
+                }
+            }
+
+            breachStateUpdates[sensorId] = firstOutOfRangeAt;
         }
 
-        return newAlerts;
+        return (newAlerts, breachStateUpdates);
     }
 }
