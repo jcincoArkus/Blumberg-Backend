@@ -106,6 +106,17 @@ public class AlertRepository(ApplicationDbContext context, ILogger<AlertReposito
 
     /// <inheritdoc />
     [Span]
+    public virtual async Task<Alert?> GetUnresolvedBySensorIdAsync(Guid sensorId)
+    {
+        return await context.Alerts
+            .FirstOrDefaultAsync(e =>
+                e.SensorId == sensorId
+                && (e.Status == AlertStatus.Active || e.Status == AlertStatus.Acknowledged)
+                && e.DeletedAt == null);
+    }
+
+    /// <inheritdoc />
+    [Span]
     public virtual async Task<Alert> CreateAsync(Alert entity)
     {
         entity.Id = Guid.NewGuid();

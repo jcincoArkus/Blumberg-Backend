@@ -29,6 +29,12 @@ public interface IAlertRepository
     Task<Alert?> GetActiveBySensorIdAsync(Guid sensorId);
 
     /// <summary>
+    /// Gets an unresolved alert (Active or Acknowledged) for a sensor, or null if none exists.
+    /// Used to enforce: do not create a new alert until the previous one is Resolved.
+    /// </summary>
+    Task<Alert?> GetUnresolvedBySensorIdAsync(Guid sensorId);
+
+    /// <summary>
     /// Creates a new alert (and its initial Triggered event) and saves. Preferred way to create a single alert.
     /// </summary>
     Task<Alert> CreateAsync(Alert entity);

@@ -215,8 +215,8 @@ public class IngestionService(
             if (alertedSensorIds.Contains(sensor.Id))
                 continue;
 
-            var existingActive = await alertRepository.GetActiveBySensorIdAsync(sensor.Id);
-            if (existingActive != null)
+            var existingUnresolved = await alertRepository.GetUnresolvedBySensorIdAsync(sensor.Id);
+            if (existingUnresolved != null)
                 continue;
 
             var severity = reading.Value > threshold.Max ? AlertSeverity.Critical : AlertSeverity.Warning;
