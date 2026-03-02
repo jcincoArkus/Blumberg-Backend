@@ -42,6 +42,25 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
         }
     }
 
+    /// <summary>Get active (unresolved) alerts ordered by severity for the dashboard</summary>
+    [HttpGet("active", Name = "GetActiveAlertsV1")]
+    [ProducesResponseType(typeof(IReadOnlyList<ActiveAlertResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ActiveAlertResponse>>> GetActive()
+    {
+        logger.LogDebug("Getting active alerts for dashboard");
+        try
+        {
+            var items = await service.GetActiveAsync();
+            logger.LogInformation("Retrieved {Count} active alerts", items.Count);
+            return Ok(items);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting active alerts");
+            return StatusCode(500, new { message = "An error occurred while getting active alerts" });
+        }
+    }
+
     /// <summary>Get alert by ID</summary>
     [HttpGet("{id}", Name = "GetAlertByIdV1")]
     [ProducesResponseType(typeof(AlertResponse), StatusCodes.Status200OK)]
