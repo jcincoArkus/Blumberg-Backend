@@ -17,7 +17,7 @@
     <ProjectReference Include="..\..\Shared\Shared.csproj" />
     <ProjectReference Include="..\Database\Adapters.Database.csproj" />
     <ProjectReference Include="..\Jwt\Adapters.Jwt.csproj" />
-    <ProjectReference Include="..\OpenAPI\Adapters.OpenAPI.csproj" />
+    <ProjectReference Include="..\OpenApi\Adapters.OpenApi.csproj" />
     <ProjectReference Include="..\..\Modules\Modules.csproj" />
     <ProjectReference Include="..\Permissions\Adapters.Permissions.csproj" />
   </ItemGroup>
