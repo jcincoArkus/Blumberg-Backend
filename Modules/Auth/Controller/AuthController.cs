@@ -47,5 +47,35 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
             return StatusCode(500, new { message = "An error occurred during login" });
         }
     }
+
+    /// <summary>
+    /// Refreshes the access token using a valid refresh token (long-lived session)
+    /// </summary>
+    /// <param name="request">Refresh token from login or previous refresh</param>
+    /// <returns>New access and refresh tokens</returns>
+    /// <response code="200">Tokens refreshed</response>
+    /// <response code="401">Invalid or expired refresh token</response>
+    [AllowAnonymous]
+    [HttpPost("refresh", Name = "RefreshV1")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponse>> Refresh([FromBody] RefreshRequest request)
+    {
+        try
+        {
+            var response = await authService.RefreshAsync(request);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            logger.LogWarning("Refresh failed: {Message}", ex.Message);
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during token refresh");
+            return StatusCode(500, new { message = "An error occurred during refresh" });
+        }
+    }
 }
 

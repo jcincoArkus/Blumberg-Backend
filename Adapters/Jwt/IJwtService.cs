@@ -34,5 +34,17 @@ public interface IJwtService
     /// <param name="token">JWT token</param>
     /// <returns>User ID if valid, null otherwise</returns>
     Guid? GetUserIdFromToken(string token);
+
+    /// <summary>
+    /// Generates a long-lived refresh token for the given user (same claims as access token plus token_type=refresh).
+    /// </summary>
+    string GenerateRefreshToken(Guid userId, string email, string firstName, string lastName, Guid organizationId);
+
+    /// <summary>
+    /// Validates that the token is a valid refresh token (signature, lifetime, and token_type=refresh).
+    /// </summary>
+    /// <param name="token">JWT refresh token</param>
+    /// <returns>True if valid refresh token, false otherwise</returns>
+    bool ValidateRefreshToken(string token);
 }
 

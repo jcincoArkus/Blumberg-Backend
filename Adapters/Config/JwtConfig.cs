@@ -41,14 +41,23 @@ public class JwtConfig
     public string Audience { get; private set; } = "Blumberg.Client";
 
     /// <summary>
-    /// Token expiration time in hours
+    /// Access token expiration time in hours
     /// </summary>
     /// <remarks>
     /// Default: 24 hours
-    /// Recommended: 1-24 hours for web apps, shorter for mobile apps
+    /// Recommended: 1-24 hours for web apps; use refresh tokens for long-lived sessions
     /// </remarks>
     /// <example>24, 12, 1</example>
     public int ExpirationHours { get; private set; } = 24;
+
+    /// <summary>
+    /// Refresh token expiration time in days
+    /// </summary>
+    /// <remarks>
+    /// Default: 7 days. Used for long-lived sessions; client exchanges refresh token for new access token.
+    /// </remarks>
+    /// <example>7, 30</example>
+    public int RefreshExpirationDays { get; private set; } = 7;
 
     /// <summary>
     /// Initializes configuration from environment variables
@@ -59,6 +68,7 @@ public class JwtConfig
         Issuer = EnvHelper.GetEnv("JWT_ISSUER", "Blumberg.API");
         Audience = EnvHelper.GetEnv("JWT_AUDIENCE", "Blumberg.Client");
         ExpirationHours = EnvHelper.GetEnvInt("JWT_EXPIRATION_HOURS", 24);
+        RefreshExpirationDays = EnvHelper.GetEnvInt("JWT_REFRESH_EXPIRATION_DAYS", 7);
 
         return this;
     }
@@ -82,15 +92,14 @@ public class JwtConfig
         if (string.IsNullOrWhiteSpace(Audience))
             throw new InvalidOperationException("JWT audience (JWT_AUDIENCE) is required");
 
-        switch (ExpirationHours)
-        {
-            case <= 0:
-                throw new InvalidOperationException("JWT expiration hours must be greater than 0");
-            // 30 days
-            case > 720:
-                Console.WriteLine("WARNING: JWT expiration is set to more than 30 days. Consider using refresh tokens.");
-                break;
-        }
+        if (ExpirationHours <= 0)
+            throw new InvalidOperationException("JWT expiration hours must be greater than 0");
+
+        if (ExpirationHours > 720) // 30 days
+            Console.WriteLine("WARNING: JWT expiration is set to more than 30 days. Consider shorter access token with refresh flow.");
+
+        if (RefreshExpirationDays <= 0)
+            throw new InvalidOperationException("JWT refresh expiration days must be greater than 0");
 
         return this;
     }

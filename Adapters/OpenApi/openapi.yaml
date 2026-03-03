@@ -434,6 +434,47 @@ paths:
             text/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      operationId: RefreshV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /api/v1/equipment:
     get:
       tags:
@@ -2747,6 +2788,9 @@ components:
         token:
           type: string
           nullable: true
+        refreshToken:
+          type: string
+          nullable: true
         email:
           type: string
           nullable: true
@@ -3122,6 +3166,13 @@ components:
           type: string
           nullable: true
       additionalProperties: { }
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          nullable: true
+      additionalProperties: false
     RejectedReadingResult:
       type: object
       properties:
