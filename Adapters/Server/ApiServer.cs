@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Adapters.Config;
 using Adapters.Database;
+using Adapters.Database.Seeders;
 using Adapters.Jwt;
 using Adapters.Logger;
 using Adapters.Telemetry;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 using Modules;
 
@@ -54,15 +57,20 @@ public class ApiServer
 
     private static void ConfigureServices(IServiceCollection services, AppConfig config)
     {
-        // Controllers and API Explorer
-        var mvcBuilder = services.AddControllers();
+        // Controllers and API Explorer (camelCase JSON so frontend receives equipmentName, sensorSerial, etc.)
+        var mvcBuilder = services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+            });
         foreach (var assembly in ModulesSetup.GetControllerAssemblies())
         {
             mvcBuilder.AddApplicationPart(assembly);
         }
         services.AddEndpointsApiExplorer();
 
-        // Swagger with JWT security
+        // Swagger with JWT and API key security
         services.AddSwaggerGen(options =>
         {
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -73,6 +81,13 @@ public class ApiServer
                 Type = SecuritySchemeType.Http,
                 BearerFormat = "JWT",
                 Scheme = "Bearer"
+            });
+            options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+            {
+                In = ParameterLocation.Header,
+                Name = "X-Api-Key",
+                Type = SecuritySchemeType.ApiKey,
+                Description = "API key for ingestion (machine-to-machine). Use header X-Api-Key."
             });
             options.OperationFilter<AuthorizeCheckOperationFilter>();
         });
@@ -85,8 +100,8 @@ public class ApiServer
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(config.Database.GetConnectionString()));
 
-        // JWT Authentication
-        services.AddJwtAuthentication(config);
+        // JWT + API key authentication (API key for ingestion / M2M)
+        services.AddJwtAuthentication(config).AddApiKeyAuthentication();
 
         // Casbin Authorization
         services.AddCasbinAuthorization();
@@ -114,27 +129,38 @@ public class ApiServer
         {
             // Initialize permission system (migrations, policies, role metadata)
             InitializePermissionSystemAsync(app.Services).GetAwaiter().GetResult();
+
+            // Dev only: run seeders so DB has org, sites, equipment, sensors, readings, admins (idempotent)
+            if (app.Environment.IsDevelopment())
+            {
+                RunSeedersIfDevelopmentAsync(app.Services).GetAwaiter().GetResult();
+            }
         }
 
         // Request logging (must be early in pipeline)
         app.UseStructuredRequestLogging();
 
+        // Swagger and Swagger UI first so /swagger and /swagger/v1/swagger.json are served
+        // before auth (avoids 403 Forbidden when opening Swagger UI unauthenticated)
+        app.UseSwagger();
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blumberg API v1");
             });
         }
-        else
+
+        // Routing must run before CORS so the CORS middleware can apply the policy correctly (required for preflight and CORS headers on responses)
+        app.UseRouting();
+
+        // CORS after Routing, before Auth — so preflight OPTIONS and all responses get Access-Control-Allow-Origin; skip HTTPS redirect in Dev so http://localhost works
+        app.UseCors("AllowAll");
+        if (!app.Environment.IsDevelopment())
         {
-            // Always enable Swagger for OpenAPI generation
-            app.UseSwagger();
+            app.UseHttpsRedirection();
         }
 
-        app.UseHttpsRedirection();
-        app.UseCors("AllowAll");
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
@@ -146,6 +172,23 @@ public class ApiServer
     private static async Task InitializePermissionSystemAsync(IServiceProvider serviceProvider)
     {
         await serviceProvider.InitializePermissionSystemAsync();
+    }
+
+    /// <summary>
+    /// Runs all seeders in Development using design-time context (no tenant).
+    /// Seeders are idempotent and skip when data already exists.
+    /// Each seeder logs whether it created data or skipped (already present).
+    /// </summary>
+    private static async Task RunSeedersIfDevelopmentAsync(IServiceProvider serviceProvider)
+    {
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("ApiServer");
+        logger.LogInformation("Dev seed: running (idempotent — seeders log created/skipped below)");
+
+        await using var context = ApplicationDbContextFactory.Create();
+        var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+        await SeederRunner.RunSeedersAsync(context, loggerFactory);
+
+        logger.LogInformation("Dev seed: finished");
     }
 
     public void Run() => _app.Run();

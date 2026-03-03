@@ -1,5 +1,6 @@
 using System.Text;
 using Adapters.Config;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -15,8 +16,8 @@ public static class JwtSetup
     /// Adds JWT authentication to the service collection using config from ConfigLoader
     /// </summary>
     /// <param name="services">Service collection</param>
-    /// <returns>Service collection for chaining</returns>
-    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services)
+    /// <returns>Authentication builder for chaining (e.g. AddApiKeyAuthentication)</returns>
+    public static AuthenticationBuilder AddJwtAuthentication(this IServiceCollection services)
     {
         var config = ConfigLoader.Load();
         return services.AddJwtAuthentication(config);
@@ -27,8 +28,8 @@ public static class JwtSetup
     /// </summary>
     /// <param name="services">Service collection</param>
     /// <param name="config">Application configuration</param>
-    /// <returns>Service collection for chaining</returns>
-    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, AppConfig config)
+    /// <returns>Authentication builder for chaining</returns>
+    public static AuthenticationBuilder AddJwtAuthentication(this IServiceCollection services, AppConfig config)
     {
         var jwt = config.Jwt;
 
@@ -40,10 +41,10 @@ public static class JwtSetup
 
         // Register JWT service
         services.AddScoped<IJwtService>(sp =>
-            new JwtService(jwt.SecretKey, jwt.Issuer, jwt.Audience, jwt.ExpirationHours));
+            new JwtService(jwt.SecretKey, jwt.Issuer, jwt.Audience, jwt.ExpirationHours, jwt.RefreshExpirationDays));
 
-        // Configure authentication
-        services.AddAuthentication(options =>
+        // Configure authentication (return builder so caller can add ApiKey scheme, etc.)
+        var authBuilder = services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -79,8 +80,7 @@ public static class JwtSetup
         });
 
         services.AddAuthorization();
-
-        return services;
+        return authBuilder;
     }
 }
 

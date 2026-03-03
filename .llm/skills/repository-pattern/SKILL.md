@@ -5,95 +5,68 @@ description: Pattern for creating EF Core repositories with soft delete, tenant 
 
 # Repository Pattern
 
-## Overview
+Create repositories at `Modules/{Feature}/Repository/I{Feature}Repository.cs` and `{Feature}Repository.cs`.
 
-Pattern for creating **EF Core repositories** with soft delete support, multi-tenant filtering, eager loading via `.Include()`, and automatic OpenTelemetry instrumentation.
+**All list queries must be paginated** — never return unbounded lists.
 
-## Key Principles
-
-1. **Interface + Implementation**: Always define interface for testability
-2. **Soft Delete**: Use `DeletedAt` field instead of hard deletes
-3. **Eager Loading**: Include related entities with `.Include()`
-4. **Span Attribute**: Use `[Span]` on all public methods
-5. **Virtual Methods**: Required for Castle.DynamicProxy interception
-
-## Template: Repository Interface
+## Interface Template
 
 ```csharp
+using Shared.Dto;
+
 namespace Modules.Items.Repository;
 
-/// <summary>
-/// Repository interface for Item entity operations
-/// </summary>
 public interface IItemRepository
 {
-    /// <summary>
-    /// Gets all items that are not soft deleted
-    /// </summary>
-    Task<List<Shared.Entity.Item>> GetAllAsync();
-
-    /// <summary>
-    /// Gets an item by ID
-    /// </summary>
-    /// <returns>Item entity or null if not found</returns>
+    Task<(IReadOnlyList<Shared.Entity.Item> Items, int TotalCount)> GetPagedAsync(PaginationRequest request);
     Task<Shared.Entity.Item?> GetByIdAsync(Guid id);
-
-    /// <summary>
-    /// Creates a new item
-    /// </summary>
     Task<Shared.Entity.Item> CreateAsync(Shared.Entity.Item item);
-
-    /// <summary>
-    /// Updates an existing item
-    /// </summary>
     Task<Shared.Entity.Item> UpdateAsync(Shared.Entity.Item item);
-
-    /// <summary>
-    /// Soft deletes an item by setting DeletedAt timestamp
-    /// </summary>
-    /// <returns>True if found and deleted, false otherwise</returns>
     Task<bool> SoftDeleteAsync(Guid id);
 }
 ```
 
-## Template: Repository Implementation
+## Implementation Template
 
 ```csharp
 using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Shared.Dto;
 
 namespace Modules.Items.Repository;
 
-/// <summary>
-/// Repository implementation for Item entity operations
-/// </summary>
 public class ItemRepository(
     ApplicationDbContext context,
     ILogger<ItemRepository> logger) : IItemRepository
 {
     private readonly ApplicationDbContext _context = context;
 
-    /// <inheritdoc />
     [Span]
-    public virtual async Task<List<Shared.Entity.Item>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Shared.Entity.Item> Items, int TotalCount)> GetPagedAsync(
+        PaginationRequest request)
     {
-        logger.LogDebug("Querying all items");
+        logger.LogDebug("Querying items page {Page}, size {PageSize}", request.Page, request.PageSize);
 
-        var items = await _context.Items
-            .Where(i => i.DeletedAt == null)
+        var query = _context.Items.Where(i => i.DeletedAt == null);
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+            query = query.Where(i => i.Name.Contains(request.Search));
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
             .Include(i => i.Organization)
-            .Include(i => i.Category)
             .OrderBy(i => i.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync();
 
-        logger.LogInformation("Retrieved {Count} items from database", items.Count);
-
-        return items;
+        logger.LogInformation("Retrieved {Count} of {Total} items from database", items.Count, totalCount);
+        return (items, totalCount);
     }
 
-    /// <inheritdoc />
     [Span]
     public virtual async Task<Shared.Entity.Item?> GetByIdAsync(Guid id)
     {
@@ -101,7 +74,6 @@ public class ItemRepository(
 
         var item = await _context.Items
             .Include(i => i.Organization)
-            .Include(i => i.Category)
             .FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
 
         if (item != null)
@@ -112,11 +84,10 @@ public class ItemRepository(
         return item;
     }
 
-    /// <inheritdoc />
     [Span(IncludeArguments = true)]
     public virtual async Task<Shared.Entity.Item> CreateAsync(Shared.Entity.Item item)
     {
-        logger.LogDebug("Creating item in database: {Name}", item.Name);
+        logger.LogDebug("Creating item in database");
 
         item.Id = Guid.NewGuid();
         item.CreatedAt = DateTime.UtcNow;
@@ -127,11 +98,9 @@ public class ItemRepository(
         await _context.SaveChangesAsync();
 
         logger.LogInformation("Item created with ID: {Id}", item.Id);
-
         return item;
     }
 
-    /// <inheritdoc />
     [Span(IncludeArguments = true)]
     public virtual async Task<Shared.Entity.Item> UpdateAsync(Shared.Entity.Item item)
     {
@@ -142,12 +111,10 @@ public class ItemRepository(
         _context.Items.Update(item);
         await _context.SaveChangesAsync();
 
-        logger.LogInformation("Item {Id} updated", item.Id);
-
+        logger.LogInformation("Item {Id} updated in database", item.Id);
         return item;
     }
 
-    /// <inheritdoc />
     [Span]
     public virtual async Task<bool> SoftDeleteAsync(Guid id)
     {
@@ -166,89 +133,19 @@ public class ItemRepository(
         await _context.SaveChangesAsync();
 
         logger.LogInformation("Item {Id} soft deleted", id);
-
         return true;
     }
 }
 ```
 
-## Template: Paginated Query
+## Project Conventions
 
-```csharp
-/// <summary>
-/// Gets paginated items
-/// </summary>
-[Span]
-public virtual async Task<(List<Shared.Entity.Item> Items, int TotalCount)> GetPaginatedAsync(
-    int page,
-    int pageSize,
-    string? search = null)
-{
-    logger.LogDebug("Querying items page {Page}, size {PageSize}", page, pageSize);
-
-    var query = _context.Items
-        .Where(i => i.DeletedAt == null);
-
-    // Apply search filter
-    if (!string.IsNullOrWhiteSpace(search))
-    {
-        query = query.Where(i => i.Name.Contains(search));
-    }
-
-    // Get total count before pagination
-    var totalCount = await query.CountAsync();
-
-    // Apply pagination
-    var items = await query
-        .Include(i => i.Organization)
-        .OrderBy(i => i.CreatedAt)
-        .Skip((page - 1) * pageSize)
-        .Take(pageSize)
-        .ToListAsync();
-
-    logger.LogInformation("Retrieved {Count} of {Total} items", items.Count, totalCount);
-
-    return (items, totalCount);
-}
-```
-
-## Common Patterns
-
-**Filter by related entity:**
-```csharp
-var items = await _context.Items
-    .Where(i => i.CategoryId == categoryId && i.DeletedAt == null)
-    .ToListAsync();
-```
-
-**Multiple includes:**
-```csharp
-var item = await _context.Items
-    .Include(i => i.Organization)
-    .Include(i => i.Category)
-    .Include(i => i.Tags)
-    .FirstOrDefaultAsync(i => i.Id == id);
-```
-
-**Nested includes:**
-```csharp
-var item = await _context.Items
-    .Include(i => i.Category)
-        .ThenInclude(c => c.ParentCategory)
-    .FirstOrDefaultAsync(i => i.Id == id);
-```
-
-## Best Practices
-
-✅ **DO:**
-- Mark methods as `virtual` (required for proxy interception)
-- Use `[Span]` on all public repository methods
-- Always filter by `DeletedAt == null` for soft deletes
-- Set `CreatedAt` and `UpdatedAt` timestamps
-- Use `.Include()` for eager loading related entities
-
-❌ **DON'T:**
-- Hard delete records (use soft delete)
-- Use `AsNoTracking()` when you need to update
-- Forget to call `SaveChangesAsync()`
-- Return IQueryable (materialize with `ToListAsync()`)
+- **Always paginated** — list methods accept `PaginationRequest` and return `(IReadOnlyList<T> Items, int TotalCount)` tuple
+- **`PaginationRequest`** — shared base class in `Shared/Dto/` with `Page`, `PageSize`, `Search`; extend for custom filters
+- **`[Span]`** on all public methods — `[Span(IncludeArguments = true)]` for create/update
+- **`virtual`** required on all public methods (Castle.DynamicProxy interception)
+- **Timestamps**: Repository sets `Id = Guid.NewGuid()`, `CreatedAt = DateTime.UtcNow` on create; `UpdatedAt = DateTime.UtcNow` on update/delete
+- **OrganizationId**: Do NOT set manually — `SaveChangesAsync` auto-sets it from `ITenantContext`
+- **Soft-delete filter**: Always add `.Where(e => e.DeletedAt == null)` explicitly in queries. Global query filters exist in `ApplicationDbContext` but repos filter defensively as well.
+- **Eager loading**: Use `.Include()` for navigation properties needed by the controller's `MapToResponse()`
+- **Count before pagination**: Always `CountAsync()` before `.Skip().Take()` to get total

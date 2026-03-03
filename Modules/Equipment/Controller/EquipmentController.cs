@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Modules.Equipment.Service;
-using Modules.Equipment.Dto;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Modules.Equipment.Dto;
+using Modules.Equipment.Service;
+using Shared.Dto;
 
 namespace Modules.Equipment.Controller;
 
@@ -17,20 +18,27 @@ namespace Modules.Equipment.Controller;
 public class EquipmentController(IEquipmentService equipmentService, ILogger<EquipmentController> logger) : ControllerBase
 {
     /// <summary>
-    /// Gets all equipment
+    /// Gets paginated equipment
     /// </summary>
-    /// <returns>List of equipment</returns>
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated list of equipment</returns>
     [HttpGet(Name = "GetAllEquipmentV1")]
-    [ProducesResponseType(typeof(List<EquipmentResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<EquipmentResponse>>> GetAll()
+    [ProducesResponseType(typeof(PagedResponse<EquipmentResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<EquipmentResponse>>> GetAll([FromQuery] PaginationRequest request)
     {
         logger.LogDebug("Getting all equipment");
 
         try
         {
-            var equipment = await equipmentService.GetAllAsync();
-            logger.LogInformation("Retrieved {Count} equipment", equipment.Count);
-            return Ok(equipment);
+            var (items, totalCount) = await equipmentService.GetAllAsync(request);
+            logger.LogInformation("Retrieved {Count} equipment", items.Count);
+            return Ok(new PagedResponse<EquipmentResponse>
+            {
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                Page = request.Page,
+                PageSize = request.PageSize
+            });
         }
         catch (Exception ex)
         {
@@ -55,7 +63,7 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
         {
             var equipment = await equipmentService.GetByIdAsync(id);
             logger.LogInformation("Retrieved equipment {Id}", id);
-            return Ok(equipment);
+            return Ok(MapToResponse(equipment));
         }
         catch (KeyNotFoundException ex)
         {
@@ -84,8 +92,9 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
         try
         {
             var newEquipment = await equipmentService.CreateAsync(request);
-            logger.LogInformation("Equipment created successfully with ID: {Id}", newEquipment.Id);
-            return CreatedAtAction(nameof(GetById), new { id = newEquipment.Id }, newEquipment);
+            var response = MapToResponse(newEquipment);
+            logger.LogInformation("Equipment created successfully with ID: {Id}", response.Id);
+            return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
         }
         catch (InvalidOperationException ex)
         {
@@ -117,7 +126,7 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
         {
             var updatedEquipment = await equipmentService.UpdateAsync(id, request);
             logger.LogInformation("Equipment {Id} updated successfully", id);
-            return Ok(updatedEquipment);
+            return Ok(MapToResponse(updatedEquipment));
         }
         catch (KeyNotFoundException ex)
         {
@@ -152,7 +161,7 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
         {
             await equipmentService.DeleteAsync(id);
             logger.LogInformation("Equipment {Id} deleted successfully", id);
-            return NoContent();
+            return Ok();
         }
         catch (KeyNotFoundException ex)
         {
@@ -164,5 +173,24 @@ public class EquipmentController(IEquipmentService equipmentService, ILogger<Equ
             logger.LogError(ex, "Error deleting equipment {Id}", id);
             return StatusCode(500, new { message = "An error occurred while deleting equipment" });
         }
+    }
+
+    /// <summary>
+    /// Maps an Equipment entity to an EquipmentResponse DTO
+    /// </summary>
+    private static EquipmentResponse MapToResponse(Shared.Entity.Equipment equipment)
+    {
+        return new EquipmentResponse
+        {
+            Id = equipment.Id,
+            Name = equipment.Name,
+            EquipmentType = equipment.EquipmentType,
+            OrganizationId = equipment.OrganizationId,
+            OrganizationName = equipment.Organization?.Name ?? string.Empty,
+            SiteId = equipment.SiteId,
+            SiteName = equipment.Site?.Name ?? string.Empty,
+            CreatedAt = equipment.CreatedAt,
+            UpdatedAt = equipment.UpdatedAt
+        };
     }
 }

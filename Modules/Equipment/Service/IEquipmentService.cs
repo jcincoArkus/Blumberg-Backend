@@ -1,4 +1,5 @@
 using Modules.Equipment.Dto;
+using Shared.Dto;
 
 namespace Modules.Equipment.Service;
 
@@ -8,36 +9,37 @@ namespace Modules.Equipment.Service;
 public interface IEquipmentService
 {
     /// <summary>
-    /// Gets all equipment
+    /// Gets paginated equipment
     /// </summary>
-    /// <returns>List of equipment responses</returns>
-    Task<List<EquipmentResponse>> GetAllAsync();
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated equipment and total count</returns>
+    Task<(IReadOnlyList<Shared.Entity.Equipment> Items, int TotalCount)> GetAllAsync(PaginationRequest request);
 
     /// <summary>
     /// Gets equipment by ID
     /// </summary>
     /// <param name="id">Equipment ID</param>
-    /// <returns>Equipment response</returns>
+    /// <returns>Equipment entity</returns>
     /// <exception cref="KeyNotFoundException">When equipment is not found</exception>
-    Task<EquipmentResponse> GetByIdAsync(Guid id);
+    Task<Shared.Entity.Equipment> GetByIdAsync(Guid id);
 
     /// <summary>
     /// Creates new equipment
     /// </summary>
     /// <param name="request">Equipment creation request</param>
-    /// <returns>Created equipment response</returns>
+    /// <returns>Created equipment entity</returns>
     /// <exception cref="InvalidOperationException">When equipment creation fails</exception>
-    Task<EquipmentResponse> CreateAsync(EquipmentRequest request);
+    Task<Shared.Entity.Equipment> CreateAsync(EquipmentRequest request);
 
     /// <summary>
     /// Updates existing equipment
     /// </summary>
     /// <param name="id">Equipment ID</param>
     /// <param name="request">Equipment update request</param>
-    /// <returns>Updated equipment response</returns>
+    /// <returns>Updated equipment entity</returns>
     /// <exception cref="KeyNotFoundException">When equipment is not found</exception>
     /// <exception cref="InvalidOperationException">When equipment update fails</exception>
-    Task<EquipmentResponse> UpdateAsync(Guid id, EquipmentRequest request);
+    Task<Shared.Entity.Equipment> UpdateAsync(Guid id, EquipmentRequest request);
 
     /// <summary>
     /// Soft deletes equipment

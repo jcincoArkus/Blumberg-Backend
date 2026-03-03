@@ -2,6 +2,7 @@ using Adapters.Telemetry;
 using Microsoft.Extensions.Logging;
 using Modules.Admins.Dto;
 using Modules.Auth.Repository;
+using Shared.Dto;
 using Shared.Entity;
 
 namespace Modules.Admins.Service;
@@ -13,28 +14,20 @@ public class AdminService(IAdminRepository adminRepository, ILogger<AdminService
 {
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<AdminResponse>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Admin> Items, int TotalCount)> GetAllAsync(PaginationRequest request)
     {
-        logger.LogDebug("Getting all admins from repository");
+        logger.LogDebug("Getting admins page {Page}, pageSize {PageSize}", request.Page, request.PageSize);
 
-        var admins = await adminRepository.GetAllAsync();
+        var result = await adminRepository.GetPagedAsync(request);
 
-        logger.LogInformation("Retrieved {Count} admins", admins.Count);
+        logger.LogInformation("Retrieved {Count} admins (total: {TotalCount})", result.Items.Count, result.TotalCount);
 
-        return admins.Select(admin => new AdminResponse
-        {
-            Id = admin.Id,
-            Email = admin.Email,
-            FirstName = admin.FirstName,
-            LastName = admin.LastName,
-            CreatedAt = admin.CreatedAt,
-            UpdatedAt = admin.UpdatedAt
-        }).ToList();
+        return result;
     }
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<AdminResponse> GetByIdAsync(Guid id)
+    public virtual async Task<Admin> GetByIdAsync(Guid id)
     {
         logger.LogDebug("Getting admin by ID: {Id}", id);
 
@@ -48,20 +41,12 @@ public class AdminService(IAdminRepository adminRepository, ILogger<AdminService
 
         logger.LogInformation("Retrieved admin {Id}", id);
 
-        return new AdminResponse
-        {
-            Id = admin.Id,
-            Email = admin.Email,
-            FirstName = admin.FirstName,
-            LastName = admin.LastName,
-            CreatedAt = admin.CreatedAt,
-            UpdatedAt = admin.UpdatedAt
-        };
+        return admin;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<AdminResponse> CreateAsync(AdminRequest request)
+    public virtual async Task<Admin> CreateAsync(AdminRequest request)
     {
         logger.LogDebug("Creating new admin with email: {Email}", request.Email);
 
@@ -76,12 +61,10 @@ public class AdminService(IAdminRepository adminRepository, ILogger<AdminService
         // Create new admin entity
         var newAdmin = new Admin
         {
-            Id = Guid.NewGuid(),
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             FirstName = request.FirstName,
-            LastName = request.LastName,
-            CreatedAt = DateTime.UtcNow
+            LastName = request.LastName
         };
 
         // Save to database
@@ -89,21 +72,12 @@ public class AdminService(IAdminRepository adminRepository, ILogger<AdminService
 
         logger.LogInformation("Admin created successfully with ID: {Id}, Email: {Email}", createdAdmin.Id, createdAdmin.Email);
 
-        // Map to response DTO
-        return new AdminResponse
-        {
-            Id = createdAdmin.Id,
-            Email = createdAdmin.Email,
-            FirstName = createdAdmin.FirstName,
-            LastName = createdAdmin.LastName,
-            CreatedAt = createdAdmin.CreatedAt,
-            UpdatedAt = createdAdmin.UpdatedAt
-        };
+        return createdAdmin;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<AdminResponse> UpdateAsync(Guid id, AdminRequest request)
+    public virtual async Task<Admin> UpdateAsync(Guid id, AdminRequest request)
     {
         logger.LogDebug("Updating admin {Id}", id);
 
@@ -125,16 +99,7 @@ public class AdminService(IAdminRepository adminRepository, ILogger<AdminService
 
         logger.LogInformation("Admin {Id} updated successfully", id);
 
-        // Map to response DTO
-        return new AdminResponse
-        {
-            Id = updatedAdmin.Id,
-            Email = updatedAdmin.Email,
-            FirstName = updatedAdmin.FirstName,
-            LastName = updatedAdmin.LastName,
-            CreatedAt = updatedAdmin.CreatedAt,
-            UpdatedAt = updatedAdmin.UpdatedAt
-        };
+        return updatedAdmin;
     }
 
     /// <inheritdoc />
@@ -143,17 +108,14 @@ public class AdminService(IAdminRepository adminRepository, ILogger<AdminService
     {
         logger.LogDebug("Deleting admin {Id}", id);
 
-        var admin = await adminRepository.GetByIdAsync(id);
-        if (admin == null)
+        var deleted = await adminRepository.SoftDeleteAsync(id);
+
+        if (!deleted)
         {
             logger.LogWarning("Admin not found with ID: {Id}", id);
             throw new KeyNotFoundException($"Admin with ID {id} was not found.");
         }
 
-        // Soft delete admin entity
-        await adminRepository.DeleteAsync(admin);
-
         logger.LogInformation("Admin {Id} deleted successfully", id);
     }
-
 }

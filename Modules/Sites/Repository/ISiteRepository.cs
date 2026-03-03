@@ -1,3 +1,4 @@
+using Shared.Dto;
 using Shared.Entity;
 
 namespace Modules.Sites.Repository;
@@ -8,10 +9,11 @@ namespace Modules.Sites.Repository;
 public interface ISiteRepository
 {
     /// <summary>
-    /// Gets all sites that are not soft deleted
+    /// Gets paginated sites
     /// </summary>
-    /// <returns>List of active sites</returns>
-    Task<List<Site>> GetAllAsync();
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated sites and total count</returns>
+    Task<(IReadOnlyList<Site> Items, int TotalCount)> GetPagedAsync(PaginationRequest request);
 
     /// <summary>
     /// Gets a site by ID

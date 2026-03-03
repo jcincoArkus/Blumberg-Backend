@@ -2,6 +2,8 @@ using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Modules.Sensors.Dto;
+using Shared.Dto;
 
 namespace Modules.Sensors.Repository;
 
@@ -10,26 +12,65 @@ namespace Modules.Sensors.Repository;
 /// </summary>
 public class SensorRepository(ApplicationDbContext context, ILogger<SensorRepository> logger) : ISensorRepository
 {
-    private readonly ApplicationDbContext _context = context;
-
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<Shared.Entity.Sensor>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Shared.Entity.Sensor> Items, int TotalCount)> GetPagedAsync(PaginationRequest request)
     {
-        logger.LogDebug("Querying all sensors");
+        logger.LogDebug("Querying sensors page {Page}, pageSize {PageSize}, search '{Search}'", request.Page, request.PageSize, request.Search);
 
-        var sensors = await _context.Sensors
+        IQueryable<Shared.Entity.Sensor> query = context.Sensors
             .Where(s => s.DeletedAt == null)
             .Include(s => s.Organization)
             .Include(s => s.Equipment)
             .Include(s => s.SensorType)
-            .Include(s => s.Threshold)
+            .Include(s => s.Threshold);
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim().ToLower();
+            query = query.Where(s => s.Serial.ToLower().Contains(search));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
             .OrderBy(s => s.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync();
 
-        logger.LogInformation("Retrieved {Count} sensors from database", sensors.Count);
+        logger.LogInformation("Retrieved {Count} sensors from database (total: {TotalCount})", items.Count, totalCount);
 
-        return sensors;
+        return (items, totalCount);
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<IReadOnlyList<Shared.Entity.Sensor>> GetForHealthListAsync(GetSensorHealthRequest request)
+    {
+        IQueryable<Shared.Entity.Sensor> query = context.Sensors
+            .Where(s => s.DeletedAt == null)
+            .Include(s => s.Organization)
+            .Include(s => s.Equipment)
+                .ThenInclude(e => e.Site)
+            .Include(s => s.SensorType)
+            .Include(s => s.Threshold);
+
+        if (request.SiteId.HasValue)
+            query = query.Where(s => s.Equipment.SiteId == request.SiteId.Value);
+        if (request.EquipmentId.HasValue)
+            query = query.Where(s => s.EquipmentId == request.EquipmentId.Value);
+        if (request.Status.HasValue)
+            query = query.Where(s => s.Status == request.Status.Value);
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim().ToLower();
+            query = query.Where(s => s.Serial.ToLower().Contains(search));
+        }
+
+        var items = await query.OrderBy(s => s.CreatedAt).ToListAsync();
+        logger.LogDebug("Retrieved {Count} sensors for health list (filters applied)", items.Count);
+        return items;
     }
 
     /// <inheritdoc />
@@ -38,7 +79,7 @@ public class SensorRepository(ApplicationDbContext context, ILogger<SensorReposi
     {
         logger.LogDebug("Querying sensor by ID: {Id}", id);
 
-        var sensor = await _context.Sensors
+        var sensor = await context.Sensors
             .Include(s => s.Organization)
             .Include(s => s.Equipment)
             .Include(s => s.SensorType)
@@ -64,8 +105,8 @@ public class SensorRepository(ApplicationDbContext context, ILogger<SensorReposi
         sensor.UpdatedAt = null;
         sensor.DeletedAt = null;
 
-        _context.Sensors.Add(sensor);
-        await _context.SaveChangesAsync();
+        context.Sensors.Add(sensor);
+        await context.SaveChangesAsync();
 
         logger.LogInformation("Sensor created in database with ID: {Id}", sensor.Id);
 
@@ -80,8 +121,8 @@ public class SensorRepository(ApplicationDbContext context, ILogger<SensorReposi
 
         sensor.UpdatedAt = DateTime.UtcNow;
 
-        _context.Sensors.Update(sensor);
-        await _context.SaveChangesAsync();
+        context.Sensors.Update(sensor);
+        await context.SaveChangesAsync();
 
         logger.LogInformation("Sensor {Id} updated in database", sensor.Id);
 
@@ -104,7 +145,7 @@ public class SensorRepository(ApplicationDbContext context, ILogger<SensorReposi
         sensor.DeletedAt = DateTime.UtcNow;
         sensor.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         logger.LogInformation("Sensor {Id} soft deleted in database", id);
 

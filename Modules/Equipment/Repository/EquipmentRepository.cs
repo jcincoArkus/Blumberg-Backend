@@ -2,6 +2,7 @@ using Adapters.Database;
 using Adapters.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Shared.Dto;
 using Shared.Entity;
 
 namespace Modules.Equipment.Repository;
@@ -13,20 +14,32 @@ public class EquipmentRepository(ApplicationDbContext context, ILogger<Equipment
 {
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<Shared.Entity.Equipment>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Shared.Entity.Equipment> Items, int TotalCount)> GetPagedAsync(PaginationRequest request)
     {
-        logger.LogDebug("Querying all equipment");
+        logger.LogDebug("Querying equipment page {Page}, pageSize {PageSize}, search '{Search}'", request.Page, request.PageSize, request.Search);
 
-        var equipment = await context.Equipment
+        IQueryable<Shared.Entity.Equipment> query = context.Equipment
             .Where(e => e.DeletedAt == null)
             .Include(e => e.Organization)
-            .Include(e => e.Site)
+            .Include(e => e.Site);
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim().ToLower();
+            query = query.Where(e => e.Name.ToLower().Contains(search));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
             .OrderBy(e => e.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync();
 
-        logger.LogInformation("Retrieved {Count} equipment from database", equipment.Count);
+        logger.LogInformation("Retrieved {Count} equipment from database (total: {TotalCount})", items.Count, totalCount);
 
-        return equipment;
+        return (items, totalCount);
     }
 
     /// <inheritdoc />

@@ -58,6 +58,17 @@ public class Sensor : BaseEntity
     public Threshold Threshold { get; set; } = null!;
 
     /// <summary>
+    /// UTC timestamp of the most recent reading received for this sensor. Updated on each ingestion.
+    /// </summary>
+    public DateTime? LastSeenAt { get; set; }
+
+    /// <summary>
+    /// UTC timestamp when the current continuous out-of-range run started. Null when value is in range.
+    /// Used to enforce threshold duration: alert is only created after value stays out of range for Threshold.Duration.
+    /// </summary>
+    public DateTime? FirstOutOfRangeAt { get; set; }
+
+    /// <summary>
     /// Sensor readings produced by this sensor
     /// </summary>
     public ICollection<SensorReading> SensorReadings { get; set; } = new List<SensorReading>();

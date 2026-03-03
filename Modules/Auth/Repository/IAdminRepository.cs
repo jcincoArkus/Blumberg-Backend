@@ -1,3 +1,4 @@
+using Shared.Dto;
 using Shared.Entity;
 
 namespace Modules.Auth.Repository;
@@ -29,10 +30,11 @@ public interface IAdminRepository
     Task<bool> ExistsAsync(string email);
 
     /// <summary>
-    /// Gets all active admins
+    /// Gets paginated admins
     /// </summary>
-    /// <returns>List of active admin entities</returns>
-    Task<List<Admin>> GetAllAsync();
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated admins and total count</returns>
+    Task<(IReadOnlyList<Admin> Items, int TotalCount)> GetPagedAsync(PaginationRequest request);
 
     /// <summary>
     /// Creates a new admin
@@ -51,8 +53,7 @@ public interface IAdminRepository
     /// <summary>
     /// Soft deletes an admin by setting the DeletedAt timestamp
     /// </summary>
-    /// <param name="admin">Admin entity</param>
-    /// <returns>Soft deleted admin entity</returns>
-    Task<Admin> DeleteAsync(Admin admin);
+    /// <param name="id">Admin ID</param>
+    /// <returns>True if admin was found and deleted, false otherwise</returns>
+    Task<bool> SoftDeleteAsync(Guid id);
 }
-

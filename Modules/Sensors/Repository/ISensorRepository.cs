@@ -1,3 +1,6 @@
+using Modules.Sensors.Dto;
+using Shared.Dto;
+
 namespace Modules.Sensors.Repository;
 
 /// <summary>
@@ -6,10 +9,19 @@ namespace Modules.Sensors.Repository;
 public interface ISensorRepository
 {
     /// <summary>
-    /// Gets all sensors that are not soft deleted
+    /// Gets paginated sensors
     /// </summary>
-    /// <returns>List of active sensors</returns>
-    Task<List<Shared.Entity.Sensor>> GetAllAsync();
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated sensors and total count</returns>
+    Task<(IReadOnlyList<Shared.Entity.Sensor> Items, int TotalCount)> GetPagedAsync(PaginationRequest request);
+
+    /// <summary>
+    /// Gets all sensors matching health list filters (site, equipment, status) for health aggregation.
+    /// Does not apply healthStatus filter or pagination; caller computes health and paginates.
+    /// </summary>
+    /// <param name="request">Filters: SiteId, EquipmentId, Status (HealthStatus and pagination ignored)</param>
+    /// <returns>Matching sensors with Equipment and SensorType included</returns>
+    Task<IReadOnlyList<Shared.Entity.Sensor>> GetForHealthListAsync(GetSensorHealthRequest request);
 
     /// <summary>
     /// Gets a sensor by ID

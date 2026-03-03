@@ -39,4 +39,9 @@ public class Organization : BaseEntity
     /// Admins belonging to this organization
     /// </summary>
     public ICollection<Admin> Admins { get; set; } = new List<Admin>();
+
+    /// <summary>
+    /// Ingestion runs belonging to this organization
+    /// </summary>
+    public ICollection<IngestionRun> IngestionRuns { get; set; } = new List<IngestionRun>();
 }

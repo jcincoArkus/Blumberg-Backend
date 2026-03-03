@@ -70,9 +70,24 @@ public class ApplicationDbContext : DbContext
     public DbSet<Alert> Alerts => Set<Alert>();
 
     /// <summary>
+    /// Gets or sets the AlertEvents DbSet (append-only lifecycle events per alert)
+    /// </summary>
+    public DbSet<AlertEvent> AlertEvents => Set<AlertEvent>();
+
+    /// <summary>
     /// Gets or sets the IngestionRuns DbSet
     /// </summary>
     public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
+
+    /// <summary>
+    /// Gets or sets the IngestionRejectedReadings DbSet
+    /// </summary>
+    public DbSet<IngestionRejectedReading> IngestionRejectedReadings => Set<IngestionRejectedReading>();
+
+    /// <summary>
+    /// Gets or sets the API keys DbSet (no global filter; used for auth lookup by hash)
+    /// </summary>
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     /// <summary>
     /// Gets or sets the CasbinRules DbSet for authorization policies
@@ -103,7 +118,10 @@ public class ApplicationDbContext : DbContext
             typeof(Unit),
             typeof(IngestionSource),
             typeof(IngestionStatus),
-            typeof(SensorHealthStatus)
+            typeof(SensorHealthStatus),
+            typeof(AlertSeverity),
+            typeof(AlertStatus),
+            typeof(AlertEventType)
         };
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -130,8 +148,10 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Organization>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<SensorType>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Threshold>().HasQueryFilter(e => e.DeletedAt == null);
-        modelBuilder.Entity<Alert>().HasQueryFilter(e => e.DeletedAt == null);
-        modelBuilder.Entity<IngestionRun>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<Alert>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+        modelBuilder.Entity<AlertEvent>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+        // IngestionRun: tenant-scoped by OrganizationId
+        modelBuilder.Entity<IngestionRun>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
     }
 
     /// <summary>
@@ -158,6 +178,12 @@ public class ApplicationDbContext : DbContext
                     ValidateAndSetTenant(sn.OrganizationId, () => sn.OrganizationId = orgId!.Value, orgId, nameof(Sensor));
                 else if (entry.Entity is SensorReading sr)
                     ValidateAndSetTenant(sr.OrganizationId, () => sr.OrganizationId = orgId!.Value, orgId, nameof(SensorReading));
+                else if (entry.Entity is IngestionRun run)
+                    ValidateAndSetTenant(run.OrganizationId, () => run.OrganizationId = orgId!.Value, orgId, nameof(IngestionRun));
+                else if (entry.Entity is Alert alert)
+                    ValidateAndSetTenant(alert.OrganizationId, () => alert.OrganizationId = orgId!.Value, orgId, nameof(Alert));
+                else if (entry.Entity is AlertEvent alertEvent)
+                    ValidateAndSetTenant(alertEvent.OrganizationId, () => alertEvent.OrganizationId = orgId!.Value, orgId, nameof(AlertEvent));
             }
         }
 

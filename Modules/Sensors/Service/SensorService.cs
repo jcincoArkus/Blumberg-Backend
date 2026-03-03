@@ -1,7 +1,10 @@
+using System.Collections.Frozen;
 using Adapters.Telemetry;
 using Microsoft.Extensions.Logging;
 using Modules.Sensors.Dto;
 using Modules.Sensors.Repository;
+using Shared.Dto;
+using Shared.Enums;
 
 namespace Modules.Sensors.Service;
 
@@ -12,20 +15,20 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 {
     /// <inheritdoc />
     [Span]
-    public virtual async Task<List<SensorResponse>> GetAllAsync()
+    public virtual async Task<(IReadOnlyList<Shared.Entity.Sensor> Items, int TotalCount)> GetAllAsync(PaginationRequest request)
     {
-        logger.LogDebug("Getting all sensors from repository");
+        logger.LogDebug("Getting sensors page {Page}, pageSize {PageSize}", request.Page, request.PageSize);
 
-        var sensors = await sensorRepository.GetAllAsync();
+        var result = await sensorRepository.GetPagedAsync(request);
 
-        logger.LogInformation("Retrieved {Count} sensors", sensors.Count);
+        logger.LogInformation("Retrieved {Count} sensors (total: {TotalCount})", result.Items.Count, result.TotalCount);
 
-        return sensors.Select(MapToResponse).ToList();
+        return result;
     }
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<SensorResponse> GetByIdAsync(Guid id)
+    public virtual async Task<Shared.Entity.Sensor> GetByIdAsync(Guid id)
     {
         logger.LogDebug("Getting sensor by ID: {Id}", id);
 
@@ -39,12 +42,12 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
         logger.LogInformation("Retrieved sensor {Id}", id);
 
-        return MapToResponse(sensor);
+        return sensor;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<SensorResponse> CreateAsync(SensorRequest request)
+    public virtual async Task<Shared.Entity.Sensor> CreateAsync(SensorRequest request)
     {
         logger.LogDebug("Creating new sensor: {Serial}", request.Serial);
 
@@ -61,12 +64,12 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
         logger.LogInformation("Sensor created successfully with ID: {Id}", createdSensor.Id);
 
-        return MapToResponse(createdSensor);
+        return createdSensor;
     }
 
     /// <inheritdoc />
     [Span(IncludeArguments = true)]
-    public virtual async Task<SensorResponse> UpdateAsync(Guid id, SensorRequest request)
+    public virtual async Task<Shared.Entity.Sensor> UpdateAsync(Guid id, SensorRequest request)
     {
         logger.LogDebug("Updating sensor {Id}", id);
 
@@ -88,7 +91,7 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
         logger.LogInformation("Sensor {Id} updated successfully", id);
 
-        return MapToResponse(updatedSensor);
+        return updatedSensor;
     }
 
     /// <inheritdoc />
@@ -110,14 +113,11 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
 
     /// <inheritdoc />
     [Span]
-    public virtual async Task<PagedResponse<SensorReadingResponse>> GetReadingsAsync(
+    public virtual async Task<(IReadOnlyList<Shared.Entity.SensorReading> Items, int TotalCount)> GetReadingsAsync(
         Guid sensorId,
-        DateTime? fromUtc,
-        DateTime? toUtc,
-        int page,
-        int pageSize)
+        GetSensorReadingsRequest request)
     {
-        logger.LogDebug("Getting readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", sensorId, page, pageSize);
+        logger.LogDebug("Getting readings for sensor {SensorId}, page {Page}, pageSize {PageSize}", sensorId, request.Page, request.PageSize);
 
         var sensor = await sensorRepository.GetByIdAsync(sensorId);
 
@@ -127,56 +127,144 @@ public class SensorService(ISensorRepository sensorRepository, ISensorReadingRep
             throw new KeyNotFoundException($"Sensor with ID {sensorId} was not found");
         }
 
-        var (items, totalCount) = await sensorReadingRepository.GetBySensorIdAsync(sensorId, fromUtc, toUtc, page, pageSize);
+        var result = await sensorReadingRepository.GetBySensorIdAsync(sensorId, request);
 
-        logger.LogInformation("Retrieved {Count} readings for sensor {SensorId}", items.Count, sensorId);
+        logger.LogInformation("Retrieved {Count} readings for sensor {SensorId}", result.Items.Count, sensorId);
 
-        return new PagedResponse<SensorReadingResponse>
+        return result;
+    }
+
+    // Global expected reporting interval (5 min). Freshness: Fresh ≤ 1×, Stale > 2×, Offline > 5×.
+    private const int ExpectedIntervalSeconds = 300;
+    private static readonly int StaleThresholdSeconds = 2 * ExpectedIntervalSeconds;   // 2× expected
+    private static readonly int OfflineThresholdSeconds = 5 * ExpectedIntervalSeconds; // 5× expected (configurable)
+    private const int ReliabilityWindowHours = 24;
+    private const int ExpectedReadingsPerHour = 12;    // 300s interval = 12 readings/hour
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<(IReadOnlyList<SensorHealthListResult> Items, int TotalCount)> GetHealthListAsync(GetSensorHealthRequest request)
+    {
+        var sensors = await sensorRepository.GetForHealthListAsync(request);
+        if (sensors.Count == 0)
+            return ([], 0);
+
+        var sensorIds = sensors.Select(s => s.Id).ToList();
+        var latestReadings = await sensorReadingRepository.GetLatestBySensorIdsAsync(sensorIds);
+        var readingBySensor = latestReadings.ToFrozenDictionary(r => r.SensorId);
+
+        var windowEnd = DateTime.UtcNow;
+        var windowStart = windowEnd.AddHours(-ReliabilityWindowHours);
+        var countsBySensor = await sensorReadingRepository.GetReadingCountsBySensorIdsInWindowAsync(sensorIds, windowStart, windowEnd);
+        var expectedPerSensor = ReliabilityWindowHours * ExpectedReadingsPerHour;
+
+        var list = new List<SensorHealthListResult>();
+        foreach (var sensor in sensors)
         {
-            Items = items.Select(MapReadingToResponse).ToList(),
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
+            readingBySensor.TryGetValue(sensor.Id, out var reading);
+            var lastSeenAt = sensor.LastSeenAt ?? reading?.TimestampUtc;
+            countsBySensor.TryGetValue(sensor.Id, out var received);
+            var reliability = expectedPerSensor > 0
+                ? Math.Round(Math.Min(100.0, (received / (double)expectedPerSensor) * 100.0), 1)
+                : 100.0;
+            var healthStatus = ComputeHealthStatus(sensor, reading, reliability);
+            if (request.HealthStatus.HasValue && healthStatus != request.HealthStatus.Value)
+                continue;
+
+            list.Add(new SensorHealthListResult
+            {
+                Id = sensor.Id,
+                Name = sensor.Serial,
+                SensorType = sensor.SensorType?.Type.ToString() ?? string.Empty,
+                HealthStatus = healthStatus,
+                LastSeenAt = lastSeenAt,
+                ReliabilityScore = reliability,
+                SiteId = sensor.Equipment?.SiteId ?? Guid.Empty,
+                SiteName = sensor.Equipment?.Site?.Name ?? string.Empty,
+                EquipmentId = sensor.EquipmentId,
+                EquipmentName = sensor.Equipment?.Name ?? string.Empty,
+                LastValue = reading != null ? (double)reading.Value : null,
+                Unit = reading != null ? reading.Unit.ToString() : (sensor.SensorType != null ? sensor.SensorType.Unit.ToString() : string.Empty),
+                IngestionSource = reading?.IngestionRun?.Source
+            });
+        }
+
+        var totalCount = list.Count;
+        var skip = (request.Page - 1) * request.PageSize;
+        var items = list.Skip(skip).Take(request.PageSize).ToList();
+
+        logger.LogInformation("Health list: {Count} items (total: {TotalCount})", items.Count, totalCount);
+        return (items, totalCount);
+    }
+
+    /// <inheritdoc />
+    [Span]
+    public virtual async Task<SensorHealthDetailResult> GetHealthDetailAsync(Guid id)
+    {
+        var sensor = await sensorRepository.GetByIdAsync(id);
+        if (sensor == null)
+            throw new KeyNotFoundException($"Sensor with ID {id} was not found");
+
+        var latestList = await sensorReadingRepository.GetLatestBySensorIdsAsync([id]);
+        var reading = latestList.FirstOrDefault();
+
+        var now = DateTime.UtcNow;
+        var lastSeenAt = sensor.LastSeenAt ?? reading?.TimestampUtc;
+        var freshnessSeconds = lastSeenAt.HasValue ? (now - lastSeenAt.Value).TotalSeconds : (double?)null;
+
+        var windowEnd = now;
+        var windowStart = now.AddHours(-ReliabilityWindowHours);
+        var receivedPoints = await sensorReadingRepository.CountBySensorIdInWindowAsync(id, windowStart, windowEnd);
+        var expectedPoints = ReliabilityWindowHours * ExpectedReadingsPerHour;
+        var reliabilityScore = expectedPoints > 0
+            ? Math.Min(100.0, (receivedPoints / (double)expectedPoints) * 100.0)
+            : 100.0;
+        var healthStatus = ComputeHealthStatus(sensor, reading, reliabilityScore);
+
+        return new SensorHealthDetailResult
+        {
+            SensorId = sensor.Id,
+            Name = sensor.Serial,
+            HealthStatus = healthStatus,
+            LastSeenAt = lastSeenAt,
+            ReliabilityScore = Math.Round(reliabilityScore, 1),
+            LastValue = reading != null ? (double)reading.Value : null,
+            Unit = reading != null ? reading.Unit.ToString() : (sensor.SensorType != null ? sensor.SensorType.Unit.ToString() : string.Empty),
+            FreshnessSeconds = freshnessSeconds.HasValue ? Math.Round(freshnessSeconds.Value, 1) : null,
+            RecentReadingsCount = receivedPoints,
+            ExpectedPoints = expectedPoints,
+            ReceivedPoints = receivedPoints
         };
     }
 
     /// <summary>
-    /// Maps a SensorReading entity to a SensorReadingResponse DTO
+    /// Computes health from freshness (age vs expected interval) and reliability (received vs expected in 24h).
+    /// Fresh: age ≤ 1× expected; Stale: age &gt; 2×; Offline: no reading or age &gt; 5×.
+    /// When Fresh: Healthy if reliability &gt; 90%, Warning if 70–90%, Critical if &lt; 70%.
     /// </summary>
-    private static SensorReadingResponse MapReadingToResponse(Shared.Entity.SensorReading reading)
+    private static SensorHealthStatus ComputeHealthStatus(
+        Shared.Entity.Sensor sensor,
+        Shared.Entity.SensorReading? latestReading,
+        double reliabilityScore)
     {
-        return new SensorReadingResponse
-        {
-            Id = reading.Id,
-            SensorId = reading.SensorId,
-            Value = reading.Value,
-            TimestampUtc = reading.TimestampUtc,
-            Unit = reading.Unit,
-            OrganizationId = reading.OrganizationId,
-            IngestionRunId = reading.IngestionRunId,
-            CreatedAt = reading.CreatedAt
-        };
+        if (sensor.Status == SensorStatus.Inactive)
+            return SensorHealthStatus.Offline;
+
+        if (latestReading == null)
+            return SensorHealthStatus.Offline;
+
+        var ageSeconds = (DateTime.UtcNow - latestReading.TimestampUtc).TotalSeconds;
+        if (ageSeconds > OfflineThresholdSeconds)
+            return SensorHealthStatus.Offline;
+        if (ageSeconds > StaleThresholdSeconds)
+            return SensorHealthStatus.Stale;
+
+        // Fresh: derive from reliability
+        if (reliabilityScore > 90.0)
+            return SensorHealthStatus.Healthy;
+        if (reliabilityScore >= 70.0)
+            return SensorHealthStatus.Warning;
+        return SensorHealthStatus.Critical;
     }
 
-    /// <summary>
-    /// Maps a Sensor entity to a SensorResponse DTO
-    /// </summary>
-    private static SensorResponse MapToResponse(Shared.Entity.Sensor sensor)
-    {
-        return new SensorResponse
-        {
-            Id = sensor.Id,
-            Serial = sensor.Serial,
-            Status = sensor.Status,
-            OrganizationId = sensor.OrganizationId,
-            OrganizationName = sensor.Organization?.Name ?? string.Empty,
-            EquipmentId = sensor.EquipmentId,
-            EquipmentName = sensor.Equipment?.Name ?? string.Empty,
-            SensorTypeId = sensor.SensorTypeId,
-            SensorTypeName = sensor.SensorType?.Type.ToString() ?? string.Empty,
-            ThresholdId = sensor.ThresholdId,
-            CreatedAt = sensor.CreatedAt,
-            UpdatedAt = sensor.UpdatedAt
-        };
-    }
 }

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Modules.Admins.Dto;
 using Modules.Admins.Service;
+using Shared.Dto;
+using Shared.Entity;
 
 namespace Modules.Admins.Controller;
 
@@ -17,23 +19,30 @@ namespace Modules.Admins.Controller;
 public class AdminController(IAdminService adminService, ILogger<AdminController> logger) : ControllerBase
 {
     /// <summary>
-    /// Gets a list of all active admins
+    /// Gets a paginated list of active admins
     /// </summary>
-    /// <returns>List of admin information</returns>
-    /// <response code="200">Returns the list of admins</response>
+    /// <param name="request">Pagination parameters</param>
+    /// <returns>Paginated list of admin information</returns>
+    /// <response code="200">Returns the paginated list of admins</response>
     /// <response code="500">Internal server error</response>
     [HttpGet(Name = "GetAllAdminsV1")]
-    [ProducesResponseType(typeof(List<AdminResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResponse<AdminResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<List<AdminResponse>>> GetAll()
+    public async Task<ActionResult<PagedResponse<AdminResponse>>> GetAll([FromQuery] PaginationRequest request)
     {
         logger.LogDebug("Getting all admins");
 
         try
         {
-            var admins = await adminService.GetAllAsync();
-            logger.LogInformation("Retrieved {Count} admins", admins.Count);
-            return Ok(admins);
+            var (items, totalCount) = await adminService.GetAllAsync(request);
+            logger.LogInformation("Retrieved {Count} admins", items.Count);
+            return Ok(new PagedResponse<AdminResponse>
+            {
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                Page = request.Page,
+                PageSize = request.PageSize
+            });
         }
         catch (Exception ex)
         {
@@ -60,7 +69,7 @@ public class AdminController(IAdminService adminService, ILogger<AdminController
         {
             var admin = await adminService.GetByIdAsync(id);
             logger.LogInformation("Retrieved admin {Id}", id);
-            return Ok(admin);
+            return Ok(MapToResponse(admin));
         }
         catch (KeyNotFoundException ex)
         {
@@ -91,8 +100,9 @@ public class AdminController(IAdminService adminService, ILogger<AdminController
         try
         {
             var newAdmin = await adminService.CreateAsync(admin);
-            logger.LogInformation("Admin created successfully with ID: {Id}", newAdmin.Id);
-            return CreatedAtAction(nameof(GetById), new { id = newAdmin.Id }, newAdmin);
+            var response = MapToResponse(newAdmin);
+            logger.LogInformation("Admin created successfully with ID: {Id}", response.Id);
+            return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
         }
         catch (InvalidOperationException ex)
         {
@@ -125,7 +135,7 @@ public class AdminController(IAdminService adminService, ILogger<AdminController
         {
             var updatedAdmin = await adminService.UpdateAsync(id, admin);
             logger.LogInformation("Admin {Id} updated successfully", id);
-            return Ok(updatedAdmin);
+            return Ok(MapToResponse(updatedAdmin));
         }
         catch (KeyNotFoundException ex)
         {
@@ -174,5 +184,21 @@ public class AdminController(IAdminService adminService, ILogger<AdminController
             logger.LogError(ex, "Error deleting admin {Id}", id);
             return StatusCode(500, new { message = "An error occurred while deleting admin" });
         }
+    }
+
+    /// <summary>
+    /// Maps an Admin entity to an AdminResponse DTO
+    /// </summary>
+    private static AdminResponse MapToResponse(Admin admin)
+    {
+        return new AdminResponse
+        {
+            Id = admin.Id,
+            Email = admin.Email,
+            FirstName = admin.FirstName,
+            LastName = admin.LastName,
+            CreatedAt = admin.CreatedAt,
+            UpdatedAt = admin.UpdatedAt
+        };
     }
 }

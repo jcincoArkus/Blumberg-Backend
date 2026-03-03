@@ -70,5 +70,12 @@ public class OrganizationSchema : IEntityTypeConfiguration<Organization>
             .HasForeignKey(e => e.OrganizationId)
             .HasConstraintName("fk_admins_organization_id")
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Relationships: Organization has many IngestionRuns
+        builder.HasMany(e => e.IngestionRuns)
+            .WithOne(e => e.Organization)
+            .HasForeignKey(e => e.OrganizationId)
+            .HasConstraintName("fk_ingestion_runs_organization_id")
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
