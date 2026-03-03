@@ -41,7 +41,7 @@ public static class JwtSetup
 
         // Register JWT service
         services.AddScoped<IJwtService>(sp =>
-            new JwtService(jwt.SecretKey, jwt.Issuer, jwt.Audience, jwt.ExpirationHours));
+            new JwtService(jwt.SecretKey, jwt.Issuer, jwt.Audience, jwt.ExpirationHours, jwt.RefreshExpirationDays));
 
         // Configure authentication (return builder so caller can add ApiKey scheme, etc.)
         var authBuilder = services.AddAuthentication(options =>

@@ -6,9 +6,14 @@ namespace Modules.Auth.Dto;
 public class AuthResponse
 {
     /// <summary>
-    /// JWT access token
+    /// JWT access token (short-lived)
     /// </summary>
     public string Token { get; set; } = string.Empty;
+
+    /// <summary>
+    /// JWT refresh token (long-lived); use with POST /api/v1/auth/refresh to obtain a new access token
+    /// </summary>
+    public string? RefreshToken { get; set; }
 
     /// <summary>
     /// Admin email
