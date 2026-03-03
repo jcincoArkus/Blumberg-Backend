@@ -40,11 +40,12 @@ public class ApiServer
 
         builder.AddStructuredLogging(config.Log);
         builder.AddDistributedTracing(config.Telemetry);
-
-        if (!string.IsNullOrEmpty(url))
-        {
-            builder.WebHost.UseUrls(url);
-        }
+        
+        //Use only in local
+        //(!string.IsNullOrEmpty(url))
+        //{
+            //builder.WebHost.UseUrls(url);
+        //}
 
         ConfigureServices(builder.Services, config);
 
