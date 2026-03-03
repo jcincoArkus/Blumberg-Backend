@@ -87,6 +87,36 @@ public class AlertRepository(ApplicationDbContext context, ILogger<AlertReposito
 
     /// <inheritdoc />
     [Span]
+    public virtual async Task<IReadOnlyList<ActiveAlertResponse>> GetActiveAsync()
+    {
+        var now = DateTime.UtcNow;
+
+        var items = await context.Alerts
+            .Where(e => e.DeletedAt == null
+                && (e.Status == AlertStatus.Active || e.Status == AlertStatus.Acknowledged))
+            .OrderBy(e => e.Severity)
+            .ThenBy(e => e.TriggeredAt)
+            .Select(a => new ActiveAlertResponse
+            {
+                Id = a.Id,
+                Severity = a.Severity.ToString(),
+                Status = a.Status.ToString(),
+                SensorSerial = a.Sensor != null ? a.Sensor.Serial : null,
+                SensorTypeName = a.Sensor != null && a.Sensor.SensorType != null ? a.Sensor.SensorType.Type.ToString() : null,
+                EquipmentName = a.Equipment != null ? a.Equipment.Name : null,
+                TriggeredAt = a.TriggeredAt,
+            })
+            .ToListAsync();
+
+        foreach (var item in items)
+            item.DurationSeconds = (now - item.TriggeredAt).TotalSeconds;
+
+        logger.LogInformation("Retrieved {Count} active alerts", items.Count);
+        return items;
+    }
+
+    /// <inheritdoc />
+    [Span]
     public virtual async Task<Alert?> GetByIdAsync(Guid id)
     {
         return await context.Alerts

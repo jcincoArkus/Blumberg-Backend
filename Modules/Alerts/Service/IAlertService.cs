@@ -14,6 +14,11 @@ public interface IAlertService
     Task<(IReadOnlyList<AlertResponse> Items, int TotalCount)> GetAllAsync(GetAlertsRequest request);
 
     /// <summary>
+    /// Gets all active (unresolved) alerts ordered by severity for the dashboard
+    /// </summary>
+    Task<IReadOnlyList<ActiveAlertResponse>> GetActiveAsync();
+
+    /// <summary>
     /// Gets an alert by ID, throws KeyNotFoundException if not found
     /// </summary>
     Task<Alert> GetByIdAsync(Guid id);

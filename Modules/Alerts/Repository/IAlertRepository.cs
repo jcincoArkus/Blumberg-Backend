@@ -35,6 +35,11 @@ public interface IAlertRepository
     Task<Alert?> GetUnresolvedBySensorIdAsync(Guid sensorId);
 
     /// <summary>
+    /// Gets all active (unresolved) alerts ordered by severity for the dashboard
+    /// </summary>
+    Task<IReadOnlyList<ActiveAlertResponse>> GetActiveAsync();
+
+    /// <summary>
     /// Creates a new alert (and its initial Triggered event) and saves. Preferred way to create a single alert.
     /// </summary>
     Task<Alert> CreateAsync(Alert entity);

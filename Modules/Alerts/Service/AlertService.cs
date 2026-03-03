@@ -24,6 +24,14 @@ public class AlertService(
 
     /// <inheritdoc />
     [Span]
+    public virtual async Task<IReadOnlyList<ActiveAlertResponse>> GetActiveAsync()
+    {
+        logger.LogDebug("Getting active alerts for dashboard");
+        return await alertRepository.GetActiveAsync();
+    }
+
+    /// <inheritdoc />
+    [Span]
     public virtual async Task<Alert> GetByIdAsync(Guid id)
     {
         logger.LogDebug("Getting alert {Id}", id);

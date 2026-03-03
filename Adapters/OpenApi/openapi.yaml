@@ -252,6 +252,32 @@ paths:
                 $ref: '#/components/schemas/AlertResponsePagedResponse'
       security:
         - Bearer: [ ]
+  /api/v1/alerts/active:
+    get:
+      tags:
+        - Alerts
+      operationId: GetActiveAlertsV1
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActiveAlertResponse'
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActiveAlertResponse'
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActiveAlertResponse'
+      security:
+        - Bearer: [ ]
   '/api/v1/alerts/{id}':
     get:
       tags:
@@ -2504,6 +2530,34 @@ components:
           items:
             type: string
           nullable: true
+      additionalProperties: false
+    ActiveAlertResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        severity:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        sensorSerial:
+          type: string
+          nullable: true
+        sensorTypeName:
+          type: string
+          nullable: true
+        equipmentName:
+          type: string
+          nullable: true
+        triggeredAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: number
+          format: double
       additionalProperties: false
     AdminRequest:
       required:
