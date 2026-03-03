@@ -65,6 +65,8 @@ jobs:
       - name: Load config from Secrets Manager
         id: load-secret
         run: |
+          set -euo pipefail
+
           SECRET=$(aws secretsmanager get-secret-value \
             --secret-id "$SECRET_NAME" \
             --query SecretString \
@@ -103,7 +105,7 @@ jobs:
           IMAGE_TAG_COMMIT: ${{ steps.vars.outputs.short_sha }}
           IMAGE_TAG_BRANCH: ${{ steps.vars.outputs.branch_name }}
         run: |
-          set -e
+          set -euo pipefail
           echo "Repo ECR: $ECR_REGISTRY/$ECR_REPOSITORY_NAME"
 
           docker buildx build \
@@ -120,9 +122,10 @@ jobs:
       - name: Register new ECS task definition revision (commit-based image)
         id: register-task-def
         run: |
-          set -e
+          set -euo pipefail
 
           NEW_IMAGE="${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY_NAME}:${{ steps.vars.outputs.short_sha }}"
+          echo "ECS_CONTAINER_NAME: $ECS_CONTAINER_NAME"
           echo "Using new image: $NEW_IMAGE"
 
           TASK_DEF_ARN=$(aws ecs describe-services \
@@ -138,6 +141,10 @@ jobs:
             --task-definition "$TASK_DEF_ARN" \
             --region "$AWS_REGION")
 
+          # Build a new task definition JSON:
+          # - Always includes executionRoleArn
+          # - Includes taskRoleArn only if present
+          # - Prevents null arrays for volumes/placementConstraints
           NEW_TASK_DEF=$(echo "$TASK_DEF_JSON" | \
             jq --arg IMAGE "$NEW_IMAGE" \
                --arg CONTAINER "$ECS_CONTAINER_NAME" '
@@ -151,16 +158,16 @@ jobs:
                 )
               | {
                   family,
-                  taskRoleArn,
                   executionRoleArn,
                   networkMode,
                   containerDefinitions,
-                  volumes,
-                  placementConstraints,
                   requiresCompatibilities,
                   cpu,
-                  memory
+                  memory,
+                  volumes: (.volumes // []),
+                  placementConstraints: (.placementConstraints // [])
                 }
+              + (if .taskRoleArn? != null then { taskRoleArn: .taskRoleArn } else {} end)
             ')
 
           echo "$NEW_TASK_DEF" > task-def.json
@@ -172,10 +179,11 @@ jobs:
             --region "$AWS_REGION")
 
           echo "task_def_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+          echo "Registered new task definition: $NEW_TASK_DEF_ARN"
 
       - name: Update ECS service to new task definition
         run: |
-          set -e
+          set -euo pipefail
           aws ecs update-service \
             --cluster "$ECS_CLUSTER" \
             --service "$ECS_SERVICE" \
