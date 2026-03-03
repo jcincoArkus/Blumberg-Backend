@@ -1,4 +1,4 @@
-name: Build, Push to ECR & Deploy ECS - Development
+name: Build, Push to ECR & Deploy ECS - Dev
 
 on:
   push:
