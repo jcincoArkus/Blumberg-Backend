@@ -88,9 +88,40 @@ public class IngestionService(
                 ? IngestionStatus.Failed
                 : IngestionStatus.PartialSuccess;
 
-        var (newAlerts, sensorBreachStateUpdates) = await BuildNewAlertsAsync(organizationId, acceptedReadings, sensorByReadingIndex, cancellationToken);
+        var (newAlerts, sensorBreachStateUpdates, autoResolvedAlerts) =
+            await BuildNewAlertsAsync(organizationId, acceptedReadings, sensorByReadingIndex, cancellationToken);
 
-        await ingestionRunRepository.CreateRunAsync(run, rejectedReadings, acceptedReadings, newAlerts, sensorBreachStateUpdates, cancellationToken);
+        await ingestionRunRepository.CreateRunAsync(
+            run,
+            rejectedReadings,
+            acceptedReadings,
+            newAlerts,
+            sensorBreachStateUpdates,
+            cancellationToken);
+
+        // Automatically resolve alerts whose sensor values returned to normal during this batch
+        foreach (var (alertId, resolvedAt) in autoResolvedAlerts)
+        {
+            var alert = await alertRepository.GetByIdAsync(alertId);
+            if (alert == null)
+                continue;
+
+            if (alert.Status != AlertStatus.Active && alert.Status != AlertStatus.Acknowledged)
+                continue;
+
+            alert.Status = AlertStatus.Resolved;
+            alert.ResolvedAt = resolvedAt;
+            await alertRepository.UpdateAsync(alert);
+
+            await alertRepository.AddEventAsync(new AlertEvent
+            {
+                AlertId = alert.Id,
+                OrganizationId = alert.OrganizationId,
+                EventType = AlertEventType.Resolved,
+                OccurredAt = resolvedAt,
+                Description = "Alert auto-resolved (value returned to normal)",
+            });
+        }
 
         logger.LogInformation("Ingestion run {RunId} completed: {Accepted} accepted, {Rejected} rejected, {Alerts} alerts",
             run.Id, run.AcceptedRecords, run.RejectedRecords, newAlerts.Count);
@@ -190,9 +221,10 @@ public class IngestionService(
 
     /// <summary>
     /// Builds new alerts respecting threshold duration: only trigger after value stays out of range
-    /// for the configured duration; reset the timer when value returns to normal.
+    /// for the configured duration; reset the timer when value returns to normal. Also determines
+    /// which existing alerts should be automatically resolved when values return to the allowed range.
     /// </summary>
-    private async Task<(List<Alert> newAlerts, IReadOnlyDictionary<Guid, DateTime?> sensorBreachStateUpdates)> BuildNewAlertsAsync(
+    private async Task<(List<Alert> newAlerts, IReadOnlyDictionary<Guid, DateTime?> sensorBreachStateUpdates, IReadOnlyList<(Guid AlertId, DateTime ResolvedAt)> autoResolvedAlerts)> BuildNewAlertsAsync(
         Guid organizationId,
         List<SensorReading> acceptedReadings,
         Dictionary<int, Sensor> sensorByReadingIndex,
@@ -200,6 +232,7 @@ public class IngestionService(
     {
         var newAlerts = new List<Alert>();
         var breachStateUpdates = new Dictionary<Guid, DateTime?>();
+        var autoResolvedAlerts = new List<(Guid AlertId, DateTime ResolvedAt)>();
 
         // Group (reading, sensor) by sensor Id and process in timestamp order per sensor
         var bySensor = new Dictionary<Guid, List<(SensorReading Reading, Sensor Sensor)>>();
@@ -236,7 +269,10 @@ public class IngestionService(
             var existingUnresolved = await alertRepository.GetUnresolvedBySensorIdAsync(sensorId);
             if (existingUnresolved != null)
             {
-                // Still update breach state (e.g. in-range clears the timer) but do not create new alerts
+                // Existing alert: update breach state and detect when the value returns to normal.
+                // If any in-range reading is observed, we mark the alert for auto-resolution.
+                DateTime? autoResolveAt = null;
+
                 foreach (var reading in readingsInOrder)
                 {
                     var isOutOfRange = reading.Value < threshold.Min || reading.Value > threshold.Max;
@@ -247,10 +283,18 @@ public class IngestionService(
                     }
                     else
                     {
+                        if (autoResolveAt == null)
+                            autoResolveAt = reading.TimestampUtc;
+
                         firstOutOfRangeAt = null;
                     }
                 }
+
                 breachStateUpdates[sensorId] = firstOutOfRangeAt;
+
+                if (autoResolveAt.HasValue)
+                    autoResolvedAlerts.Add((existingUnresolved.Id, autoResolveAt.Value));
+
                 continue;
             }
 
@@ -299,6 +343,6 @@ public class IngestionService(
             breachStateUpdates[sensorId] = firstOutOfRangeAt;
         }
 
-        return (newAlerts, breachStateUpdates);
+        return (newAlerts, breachStateUpdates, autoResolvedAlerts);
     }
 }
