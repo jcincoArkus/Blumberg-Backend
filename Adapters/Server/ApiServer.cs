@@ -60,6 +60,8 @@ public class ApiServer
 
     private static void ConfigureServices(IServiceCollection services, AppConfig config)
     {
+        services.AddSingleton(config);
+
         // Controllers and API Explorer (camelCase JSON so frontend receives equipmentName, sensorSerial, etc.)
         var mvcBuilder = services.AddControllers()
             .AddJsonOptions(options =>
@@ -163,11 +165,21 @@ public class ApiServer
         // CORS after Routing, antes de Auth — así el preflight OPTIONS y todas las respuestas incluyen Access-Control-Allow-Origin.
         app.UseCors();
 
-        // Preflight OPTIONS: responder 204 antes de llegar a los endpoints (evita 405 del controller que solo acepta POST).
+        // Preflight OPTIONS: 204 y cabeceras CORS explícitas (Content-Type debe estar en Allow-Headers para POST JSON).
         app.Use(async (context, next) =>
         {
             if (context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
             {
+                var config = context.RequestServices.GetRequiredService<AppConfig>();
+                var origin = context.Request.Headers.Origin.FirstOrDefault();
+                var allowed = config.Cors.AllowedOrigins.Length > 0
+                    ? config.Cors.AllowedOrigins
+                    : new[] { "https://development.d2g4yx5jn4b7oi.amplifyapp.com" };
+                if (!string.IsNullOrEmpty(origin) && allowed.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                    context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+                context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+                context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Api-Key, X-Organization-Id";
+                context.Response.Headers["Access-Control-Max-Age"] = "86400";
                 context.Response.StatusCode = StatusCodes.Status204NoContent;
                 return;
             }
