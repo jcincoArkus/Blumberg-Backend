@@ -166,15 +166,14 @@ public class ApiServer
         // Routing must run before CORS so the CORS middleware can apply the policy correctly (required for preflight and CORS headers on responses)
         app.UseRouting();
 
-        // CORS after Routing, before Auth — so preflight OPTIONS and all responses get Access-Control-Allow-Origin; skip HTTPS redirect in Dev so http://localhost works
+        // CORS after Routing, antes de Auth — así el preflight OPTIONS y todas las respuestas incluyen Access-Control-Allow-Origin.
         app.UseCors("AllowAll");
-        if (!app.Environment.IsDevelopment())
-        {
-            app.UseHttpsRedirection();
-        }
-
         app.UseAuthentication();
         app.UseAuthorization();
+
+        // OPTIONS genérico público para preflight CORS en /api/**
+        app.MapMethods("/api/{**path}", new[] { "OPTIONS" }, () => Results.Ok())
+           .AllowAnonymous();
 
         // Health check público para el ALB (no requiere autenticación)
         app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
