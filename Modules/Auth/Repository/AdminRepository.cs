@@ -31,6 +31,22 @@ public class AdminRepository(ApplicationDbContext context, ILogger<AdminReposito
 
     /// <inheritdoc />
     [Span]
+    public virtual async Task<Admin?> GetByIdForAuthAsync(Guid id)
+    {
+        logger.LogDebug("Querying admin by ID for auth: {Id}", id);
+        // Bypass tenant filter for refresh: request has no JWT so tenant context is null; id comes from validated refresh token.
+        var admin = await context.Admins
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(a => a.Id == id && a.DeletedAt == null);
+        if (admin != null)
+            logger.LogInformation("Found admin for auth: {Id}", id);
+        else
+            logger.LogDebug("Admin not found for auth with ID: {Id}", id);
+        return admin;
+    }
+
+    /// <inheritdoc />
+    [Span]
     public virtual async Task<Admin?> GetByEmailAsync(string email)
     {
         logger.LogDebug("Querying admin by email: {Email}", email);

@@ -16,6 +16,14 @@ public interface IAdminRepository
     Task<Admin?> GetByIdAsync(Guid id);
 
     /// <summary>
+    /// Gets an admin by ID for auth flows (e.g. refresh). Bypasses tenant filter because
+    /// the request has no JWT (refresh sends only body), so tenant context is null.
+    /// </summary>
+    /// <param name="id">Admin ID</param>
+    /// <returns>Admin entity or null if not found</returns>
+    Task<Admin?> GetByIdForAuthAsync(Guid id);
+
+    /// <summary>
     /// Gets an admin by email address
     /// </summary>
     /// <param name="email">Email address</param>
