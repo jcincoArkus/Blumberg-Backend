@@ -179,6 +179,8 @@ public class ApiServer
         // Health check público para el ALB (no requiere autenticación)
         app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
            .AllowAnonymous();
+        app.MapGet("/api/health", () => Results.Ok(new { status = "Healthy" }))
+           .AllowAnonymous();
 
         app.MapControllers();
     }
