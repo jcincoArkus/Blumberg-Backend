@@ -30,7 +30,8 @@ public static class ConfigLoader
             Jwt = new JwtConfig().Init().Validate(),
             Application = new ApplicationConfig().Init().Validate(),
             Log = new LogConfig().Init().Validate(),
-            Telemetry = new TelemetryConfig().Init().Validate()
+            Telemetry = new TelemetryConfig().Init().Validate(),
+            Cors = new CorsConfig().Init()
         };
 
         _loaded = true;

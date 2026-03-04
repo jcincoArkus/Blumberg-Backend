@@ -52,4 +52,9 @@ public class AppConfig
     /// Telemetry configuration section
     /// </summary>
     public TelemetryConfig Telemetry { get; internal set; } = new();
+
+    /// <summary>
+    /// CORS configuration (orígenes permitidos para el frontend).
+    /// </summary>
+    public CorsConfig Cors { get; internal set; } = new();
 }

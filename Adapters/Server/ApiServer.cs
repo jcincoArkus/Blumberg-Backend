@@ -10,6 +10,8 @@ using Shared.Abstractions;
 using Adapters.OpenAPI.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -107,14 +109,23 @@ public class ApiServer
         // Casbin Authorization
         services.AddCasbinAuthorization();
 
-        // CORS
+        // CORS (orígenes explícitos en producción ayudan con CloudFront; vacío = AllowAnyOrigin en dev)
         services.AddCors(options =>
         {
             options.AddPolicy("AllowAll", policy =>
             {
-                policy.AllowAnyOrigin()
-                      .AllowAnyMethod()
-                      .AllowAnyHeader();
+                if (config.Cors.AllowAnyOrigin)
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                }
+                else
+                {
+                    policy.WithOrigins(config.Cors.AllowedOrigins)
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                }
             });
         });
 
@@ -164,6 +175,11 @@ public class ApiServer
 
         app.UseAuthentication();
         app.UseAuthorization();
+
+        // Health check público para el ALB (no requiere autenticación)
+        app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
+           .AllowAnonymous();
+
         app.MapControllers();
     }
 
