@@ -165,7 +165,7 @@ public class JwtService : IJwtService
 
         try
         {
-            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
@@ -175,13 +175,16 @@ public class JwtService : IJwtService
                 ValidAudience = _audience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
-            }, out _);
+            }, out var validatedToken);
 
-            var userIdClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub);
-            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
-            {
+            // Read "sub" from the raw token claims; after ValidateToken the principal may have
+            // claim type mapped (e.g. "sub" -> ClaimTypes.NameIdentifier), so principal.FindFirst("sub") can be null.
+            if (validatedToken is not JwtSecurityToken jwt)
+                return null;
+
+            var subClaim = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
+            if (subClaim != null && Guid.TryParse(subClaim.Value, out var userId))
                 return userId;
-            }
 
             return null;
         }
