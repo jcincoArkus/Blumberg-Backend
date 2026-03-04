@@ -4,31 +4,27 @@ namespace Adapters.Config;
 /// CORS configuration for cross-origin requests (e.g. frontend en Amplify).
 /// </summary>
 /// <remarks>
-/// Si CORS__AllowedOrigins está vacío, se permite cualquier origen (útil en desarrollo).
-/// En producción, define los orígenes permitidos para evitar problemas con CloudFront/caché.
+/// Variable de entorno: CORS_ORIGINS (orígenes separados por coma).
+/// Si no está definida, se usa solo https://development.d2g4yx5jn4b7oi.amplifyapp.com.
 /// </remarks>
 public class CorsConfig
 {
+    private const string DefaultOrigins = "https://development.d2g4yx5jn4b7oi.amplifyapp.com";
+
     /// <summary>
-    /// Orígenes permitidos (ej. https://development.d2g4yx5jn4b7oi.amplifyapp.com).
-    /// Separados por coma. Si está vacío, se usa AllowAnyOrigin().
+    /// Orígenes permitidos. Por defecto: https://development.d2g4yx5jn4b7oi.amplifyapp.com
     /// </summary>
     public string[] AllowedOrigins { get; private set; } = [];
 
     /// <summary>
-    /// Inicializa desde CORS__AllowedOrigins (lista separada por comas).
+    /// Inicializa desde CORS_ORIGINS (lista separada por comas). Si no está definida, usa orígenes por defecto.
     /// </summary>
     public CorsConfig Init()
     {
-        var value = EnvHelper.GetEnv("CORS__AllowedOrigins", "");
+        var value = EnvHelper.GetEnv("CORS_ORIGINS", DefaultOrigins);
         AllowedOrigins = string.IsNullOrWhiteSpace(value)
             ? []
             : value.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         return this;
     }
-
-    /// <summary>
-    /// Indica si se deben permitir todos los orígenes (config vacía).
-    /// </summary>
-    public bool AllowAnyOrigin => AllowedOrigins.Length == 0;
 }

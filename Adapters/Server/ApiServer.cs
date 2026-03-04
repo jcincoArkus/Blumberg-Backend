@@ -109,23 +109,17 @@ public class ApiServer
         // Casbin Authorization
         services.AddCasbinAuthorization();
 
-        // CORS (orígenes explícitos en producción ayudan con CloudFront; vacío = AllowAnyOrigin en dev)
+        // CORS: orígenes desde CORS_ORIGINS (por defecto localhost + Amplify)
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll", policy =>
+            options.AddDefaultPolicy(policy =>
             {
-                if (config.Cors.AllowAnyOrigin)
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                }
-                else
-                {
-                    policy.WithOrigins(config.Cors.AllowedOrigins)
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                }
+                var origins = config.Cors.AllowedOrigins.Length > 0
+                    ? config.Cors.AllowedOrigins
+                    : new[] { "https://development.d2g4yx5jn4b7oi.amplifyapp.com" };
+                policy.WithOrigins(origins)
+                      .AllowAnyMethod()
+                      .AllowAnyHeader();
             });
         });
 
@@ -167,13 +161,21 @@ public class ApiServer
         app.UseRouting();
 
         // CORS after Routing, antes de Auth — así el preflight OPTIONS y todas las respuestas incluyen Access-Control-Allow-Origin.
-        app.UseCors("AllowAll");
+        app.UseCors();
+
+        // Preflight OPTIONS: responder 204 antes de llegar a los endpoints (evita 405 del controller que solo acepta POST).
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return;
+            }
+            await next(context);
+        });
+
         app.UseAuthentication();
         app.UseAuthorization();
-
-        // OPTIONS genérico público para preflight CORS en /api/**
-        app.MapMethods("/api/{**path}", new[] { "OPTIONS" }, () => Results.Ok())
-           .AllowAnonymous();
 
         // Health check público para el ALB (no requiere autenticación)
         app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
