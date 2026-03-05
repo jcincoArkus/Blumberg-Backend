@@ -76,6 +76,10 @@ public static class IngestionCommands
             ["--alert-every", "-a"],
             getDefaultValue: () => 2,
             "Every N batches (default: 5), send one valid reading above or below a sensor threshold to trigger an alert (0 = disabled). Only when using --org-id (sensors with thresholds from DB).");
+        var batchesOption = new Option<int>(
+            ["--batches"],
+            getDefaultValue: () => 0,
+            "Number of batches to run then exit (0 = run until Ctrl+C). Use in CI/ECS for a finite run.");
 
         command.AddOption(baseUrlOption);
         command.AddOption(apiKeyOption);
@@ -86,6 +90,7 @@ public static class IngestionCommands
         command.AddOption(rejectChanceOption);
         command.AddOption(noVarietyOption);
         command.AddOption(alertEveryOption);
+        command.AddOption(batchesOption);
 
         command.SetHandler(async (InvocationContext invocationContext) =>
         {
@@ -99,6 +104,7 @@ public static class IngestionCommands
             var rejectChance = GetOptionValue(pr, rejectChanceOption, 0.2);
             var noVariety = GetOptionValue(pr, noVarietyOption, false);
             var alertEvery = GetOptionValue(pr, alertEveryOption, 0);
+            var maxBatches = GetOptionValue(pr, batchesOption, 0);
 
             try
             {
@@ -202,6 +208,8 @@ public static class IngestionCommands
 
             while (!ct.IsCancellationRequested)
             {
+                if (maxBatches > 0 && run >= maxBatches)
+                    break;
                 run++;
                 List<SimulateReadingDto> readings;
 
