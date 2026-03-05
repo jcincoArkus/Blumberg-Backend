@@ -9,6 +9,11 @@ on:
         description: "Branch a desplegar (solo ci-cd/blum)"
         required: true
         default: "ci-cd/blum"
+      run_nuke_and_pave:
+        description: "Ejecutar nukeAndPave (borra BD, migra y siembra datos) contra la DB indicada en secretos"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -189,6 +194,46 @@ jobs:
             --service "$ECS_SERVICE" \
             --task-definition "${{ steps.register-task-def.outputs.task_def_arn }}" \
             --force-new-deployment \
+            --region "$AWS_REGION"
+
+      # Solo si ejecutas manualmente con "Run nuke and pave" = true.
+      # Lanza una tarea ECS usando la *misma task definition* que la API, pero sobreescribiendo el comando del contenedor
+      # para ejecutar el CLI: dotnet /app/cli/CLI.dll nukeAndPave. La tarea corre en la misma VPC/subnets que el servicio
+      # y hereda las variables de entorno de DB (DB_HOST, DB_NAME, etc.) ya configuradas en ECS.
+      - name: Run nukeAndPave task in ECS (drop DB, migrate, seed)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_nuke_and_pave == 'true' }}
+        run: |
+          set -euo pipefail
+
+          echo "Describiendo servicio ECS $ECS_SERVICE en cluster $ECS_CLUSTER..."
+          SERVICE_DESC=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --region "$AWS_REGION")
+
+          LAUNCH_TYPE=$(echo "$SERVICE_DESC" | jq -r '.services[0].launchType // "FARGATE"')
+          NETWORK_CONF=$(echo "$SERVICE_DESC" | jq -r '.services[0].networkConfiguration | @json')
+
+          echo "Launch type del servicio: $LAUNCH_TYPE"
+          echo "Network configuration: $NETWORK_CONF"
+
+          OVERRIDES=$(jq -n --arg name "$ECS_CONTAINER_NAME" '
+            {
+              containerOverrides: [
+                {
+                  name: $name,
+                  command: ["dotnet", "/app/cli/CLI.dll", "nukeAndPave"]
+                }
+              ]
+            }')
+
+          echo "Lanzando tarea ECS con task definition ${{ steps.register-task-def.outputs.task_def_arn }}..."
+          aws ecs run-task \
+            --cluster "$ECS_CLUSTER" \
+            --task-definition "${{ steps.register-task-def.outputs.task_def_arn }}" \
+            --launch-type "$LAUNCH_TYPE" \
+            --network-configuration "$NETWORK_CONF" \
+            --overrides "$OVERRIDES" \
             --region "$AWS_REGION"
 
       - name: Summary
