@@ -306,6 +306,7 @@ jobs:
           LAUNCH_TYPE=$(echo "$SERVICE_DESC" | jq -r '.services[0].launchType // "FARGATE"')
           NETWORK_CONF=$(echo "$SERVICE_DESC" | jq -r '.services[0].networkConfiguration | @json')
 
+          # ~10 min: 20 batches × 30 s interval. Fire-and-forget: no wait, el workflow sigue y la tarea corre en ECS hasta que termine.
           OVERRIDES=$(jq -n \
             --arg name "$CONTAINER_NAME" \
             --arg base_url "$BASE_URL" \
@@ -314,7 +315,7 @@ jobs:
             '{
               containerOverrides: [{
                 name: $name,
-                command: ["/app/cli/CLI.dll", "ingestion:simulate", "--batches", "2"],
+                command: ["/app/cli/CLI.dll", "ingestion:simulate", "--batches", "20", "--interval", "30"],
                 environment: (
                   [{ name: "INGESTION_SIMULATOR_BASE_URL", value: $base_url }]
                   + (if $api_key != "" then [{ name: "INGESTION_SIMULATOR_API_KEY", value: $api_key }] else [] end)
@@ -323,7 +324,7 @@ jobs:
               }]
             }')
 
-          echo "Lanzando tarea ingestion:simulate (2 batches)..."
+          echo "Lanzando tarea ingestion:simulate (~10 min, 20 batches × 30 s). No se espera; el workflow continúa."
           RUN_RESULT=$(aws ecs run-task \
             --cluster "$ECS_CLUSTER" \
             --task-definition "$TASK_DEF_ARN" \
@@ -339,17 +340,8 @@ jobs:
             exit 1
           fi
 
-          TASK_ARN="$RUN_RESULT"
-          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN" --region "$AWS_REGION"
-
-          TASK_JSON=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN" --region "$AWS_REGION")
-          EXIT_CODE=$(echo "$TASK_JSON" | jq -r '.tasks[0].containers[0].exitCode // "null"')
-          echo "ingestion:simulate exitCode: $EXIT_CODE"
-          if [ "$EXIT_CODE" != "0" ] && [ "$EXIT_CODE" != "null" ]; then
-            echo "::error::ingestion:simulate falló (exitCode=$EXIT_CODE). Revisa CloudWatch Logs de la tarea."
-            exit 1
-          fi
-          echo "ingestion:simulate completó correctamente."
+          echo "Tarea lanzada (sigue en ECS ~10 min): $RUN_RESULT"
+          echo "Para ver logs: CloudWatch Logs del grupo del contenedor, stream con este task ID."
 
       - name: Summary
         run: |
