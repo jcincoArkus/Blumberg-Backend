@@ -58,4 +58,6 @@ COPY --from=build /app/cli ./cli/
 # Use the non-root user provided by official .NET images.
 USER $APP_UID
 
-ENTRYPOINT ["dotnet", "API.dll"]
+# ENTRYPOINT ["dotnet"] + CMD so ECS can override only command to run CLI (e.g. ["/app/cli/CLI.dll", "nukeAndPave"]).
+ENTRYPOINT ["dotnet"]
+CMD ["API.dll"]

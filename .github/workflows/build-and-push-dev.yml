@@ -225,15 +225,13 @@ jobs:
           echo "Launch type del servicio: $LAUNCH_TYPE"
           echo "Network configuration: $NETWORK_CONF"
 
-          # Override entryPoint and command so the container runs only the CLI (nukeAndPave), not the API.
-          # The image default is ENTRYPOINT ["dotnet", "API.dll"]; without overriding entryPoint, the API would still start.
+          # Override command so the container runs CLI (nukeAndPave). Image uses ENTRYPOINT ["dotnet"] CMD ["API.dll"] so this becomes: dotnet /app/cli/CLI.dll nukeAndPave
           OVERRIDES=$(jq -n --arg name "$CONTAINER_NAME" '
             {
               containerOverrides: [
                 {
                   name: $name,
-                  entryPoint: ["dotnet", "/app/cli/CLI.dll"],
-                  command: ["nukeAndPave"]
+                  command: ["/app/cli/CLI.dll", "nukeAndPave"]
                 }
               ]
             }')
