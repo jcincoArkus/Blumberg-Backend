@@ -209,7 +209,7 @@ jobs:
       # y hereda las variables de entorno de DB (DB_HOST, DB_NAME, etc.) ya configuradas en ECS.
       - name: Run nukeAndPave task in ECS (drop DB, migrate, seed)
         id: nuke-and-pave
-        if: false
+        if: true
         run: |
           set -euo pipefail
 
