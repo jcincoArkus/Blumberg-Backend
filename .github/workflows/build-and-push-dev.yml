@@ -201,7 +201,7 @@ jobs:
       # para ejecutar el CLI: dotnet /app/cli/CLI.dll nukeAndPave. La tarea corre en la misma VPC/subnets que el servicio
       # y hereda las variables de entorno de DB (DB_HOST, DB_NAME, etc.) ya configuradas en ECS.
       - name: Run nukeAndPave task in ECS (drop DB, migrate, seed)
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_nuke_and_pave == 'true' }}
+        if: true
         run: |
           set -euo pipefail
 
