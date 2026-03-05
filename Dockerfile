@@ -32,11 +32,18 @@ RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
     --no-restore \
     -p:UseAppHost=false
 
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet restore "Apps/CLI/CLI.csproj" && \
+    dotnet publish "Apps/CLI/CLI.csproj" \
+    -c Release \
+    -o /app/cli \
+    --no-restore
+
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
 WORKDIR /app
 
 LABEL org.opencontainers.image.title="blumberg-api" \
-      org.opencontainers.image.description="Blumberg backend API service"
+      org.opencontainers.image.description="Blumberg backend API and CLI (nukeAndPave)"
 
 ENV ASPNETCORE_URLS=http://0.0.0.0:5000 \
     ASPNETCORE_HTTP_PORTS=5000 \
@@ -46,6 +53,7 @@ ENV ASPNETCORE_URLS=http://0.0.0.0:5000 \
 EXPOSE 5000
 
 COPY --from=build /app/publish ./
+COPY --from=build /app/cli ./cli/
 
 # Use the non-root user provided by official .NET images.
 USER $APP_UID
