@@ -6,6 +6,7 @@ using Modules.Ingestion.Repository;
 using Modules.Sensors.Repository;
 using Shared.Entity;
 using Shared.Enums;
+using Shared.Notifications;
 
 namespace Modules.Ingestion.Service;
 
@@ -16,6 +17,7 @@ public class IngestionService(
     IIngestionRunRepository ingestionRunRepository,
     ISensorRepository sensorRepository,
     IAlertRepository alertRepository,
+    IAlertTriggeredNotifier alertTriggeredNotifier,
     ILogger<IngestionService> logger) : IIngestionService
 {
     /// <summary>
@@ -98,6 +100,21 @@ public class IngestionService(
             newAlerts,
             sensorBreachStateUpdates,
             cancellationToken);
+
+        // Notify recipients for each newly triggered alert (email, etc.). Do not fail ingestion if notification fails.
+        if (newAlerts.Count > 0)
+            logger.LogInformation("Notifying for {Count} new alert(s)", newAlerts.Count);
+        foreach (var alert in newAlerts)
+        {
+            try
+            {
+                await alertTriggeredNotifier.NotifyTriggeredAsync(alert, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Alert notification failed for alert {AlertId}; ingestion completed successfully", alert.Id);
+            }
+        }
 
         // Automatically resolve alerts whose sensor values returned to normal during this batch
         foreach (var (alertId, resolvedAt) in autoResolvedAlerts)
