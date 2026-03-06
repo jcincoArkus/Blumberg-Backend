@@ -2,6 +2,7 @@ using Adapters.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Modules.Auth.Repository;
 using Modules.Auth.Service;
+using Shared.Notifications;
 
 namespace Modules.Auth;
 
@@ -19,6 +20,7 @@ public static class AuthModule
     {
         services.AddScopedWithSpan<IAdminRepository, AdminRepository>();
         services.AddScopedWithSpan<IAuthService, AuthService>();
+        services.AddScopedWithSpan<IAlertRecipientResolver, AlertRecipientResolver>();
 
         return services;
     }

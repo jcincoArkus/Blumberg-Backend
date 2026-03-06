@@ -21,7 +21,6 @@ public class ApiKeyRepository(ApplicationDbContext context, ILogger<ApiKeyReposi
 
         context.ApiKeys.Add(apiKey);
         await context.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Created API key {Id} for organization {OrgId}", apiKey.Id, apiKey.OrganizationId);
         return apiKey;
     }
 

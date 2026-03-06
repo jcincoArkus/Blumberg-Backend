@@ -5,8 +5,11 @@ using System.Text;
 using System.Text.Json;
 using Adapters.Config;
 using Adapters.Database;
+using Adapters.Database.Seeders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Modules.Ingestion.Repository;
+using Modules.Ingestion.Service;
 using Shared.Entity;
 using Shared.Enums;
 
@@ -15,6 +18,12 @@ namespace CLI.Commands;
 /// <summary>
 /// Ingestion simulator command for dev: periodically POSTs fake readings to the ingestion API.
 /// Can load sensors from the database (by org) and generate type-appropriate fake values.
+///
+/// Why HTTP (POST to /api/v1/ingestion/readings) instead of direct DB insert?
+/// The ingestion API runs the full pipeline: validation (unit, sensor, org), accept/reject tracking,
+/// BuildNewAlertsAsync (threshold + duration logic), and sensor breach state (FirstOutOfRangeAt).
+/// Direct insert would only add SensorReading rows and would not create alerts, ingestion runs, or
+/// breach state—so we use the real API to exercise the same logic production uses.
 /// </summary>
 public static class IngestionCommands
 {
@@ -29,7 +38,7 @@ public static class IngestionCommands
     public static Command Simulate(ILoggerFactory loggerFactory, AppConfig config)
     {
         var logger = loggerFactory.CreateLogger("IngestionSimulate");
-        var command = new Command("ingestion:simulate", "Periodically POST fake sensor readings to the ingestion API (dev). Load sensors from DB by org, or pass sensor IDs. Press Ctrl+C to stop.");
+        var command = new Command("ingestion:simulate", "Periodically POST fake sensor readings to the ingestion API (dev). With no flags, uses seed org and auto-creates an API key. Or pass --org-id and --api-key. Load sensors from DB by org, or pass --sensor-ids. Press Ctrl+C to stop.");
 
         var baseUrlOption = new Option<string>(
             ["--base-url", "-u"],
@@ -49,16 +58,16 @@ public static class IngestionCommands
             "Comma-separated sensor GUIDs (used when --org-id is not set). Overrides INGESTION_SIMULATOR_SENSOR_IDS.");
         var intervalOption = new Option<int>(
             ["--interval", "-i"],
-            getDefaultValue: () => 30,
-            "Seconds between each batch (default: 30).");
+            getDefaultValue: () => 300,
+            "Seconds between each batch.");
         var batchSizeOption = new Option<int>(
             ["--batch-size", "-b"],
             getDefaultValue: () => 5,
-            "Readings per batch (default: 5, max 5000).");
+            "Readings per batch (max 5000).");
         var rejectChanceOption = new Option<double>(
             ["--reject-chance", "-r"],
             getDefaultValue: () => 0.2,
-            "Chance (0.0–1.0) that one reading in each batch is invalid (invalid unit or unknown sensor). Default: 0.2. Only applies to 'healthy' sensors in variety mode.");
+            "Chance (0.0–1.0) that one reading in each batch is invalid (invalid unit or unknown sensor). Only applies to 'healthy' sensors in variety mode.");
         var noVarietyOption = new Option<bool>(
             ["--no-variety"],
             getDefaultValue: () => false,
@@ -66,7 +75,7 @@ public static class IngestionCommands
         var alertEveryOption = new Option<int>(
             ["--alert-every", "-a"],
             getDefaultValue: () => 2,
-            "Every N batches (default: 5), send one valid reading above or below a sensor threshold to trigger an alert (0 = disabled). Only when using --org-id (sensors with thresholds from DB).");
+            "Every N batches, send one valid reading above or below a sensor threshold to trigger an alert (0 = disabled). Only when using --org-id (sensors with thresholds from DB).");
 
         command.AddOption(baseUrlOption);
         command.AddOption(apiKeyOption);
@@ -96,18 +105,41 @@ public static class IngestionCommands
                 using var cts = new CancellationTokenSource();
                 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
                 var ct = cts.Token;
-                if (string.IsNullOrWhiteSpace(apiKey))
+                Guid orgId;
+                if (string.IsNullOrWhiteSpace(apiKey) && string.IsNullOrWhiteSpace(orgIdStr))
                 {
-                    logger.LogError("API key is required. Set INGESTION_SIMULATOR_API_KEY or pass --api-key.");
-                    Environment.Exit(1);
+                    var (resolvedKey, resolvedOrgId) = await TryResolveOrgAndApiKeyFromSeedAsync(loggerFactory, ct);
+                    if (resolvedKey == null || resolvedOrgId == null)
+                    {
+                        logger.LogError(
+                            "No API key or org provided and seed data not found. Run database seed (e.g. dotnet run --project Apps/API seed), or pass --api-key and --org-id.");
+                        Environment.Exit(1);
+                    }
+                    apiKey = resolvedKey;
+                    orgId = resolvedOrgId.Value;
+                    orgIdStr = orgId.ToString();
+                    logger.LogInformation("Using seed org {OrgId}; created API key for this run (key not shown).", orgId);
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(orgIdStr))
+                    {
+                        logger.LogError("When using ingestion:simulate with an API key or org, both --api-key and --org-id are required.");
+                        Environment.Exit(1);
+                    }
+                    if (!Guid.TryParse(orgIdStr, out orgId))
+                    {
+                        logger.LogError("Invalid --org-id. Use a valid GUID.");
+                        Environment.Exit(1);
+                    }
                 }
 
                 List<SensorReadingInfo> sensorInfos;
 
-                if (!string.IsNullOrWhiteSpace(orgIdStr) && Guid.TryParse(orgIdStr, out var orgId))
-            {
-                // Load sensors from DB for this org (bypass tenant filter)
-                sensorInfos = await LoadSensorsFromDatabaseAsync(orgId, logger, ct);
+                if (!string.IsNullOrWhiteSpace(orgIdStr))
+                {
+                    // Load sensors from DB for this org (bypass tenant filter)
+                    sensorInfos = await LoadSensorsFromDatabaseAsync(orgId, logger, ct);
                 if (sensorInfos.Count == 0)
                 {
                     logger.LogError("No sensors found for organization {OrgId}. Create sensors or use --sensor-ids instead.", orgId);
@@ -483,6 +515,32 @@ public static class IngestionCommands
     }
 
     private sealed record SensorReadingInfo(Guid SensorId, SensorTypeKind Kind, Unit Unit, decimal? ThresholdMin, decimal? ThresholdMax);
+
+    /// <summary>
+    /// When seed data exists (test org from OrganizationSeeder), creates a new API key for that org
+    /// and returns (rawKey, orgId) so the simulator can run without --api-key or --org-id.
+    /// </summary>
+    private static async Task<(string? RawKey, Guid? OrganizationId)> TryResolveOrgAndApiKeyFromSeedAsync(
+        ILoggerFactory loggerFactory,
+        CancellationToken ct)
+    {
+        await using var context = ApplicationDbContextFactory.Create();
+        var org = await context.Organizations
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                o => o.Slug == OrganizationSeeder.TestOrganizationSlug && o.DeletedAt == null,
+                ct);
+        if (org == null)
+            return (null, null);
+
+        var keyRepoLogger = loggerFactory.CreateLogger<ApiKeyRepository>();
+        var keyServiceLogger = loggerFactory.CreateLogger<ApiKeyService>();
+        var apiKeyRepository = new ApiKeyRepository(context, keyRepoLogger);
+        var apiKeyService = new ApiKeyService(apiKeyRepository, keyServiceLogger);
+
+        var (_, rawKey) = await apiKeyService.CreateKeyAsync(org.Id, "CLI ingestion:simulate (auto)", ct);
+        return (rawKey, org.Id);
+    }
 
     private static async Task<List<SensorReadingInfo>> LoadSensorsFromDatabaseAsync(Guid organizationId, ILogger logger, CancellationToken ct)
     {

@@ -82,7 +82,9 @@ public class AuthService(IAdminRepository adminRepository, IJwtService jwtServic
             throw new UnauthorizedAccessException("Invalid refresh token");
         }
 
-        var admin = await adminRepository.GetByIdAsync(userId.Value);
+        // Use GetByIdForAuthAsync: refresh request has no JWT so tenant context is null;
+        // the Admin query filter would exclude all rows (WHERE FALSE) and we'd always get 401.
+        var admin = await adminRepository.GetByIdForAuthAsync(userId.Value);
         if (admin == null)
         {
             logger.LogWarning("Refresh attempted for non-existent admin: {UserId}", userId);
