@@ -315,7 +315,7 @@ jobs:
             '{
               containerOverrides: [{
                 name: $name,
-                command: ["/app/cli/CLI.dll", "ingestion:simulate", "--batches", "20", "--interval", "30"],
+                command: ["/app/cli/CLI.dll", "ingestion:simulate", "--batches", "200", "--interval", "10"],
                 environment: (
                   [{ name: "INGESTION_SIMULATOR_BASE_URL", value: $base_url }]
                   + (if $api_key != "" then [{ name: "INGESTION_SIMULATOR_API_KEY", value: $api_key }] else [] end)
