@@ -9,11 +9,6 @@ on:
         description: "Branch a desplegar (solo ci-cd/blum)"
         required: true
         default: "ci-cd/blum"
-      run_nuke_and_pave:
-        description: "Ejecutar nukeAndPave (borra BD, migra y siembra datos) contra la DB indicada en secretos"
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -83,10 +78,6 @@ jobs:
           ECS_CLUSTER=$(echo "$SECRET" | jq -r '.ECS_CLUSTER')
           ECS_SERVICE=$(echo "$SECRET" | jq -r '.ECS_SERVICE')
           ECS_CONTAINER_NAME=$(echo "$SECRET" | jq -r '.ECS_CONTAINER_NAME')
-          INGESTION_BASE_URL=$(echo "$SECRET" | jq -r '.INGESTION_SIMULATOR_BASE_URL // empty')
-          INGESTION_API_KEY=$(echo "$SECRET" | jq -r '.INGESTION_SIMULATOR_API_KEY // empty')
-          INGESTION_ORG_ID=$(echo "$SECRET" | jq -r '.INGESTION_SIMULATOR_ORG_ID // empty')
-          if [ -n "$INGESTION_API_KEY" ]; then echo "::add-mask::$INGESTION_API_KEY"; fi
 
           echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
           echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
@@ -94,9 +85,6 @@ jobs:
           echo "ECS_CLUSTER=$ECS_CLUSTER" >> $GITHUB_ENV
           echo "ECS_SERVICE=$ECS_SERVICE" >> $GITHUB_ENV
           echo "ECS_CONTAINER_NAME=$ECS_CONTAINER_NAME" >> $GITHUB_ENV
-          echo "INGESTION_BASE_URL=$INGESTION_BASE_URL" >> $GITHUB_ENV
-          echo "INGESTION_API_KEY=$INGESTION_API_KEY" >> $GITHUB_ENV
-          echo "INGESTION_ORG_ID=$INGESTION_ORG_ID" >> $GITHUB_ENV
 
       - name: Ensure ECR repository exists (optional)
         run: |
@@ -202,146 +190,6 @@ jobs:
             --task-definition "${{ steps.register-task-def.outputs.task_def_arn }}" \
             --force-new-deployment \
             --region "$AWS_REGION"
-
-      # Solo si ejecutas manualmente con "Run nuke and pave" = true.
-      # Lanza una tarea ECS usando la *misma task definition* que la API, pero sobreescribiendo el comando del contenedor
-      # para ejecutar el CLI: dotnet /app/cli/CLI.dll nukeAndPave. La tarea corre en la misma VPC/subnets que el servicio
-      # y hereda las variables de entorno de DB (DB_HOST, DB_NAME, etc.) ya configuradas en ECS.
-      - name: Run nukeAndPave task in ECS (drop DB, migrate, seed)
-        id: nuke-and-pave
-        if: true
-        run: |
-          set -euo pipefail
-
-          TASK_DEF_ARN="${{ steps.register-task-def.outputs.task_def_arn }}"
-          CONTAINER_NAME=$(aws ecs describe-task-definition \
-            --task-definition "$TASK_DEF_ARN" \
-            --region "$AWS_REGION" \
-            --query 'taskDefinition.containerDefinitions[0].name' \
-            --output text)
-          echo "Container name from task definition: $CONTAINER_NAME"
-
-          echo "Describiendo servicio ECS $ECS_SERVICE en cluster $ECS_CLUSTER..."
-          SERVICE_DESC=$(aws ecs describe-services \
-            --cluster "$ECS_CLUSTER" \
-            --services "$ECS_SERVICE" \
-            --region "$AWS_REGION")
-
-          LAUNCH_TYPE=$(echo "$SERVICE_DESC" | jq -r '.services[0].launchType // "FARGATE"')
-          NETWORK_CONF=$(echo "$SERVICE_DESC" | jq -r '.services[0].networkConfiguration | @json')
-
-          echo "Launch type del servicio: $LAUNCH_TYPE"
-          echo "Network configuration: $NETWORK_CONF"
-
-          # Override command so the container runs CLI (nukeAndPave). Image uses ENTRYPOINT ["dotnet"] CMD ["API.dll"] so this becomes: dotnet /app/cli/CLI.dll nukeAndPave
-          OVERRIDES=$(jq -n --arg name "$CONTAINER_NAME" '
-            {
-              containerOverrides: [
-                {
-                  name: $name,
-                  command: ["/app/cli/CLI.dll", "nukeAndPave"]
-                }
-              ]
-            }')
-
-          echo "Lanzando tarea ECS con task definition ${{ steps.register-task-def.outputs.task_def_arn }}..."
-          RUN_RESULT=$(aws ecs run-task \
-            --cluster "$ECS_CLUSTER" \
-            --task-definition "${{ steps.register-task-def.outputs.task_def_arn }}" \
-            --launch-type "$LAUNCH_TYPE" \
-            --network-configuration "$NETWORK_CONF" \
-            --overrides "$OVERRIDES" \
-            --region "$AWS_REGION" \
-            --query 'tasks[0].taskArn' \
-            --output text)
-
-          if [ -z "$RUN_RESULT" ] || [ "$RUN_RESULT" = "None" ]; then
-            echo "::error::run-task no devolvió taskArn (revisar permisos o capacidad del cluster)"
-            exit 1
-          fi
-
-          TASK_ARN="$RUN_RESULT"
-          echo "Tarea lanzada: $TASK_ARN — esperando que termine..."
-          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN" --region "$AWS_REGION"
-
-          TASK_JSON=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN" --region "$AWS_REGION")
-          STOP_CODE=$(echo "$TASK_JSON" | jq -r '.tasks[0].stopCode // "unknown"')
-          STOP_REASON=$(echo "$TASK_JSON" | jq -r '.tasks[0].stoppedReason // ""')
-          EXIT_CODE=$(echo "$TASK_JSON" | jq -r '.tasks[0].containers[0].exitCode // "null"')
-          EXIT_CODE_REASON=$(echo "$TASK_JSON" | jq -r '.tasks[0].containers[0].reason // ""')
-
-          echo "stopCode: $STOP_CODE | stoppedReason: $STOP_REASON | exitCode: $EXIT_CODE | reason: $EXIT_CODE_REASON"
-
-          if [ "$EXIT_CODE" != "0" ] && [ "$EXIT_CODE" != "null" ]; then
-            echo "::error::nukeAndPave falló (exitCode=$EXIT_CODE). Revisa CloudWatch Logs del grupo del contenedor para ver el error (ej. DB_HOST/DB_PASSWORD en la task definition)."
-            exit 1
-          fi
-          if [ "$STOP_CODE" != "EssentialContainerExited" ] && [ "$STOP_CODE" != "UserInitiated" ]; then
-            echo "::error::Tarea detenida inesperadamente: stopCode=$STOP_CODE, reason=$STOP_REASON"
-            exit 1
-          fi
-          echo "nukeAndPave completó correctamente."
-
-      # Ejecuta ingestion:simulate solo si nukeAndPave terminó bien. BASE_URL por defecto: CloudFront de la API (se puede sobreescribir con INGESTION_SIMULATOR_BASE_URL en el secreto).
-      - name: Run ingestion:simulate task in ECS (after nukeAndPave)
-        id: ingestion-simulate
-        if: steps.nuke-and-pave.outcome == 'success'
-        run: |
-          set -euo pipefail
-
-          BASE_URL="${INGESTION_BASE_URL:-https://d2cqcx3hu6v090.cloudfront.net}"
-          echo "Using API base URL: $BASE_URL"
-
-          TASK_DEF_ARN="${{ steps.register-task-def.outputs.task_def_arn }}"
-          CONTAINER_NAME=$(aws ecs describe-task-definition \
-            --task-definition "$TASK_DEF_ARN" \
-            --region "$AWS_REGION" \
-            --query 'taskDefinition.containerDefinitions[0].name' \
-            --output text)
-
-          SERVICE_DESC=$(aws ecs describe-services \
-            --cluster "$ECS_CLUSTER" \
-            --services "$ECS_SERVICE" \
-            --region "$AWS_REGION")
-          LAUNCH_TYPE=$(echo "$SERVICE_DESC" | jq -r '.services[0].launchType // "FARGATE"')
-          NETWORK_CONF=$(echo "$SERVICE_DESC" | jq -r '.services[0].networkConfiguration | @json')
-
-          # ~10 min: 20 batches × 30 s interval. Fire-and-forget: no wait, el workflow sigue y la tarea corre en ECS hasta que termine.
-          OVERRIDES=$(jq -n \
-            --arg name "$CONTAINER_NAME" \
-            --arg base_url "$BASE_URL" \
-            --arg api_key "${INGESTION_API_KEY:-}" \
-            --arg org_id "${INGESTION_ORG_ID:-}" \
-            '{
-              containerOverrides: [{
-                name: $name,
-                command: ["/app/cli/CLI.dll", "ingestion:simulate", "--batches", "200", "--interval", "10"],
-                environment: (
-                  [{ name: "INGESTION_SIMULATOR_BASE_URL", value: $base_url }]
-                  + (if $api_key != "" then [{ name: "INGESTION_SIMULATOR_API_KEY", value: $api_key }] else [] end)
-                  + (if $org_id != "" then [{ name: "INGESTION_SIMULATOR_ORG_ID", value: $org_id }] else [] end)
-                )
-              }]
-            }')
-
-          echo "Lanzando tarea ingestion:simulate (~10 min, 20 batches × 30 s). No se espera; el workflow continúa."
-          RUN_RESULT=$(aws ecs run-task \
-            --cluster "$ECS_CLUSTER" \
-            --task-definition "$TASK_DEF_ARN" \
-            --launch-type "$LAUNCH_TYPE" \
-            --network-configuration "$NETWORK_CONF" \
-            --overrides "$OVERRIDES" \
-            --region "$AWS_REGION" \
-            --query 'tasks[0].taskArn' \
-            --output text)
-
-          if [ -z "$RUN_RESULT" ] || [ "$RUN_RESULT" = "None" ]; then
-            echo "::error::run-task ingestion:simulate no devolvió taskArn"
-            exit 1
-          fi
-
-          echo "Tarea lanzada (sigue en ECS ~10 min): $RUN_RESULT"
-          echo "Para ver logs: CloudWatch Logs del grupo del contenedor, stream con este task ID."
 
       - name: Summary
         run: |
