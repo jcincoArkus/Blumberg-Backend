@@ -32,6 +32,12 @@ RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
     --no-restore \
     -p:UseAppHost=false
 
+# Publish CLI for running nukeAndPave and ingestion:simulate inside the container (ECS Exec).
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet publish "Apps/CLI/CLI.csproj" \
+    -c Release \
+    -o /app/cli-publish
+
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
 WORKDIR /app
 
@@ -46,6 +52,7 @@ ENV ASPNETCORE_URLS=http://0.0.0.0:5000 \
 EXPOSE 5000
 
 COPY --from=build /app/publish ./
+COPY --from=build /app/cli-publish ./cli/
 
 # Use the non-root user provided by official .NET images.
 USER $APP_UID
