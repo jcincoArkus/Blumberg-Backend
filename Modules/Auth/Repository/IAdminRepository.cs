@@ -38,6 +38,14 @@ public interface IAdminRepository
     Task<bool> ExistsAsync(string email);
 
     /// <summary>
+    /// Gets email addresses of admins in the given organization (for alert notifications). Bypasses tenant filter.
+    /// </summary>
+    /// <param name="organizationId">Organization ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of admin email addresses</returns>
+    Task<IReadOnlyList<string>> GetEmailsByOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets paginated admins
     /// </summary>
     /// <param name="request">Pagination parameters</param>
