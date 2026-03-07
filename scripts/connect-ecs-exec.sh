@@ -6,14 +6,7 @@ echo "NOTE: Before running this script, make sure AWS CLI v2 is installed."
 echo "The command 'ecs execute-command' requires AWS CLI v2."
 echo ""
 
-# 1. Prompt for AWS Profile
-read -p "Enter AWS profile: " AWS_PROFILE
-if [[ -z "$AWS_PROFILE" ]]; then
-  echo "Error: AWS profile is required." >&2
-  exit 1
-fi
-
-# 2. Prompt for AWS credentials
+# 1. Prompt for AWS credentials
 read -p "AWS_ACCESS_KEY_ID: " AWS_ACCESS_KEY_ID
 read -p "AWS_SECRET_ACCESS_KEY: " AWS_SECRET_ACCESS_KEY
 if [[ -z "$AWS_ACCESS_KEY_ID" ]] || [[ -z "$AWS_SECRET_ACCESS_KEY" ]]; then
@@ -26,13 +19,14 @@ export AWS_ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION=us-west-2
 export AWS_DEFAULT_OUTPUT=json
+export AWS_PROFILE=""
 
 # --- Prerequisites check: credentials and Session Manager Plugin ---
 abort_with_note() {
   echo "" >&2
   echo "NOTE: Before running this script, make sure AWS CLI v2 is installed." >&2
   echo "The command 'ecs execute-command' requires AWS CLI v2." >&2
-  echo "Also ensure your AWS credentials are valid (e.g. run 'aws sso login' or use valid access keys) and that the Session Manager Plugin is installed." >&2
+  echo "Also ensure your AWS credentials are valid (use valid access keys) and that the Session Manager Plugin is installed." >&2
   echo "Session Manager Plugin: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html" >&2
   echo "" >&2
   echo "Waiting 30 seconds before exiting..." >&2
@@ -46,9 +40,9 @@ if ! aws --version 2>/dev/null | grep -q "aws-cli/2"; then
   abort_with_note
 fi
 
-# Check credentials (valid session)
-if ! aws sts get-caller-identity --profile "${AWS_PROFILE}" --region us-west-2 >/dev/null 2>&1; then
-  echo "Error: AWS credentials are invalid or expired. Log in (e.g. 'aws sso login --profile ${AWS_PROFILE}') or check your access keys." >&2
+# Check credentials (valid session) - uses env vars only (no profile)
+if ! aws sts get-caller-identity --region us-west-2 >/dev/null 2>&1; then
+  echo "Error: AWS credentials are invalid or expired. Check your access keys." >&2
   abort_with_note
 fi
 
@@ -65,7 +59,6 @@ echo ""
 echo ""
 echo "Getting RUNNING task from ECS service..."
 TASK_ARN=$(aws ecs list-tasks \
-  --profile "${AWS_PROFILE}" \
   --cluster an-blumberg-dev-backend-api-e85c-bc1e4de \
   --service-name an-blumberg-dev-backend-api-e85c-fb7406a \
   --desired-status RUNNING \
@@ -83,7 +76,6 @@ echo ""
 
 # 4. Connect to the container
 aws ecs execute-command \
-  --profile "${AWS_PROFILE}" \
   --region us-west-2 \
   --cluster an-blumberg-dev-backend-api-e85c-bc1e4de \
   --task "${TASK_ARN}" \
