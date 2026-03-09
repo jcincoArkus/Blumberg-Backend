@@ -6,17 +6,21 @@ echo "NOTE: Before running this script, make sure AWS CLI v2 is installed."
 echo "The command 'ecs execute-command' requires AWS CLI v2."
 echo ""
 
-# 1. Prompt for AWS credentials
-read -p "AWS_ACCESS_KEY_ID: " AWS_ACCESS_KEY_ID
-read -p "AWS_SECRET_ACCESS_KEY: " AWS_SECRET_ACCESS_KEY
-if [[ -z "$AWS_ACCESS_KEY_ID" ]] || [[ -z "$AWS_SECRET_ACCESS_KEY" ]]; then
-  echo "Error: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required." >&2
-  exit 1
+# 1. Use env credentials if present; otherwise prompt
+if [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" ]]; then
+  echo "Using AWS credentials from environment (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY)."
+else
+  read -p "AWS_ACCESS_KEY_ID: " AWS_ACCESS_KEY_ID
+  read -p "AWS_SECRET_ACCESS_KEY: " AWS_SECRET_ACCESS_KEY
+  if [[ -z "$AWS_ACCESS_KEY_ID" ]] || [[ -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+    echo "Error: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required." >&2
+    exit 1
+  fi
+  export AWS_ACCESS_KEY_ID
+  export AWS_SECRET_ACCESS_KEY
 fi
 
 # Configure AWS CLI for this session (default region and output)
-export AWS_ACCESS_KEY_ID
-export AWS_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION=us-west-2
 export AWS_DEFAULT_OUTPUT=json
 export AWS_PROFILE=""
