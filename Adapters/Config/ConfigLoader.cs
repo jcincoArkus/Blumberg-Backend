@@ -56,7 +56,7 @@ public static class ConfigLoader
             Application = new ApplicationConfig().Init().Validate(),
             Log = new LogConfig().Init().Validate(),
             Telemetry = new TelemetryConfig().Init().Validate(),
-            Cors = new CorsConfig().Init()
+            Cors = new CorsConfig().Init(),
             Email = new EmailConfig().Init().Validate()
         };
 
