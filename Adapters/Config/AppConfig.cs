@@ -57,6 +57,8 @@ public class AppConfig
     /// CORS configuration (orígenes permitidos para el frontend).
     /// </summary>
     public CorsConfig Cors { get; internal set; } = new();
+
+    /// <summary>
     /// Alert email notification configuration (optional; None = no-op sender).
     /// </summary>
     public EmailConfig Email { get; internal set; } = new();
