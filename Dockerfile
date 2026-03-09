@@ -17,6 +17,7 @@ COPY Adapters/Logger/Adapters.Logger.csproj Adapters/Logger/
 COPY Adapters/OpenApi/Adapters.OpenApi.csproj Adapters/OpenApi/
 COPY Adapters/Permissions/Adapters.Permissions.csproj Adapters/Permissions/
 COPY Adapters/Telemetry/Adapters.Telemetry.csproj Adapters/Telemetry/
+COPY Adapters/Email/Adapters.Email.csproj Adapters/Email/
 COPY Shared/Shared.csproj Shared/
 
 RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \

@@ -86,7 +86,6 @@ public static class IngestionCommands
         command.AddOption(rejectChanceOption);
         command.AddOption(noVarietyOption);
         command.AddOption(alertEveryOption);
-        command.AddOption(batchesOption);
 
         command.SetHandler(async (InvocationContext invocationContext) =>
         {
@@ -100,7 +99,6 @@ public static class IngestionCommands
             var rejectChance = GetOptionValue(pr, rejectChanceOption, 0.2);
             var noVariety = GetOptionValue(pr, noVarietyOption, false);
             var alertEvery = GetOptionValue(pr, alertEveryOption, 0);
-            var maxBatches = GetOptionValue(pr, batchesOption, 0);
 
             try
             {
@@ -204,8 +202,6 @@ public static class IngestionCommands
 
             while (!ct.IsCancellationRequested)
             {
-                if (maxBatches > 0 && run >= maxBatches)
-                    break;
                 run++;
                 List<SimulateReadingDto> readings;
 
@@ -400,8 +396,9 @@ public static class IngestionCommands
     /// <summary>Stable partition of sensors for health-variety mode. Index 0=offline, 1=invalid, 2-4=stale, 5-7=silent, 8+=healthy.</summary>
     private sealed class SensorPartition
     {
-        public SensorReadingInfo Offline { get; init; }   // 1 sensor: never send
-        public SensorReadingInfo InvalidUnit { get; init; } // 1 sensor: always send with Unit=99 (rejected)
+        // Initialized via object initializer in BuildPartition; default! avoids CS8618 (required init-only properties)
+        public SensorReadingInfo Offline { get; init; } = default!;       // 1 sensor: never send
+        public SensorReadingInfo InvalidUnit { get; init; } = default!;   // 1 sensor: always send with Unit=99 (rejected)
         public IReadOnlyList<SensorReadingInfo> Stale { get; init; } = [];   // up to 3: send with timestamp -11 min
         public IReadOnlyList<SensorReadingInfo> Silent { get; init; } = []; // up to 3: send with timestamp -31 min
         public IReadOnlyList<SensorReadingInfo> Healthy { get; init; } = []; // rest: send with Now, optional reject chance
