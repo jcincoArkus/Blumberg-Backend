@@ -80,6 +80,17 @@ public class AdminRepository(ApplicationDbContext context, ILogger<AdminReposito
 
     /// <inheritdoc />
     [Span]
+    public virtual async Task<IReadOnlyList<string>> GetEmailsByOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        return await context.Admins
+            .IgnoreQueryFilters()
+            .Where(a => a.OrganizationId == organizationId && a.DeletedAt == null)
+            .Select(a => a.Email)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    [Span]
     public virtual async Task<(IReadOnlyList<Admin> Items, int TotalCount)> GetPagedAsync(PaginationRequest request)
     {
         logger.LogDebug("Querying admins page {Page}, pageSize {PageSize}, search '{Search}'", request.Page, request.PageSize, request.Search);

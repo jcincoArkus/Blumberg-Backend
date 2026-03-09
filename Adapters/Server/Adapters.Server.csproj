@@ -16,6 +16,7 @@
     <ProjectReference Include="..\Telemetry\Adapters.Telemetry.csproj" />
     <ProjectReference Include="..\..\Shared\Shared.csproj" />
     <ProjectReference Include="..\Database\Adapters.Database.csproj" />
+    <ProjectReference Include="..\Email\Adapters.Email.csproj" />
     <ProjectReference Include="..\Jwt\Adapters.Jwt.csproj" />
     <ProjectReference Include="..\OpenApi\Adapters.OpenApi.csproj" />
     <ProjectReference Include="..\..\Modules\Modules.csproj" />

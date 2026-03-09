@@ -58,16 +58,16 @@ public static class IngestionCommands
             "Comma-separated sensor GUIDs (used when --org-id is not set). Overrides INGESTION_SIMULATOR_SENSOR_IDS.");
         var intervalOption = new Option<int>(
             ["--interval", "-i"],
-            getDefaultValue: () => 30,
-            "Seconds between each batch (default: 30).");
+            getDefaultValue: () => 300,
+            "Seconds between each batch.");
         var batchSizeOption = new Option<int>(
             ["--batch-size", "-b"],
             getDefaultValue: () => 5,
-            "Readings per batch (default: 5, max 5000).");
+            "Readings per batch (max 5000).");
         var rejectChanceOption = new Option<double>(
             ["--reject-chance", "-r"],
             getDefaultValue: () => 0.2,
-            "Chance (0.0–1.0) that one reading in each batch is invalid (invalid unit or unknown sensor). Default: 0.2. Only applies to 'healthy' sensors in variety mode.");
+            "Chance (0.0–1.0) that one reading in each batch is invalid (invalid unit or unknown sensor). Only applies to 'healthy' sensors in variety mode.");
         var noVarietyOption = new Option<bool>(
             ["--no-variety"],
             getDefaultValue: () => false,
@@ -75,11 +75,7 @@ public static class IngestionCommands
         var alertEveryOption = new Option<int>(
             ["--alert-every", "-a"],
             getDefaultValue: () => 2,
-            "Every N batches (default: 5), send one valid reading above or below a sensor threshold to trigger an alert (0 = disabled). Only when using --org-id (sensors with thresholds from DB).");
-        var batchesOption = new Option<int>(
-            ["--batches"],
-            getDefaultValue: () => 0,
-            "Number of batches to run then exit (0 = run until Ctrl+C). Use in CI/ECS for a finite run.");
+            "Every N batches, send one valid reading above or below a sensor threshold to trigger an alert (0 = disabled). Only when using --org-id (sensors with thresholds from DB).");
 
         command.AddOption(baseUrlOption);
         command.AddOption(apiKeyOption);

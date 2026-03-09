@@ -2,6 +2,7 @@ using System.Text.Json;
 using Adapters.Config;
 using Adapters.Database;
 using Adapters.Database.Seeders;
+using Adapters.Email;
 using Adapters.Jwt;
 using Adapters.Logger;
 using Adapters.Telemetry;
@@ -107,6 +108,9 @@ public class ApiServer
 
         // JWT + API key authentication (API key for ingestion / M2M)
         services.AddJwtAuthentication(config).AddApiKeyAuthentication();
+
+        // Alert email notifications (NoOp or SMTP based on config)
+        services.AddAlertEmailNotifications(config);
 
         // Casbin Authorization
         services.AddCasbinAuthorization();

@@ -57,6 +57,7 @@ public static class ConfigLoader
             Log = new LogConfig().Init().Validate(),
             Telemetry = new TelemetryConfig().Init().Validate(),
             Cors = new CorsConfig().Init()
+            Email = new EmailConfig().Init().Validate()
         };
 
         _loaded = true;
