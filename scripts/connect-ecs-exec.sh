@@ -1,12 +1,23 @@
 #!/bin/bash
 set -e
 
+# Connect to ECS container (ECS Exec). macOS/Linux.
+# Usage: ./connect-ecs-exec.sh
+# Override via env: CLUSTER, SERVICE, CONTAINER, AWS_DEFAULT_REGION, AWS_DEFAULT_OUTPUT
+#
+# Credentials: env (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY) or prompt. Not persisted (unlike .ps1).
+
+CLUSTER="${CLUSTER:-an-blumberg-dev-backend-api-e85c-bc1e4de}"
+SERVICE="${SERVICE:-an-blumberg-dev-backend-api-e85c-fb7406a}"
+CONTAINER="${CONTAINER:-an-blumberg-dev-backend-api-e85c}"
+
 # 0. Initial message (requirement)
 echo "NOTE: Before running this script, make sure AWS CLI v2 is installed."
 echo "The command 'ecs execute-command' requires AWS CLI v2."
 echo ""
 
 # 1. Use env credentials if present; otherwise prompt
+WE_SET_CREDS=0
 if [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" ]]; then
   echo "Using AWS credentials from environment (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY)."
 else
@@ -18,12 +29,14 @@ else
   fi
   export AWS_ACCESS_KEY_ID
   export AWS_SECRET_ACCESS_KEY
+  WE_SET_CREDS=1
 fi
 
-# Configure AWS CLI for this session (default region and output)
-export AWS_DEFAULT_REGION=us-west-2
-export AWS_DEFAULT_OUTPUT=json
-export AWS_PROFILE=""
+# 2. Region and output (match .ps1: respect env, else default; no prompt)
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-${AWS_REGION:-us-west-2}}"
+export AWS_DEFAULT_OUTPUT="${AWS_DEFAULT_OUTPUT:-json}"
+# Unset AWS_PROFILE so the CLI uses env credentials only (setting to "" can make CLI use default profile instead)
+unset -v AWS_PROFILE 2>/dev/null || true
 
 # --- Prerequisites check: credentials and Session Manager Plugin ---
 abort_with_note() {
@@ -45,10 +58,8 @@ if ! aws --version 2>/dev/null | grep -q "aws-cli/2"; then
 fi
 
 # Check credentials (valid session) - uses env vars only (no profile)
-echo "Verifying AWS credentials with sts get-caller-identity..."
-if ! aws sts get-caller-identity --region us-west-2; then
-  echo "" >&2
-  echo "Error: AWS credentials are invalid or expired, or STS returned an error (see above)." >&2
+if ! aws sts get-caller-identity --region "$AWS_DEFAULT_REGION" >/dev/null 2>&1; then
+  echo "Error: AWS credentials are invalid or expired. Check your access keys." >&2
   abort_with_note
 fi
 
@@ -59,16 +70,16 @@ if ! command -v session-manager-plugin >/dev/null 2>&1; then
 fi
 
 echo "Prerequisites verified (AWS CLI v2, credentials, Session Manager Plugin)."
+echo "Region: $AWS_DEFAULT_REGION | Output: $AWS_DEFAULT_OUTPUT"
 echo ""
 
 # 3. Get the active ECS task
-echo ""
 echo "Getting RUNNING task from ECS service..."
 TASK_ARN=$(aws ecs list-tasks \
-  --cluster an-blumberg-dev-backend-api-e85c-bc1e4de \
-  --service-name an-blumberg-dev-backend-api-e85c-fb7406a \
+  --cluster "$CLUSTER" \
+  --service-name "$SERVICE" \
   --desired-status RUNNING \
-  --region us-west-2 \
+  --region "$AWS_DEFAULT_REGION" \
   --query "taskArns[0]" \
   --output text)
 
@@ -81,10 +92,17 @@ echo "Task ARN: $TASK_ARN"
 echo ""
 
 # 4. Connect to the container
+cleanup() {
+  if [[ "$WE_SET_CREDS" -eq 1 ]]; then
+    unset -v AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
 aws ecs execute-command \
-  --region us-west-2 \
-  --cluster an-blumberg-dev-backend-api-e85c-bc1e4de \
+  --region "$AWS_DEFAULT_REGION" \
+  --cluster "$CLUSTER" \
   --task "${TASK_ARN}" \
-  --container an-blumberg-dev-backend-api-e85c \
+  --container "$CONTAINER" \
   --interactive \
   --command "/bin/sh"
