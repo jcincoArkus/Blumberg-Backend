@@ -60,11 +60,14 @@ public class JwtConfig
     public int RefreshExpirationDays { get; private set; } = 7;
 
     /// <summary>
-    /// Initializes configuration from environment variables
+    /// Initializes configuration from environment variables.
     /// </summary>
-    public JwtConfig Init()
+    /// <param name="requireSecretKey">If false, JWT_SECRET_KEY is optional (e.g. for CLI commands that only need DB, like nukeAndPave).</param>
+    public JwtConfig Init(bool requireSecretKey = true)
     {
-        SecretKey = EnvHelper.GetEnvRequired("JWT_SECRET_KEY");
+        SecretKey = requireSecretKey
+            ? EnvHelper.GetEnvRequired("JWT_SECRET_KEY")
+            : EnvHelper.GetEnv("JWT_SECRET_KEY", "");
         Issuer = EnvHelper.GetEnv("JWT_ISSUER", "Blumberg.API");
         Audience = EnvHelper.GetEnv("JWT_AUDIENCE", "Blumberg.Client");
         ExpirationHours = EnvHelper.GetEnvInt("JWT_EXPIRATION_HOURS", 24);
@@ -74,17 +77,21 @@ public class JwtConfig
     }
 
     /// <summary>
-    /// Validates JWT configuration
+    /// Validates JWT configuration.
     /// </summary>
+    /// <param name="requireSecret">If false, secret key is not validated (for CLI database-only operations).</param>
     /// <exception cref="InvalidOperationException">Thrown when configuration is invalid</exception>
-    public JwtConfig Validate()
+    public JwtConfig Validate(bool requireSecret = true)
     {
-        if (string.IsNullOrWhiteSpace(SecretKey))
-            throw new InvalidOperationException("JWT secret key (JWT_SECRET_KEY) is required");
+        if (requireSecret)
+        {
+            if (string.IsNullOrWhiteSpace(SecretKey))
+                throw new InvalidOperationException("JWT secret key (JWT_SECRET_KEY) is required");
 
-        if (SecretKey.Length < 32)
-            throw new InvalidOperationException(
-                $"JWT secret key must be at least 32 characters long (current: {SecretKey.Length})");
+            if (SecretKey.Length < 32)
+                throw new InvalidOperationException(
+                    $"JWT secret key must be at least 32 characters long (current: {SecretKey.Length})");
+        }
 
         if (string.IsNullOrWhiteSpace(Issuer))
             throw new InvalidOperationException("JWT issuer (JWT_ISSUER) is required");

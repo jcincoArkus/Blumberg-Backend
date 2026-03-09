@@ -31,6 +31,32 @@ public static class ConfigLoader
             Application = new ApplicationConfig().Init().Validate(),
             Log = new LogConfig().Init().Validate(),
             Telemetry = new TelemetryConfig().Init().Validate(),
+            Cors = new CorsConfig().Init()
+        };
+
+        _loaded = true;
+        return _config;
+    }
+
+    /// <summary>
+    /// Loads configuration for CLI commands that only need database access (e.g. nukeAndPave, migrations).
+    /// JWT and other API-only settings are not required, so the task can run in ECS without JWT_SECRET_KEY.
+    /// </summary>
+    public static AppConfig LoadForDatabaseOperations(string? envFilePath = null)
+    {
+        if (_loaded && _config != null)
+            return _config;
+
+        LoadEnvFile(envFilePath);
+
+        _config = new AppConfig
+        {
+            Database = new DatabaseConfig().Init().Validate(),
+            Jwt = new JwtConfig().Init(requireSecretKey: false).Validate(requireSecret: false),
+            Application = new ApplicationConfig().Init().Validate(),
+            Log = new LogConfig().Init().Validate(),
+            Telemetry = new TelemetryConfig().Init().Validate(),
+            Cors = new CorsConfig().Init()
             Email = new EmailConfig().Init().Validate()
         };
 

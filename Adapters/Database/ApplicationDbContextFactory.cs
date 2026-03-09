@@ -29,7 +29,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         if (_cachedOptions != null)
             return _cachedOptions;
 
-        var config = ConfigLoader.Load();
+        var config = ConfigLoader.LoadForDatabaseOperations();
         var connectionString = config.Database.GetConnectionString();
 
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
@@ -44,7 +44,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     /// </summary>
     public static string GetConnectionString()
     {
-        var config = ConfigLoader.Load();
+        var config = ConfigLoader.LoadForDatabaseOperations();
         return config.Database.GetConnectionString();
     }
 

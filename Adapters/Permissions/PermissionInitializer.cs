@@ -81,7 +81,8 @@ public class PermissionInitializer(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to apply database migrations");
+            logger.LogError(ex, "Failed to apply database migrations. Error: {Message}. Inner: {InnerMessage}",
+                ex.Message, ex.InnerException?.Message ?? "(none)");
             throw;
         }
     }
