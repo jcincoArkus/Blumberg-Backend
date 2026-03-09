@@ -400,8 +400,9 @@ public static class IngestionCommands
     /// <summary>Stable partition of sensors for health-variety mode. Index 0=offline, 1=invalid, 2-4=stale, 5-7=silent, 8+=healthy.</summary>
     private sealed class SensorPartition
     {
-        public SensorReadingInfo Offline { get; init; }   // 1 sensor: never send
-        public SensorReadingInfo InvalidUnit { get; init; } // 1 sensor: always send with Unit=99 (rejected)
+        // Initialized via object initializer in BuildPartition; default! avoids CS8618 (required init-only properties)
+        public SensorReadingInfo Offline { get; init; } = default!;       // 1 sensor: never send
+        public SensorReadingInfo InvalidUnit { get; init; } = default!;   // 1 sensor: always send with Unit=99 (rejected)
         public IReadOnlyList<SensorReadingInfo> Stale { get; init; } = [];   // up to 3: send with timestamp -11 min
         public IReadOnlyList<SensorReadingInfo> Silent { get; init; } = []; // up to 3: send with timestamp -31 min
         public IReadOnlyList<SensorReadingInfo> Healthy { get; init; } = []; // rest: send with Now, optional reject chance
