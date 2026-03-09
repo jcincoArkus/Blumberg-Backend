@@ -151,13 +151,15 @@ public class ApiServer
         // Swagger and Swagger UI first so /swagger and /swagger/v1/swagger.json are served
         // before auth (avoids 403 Forbidden when opening Swagger UI unauthenticated)
         app.UseSwagger();
-        if (app.Environment.IsDevelopment())
+        app.UseSwaggerUI(c =>
         {
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blumberg API v1");
-            });
-        }
+            // NOTE:
+            // - This enables Swagger UI in all environments (including ECS).
+            // - Access via /swagger behind your ALB/CloudFront, e.g. https://<tu-dominio>/swagger
+            // - If you ever need to restrict it, gate this with an env var like ENABLE_SWAGGER_UI.
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blumberg API v1");
+            c.RoutePrefix = "swagger";
+        });
 
         // Routing must run before CORS so the CORS middleware can apply the policy correctly (required for preflight and CORS headers on responses)
         app.UseRouting();
