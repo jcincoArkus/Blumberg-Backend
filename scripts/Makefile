@@ -4,7 +4,7 @@
 #
 # After connecting to the container, run these two commands separately (inside the container):
 #   1. dotnet /app/cli/CLI.dll nukeAndPave
-#   2. INGESTION_SIMULATOR_BASE_URL="https://d2cqcx3hu6v090.cloudfront.net" dotnet /app/cli/CLI.dll ingestion:simulate --batches 20 --interval 10
+#   2. INGESTION_SIMULATOR_BASE_URL="https://d2cqcx3hu6v090.cloudfront.net" dotnet /app/cli/CLI.dll ingestion:simulate --interval 10
 
 .PHONY: connect-ecs connect-ecs-bash
 
