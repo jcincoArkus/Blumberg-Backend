@@ -45,8 +45,10 @@ if ! aws --version 2>/dev/null | grep -q "aws-cli/2"; then
 fi
 
 # Check credentials (valid session) - uses env vars only (no profile)
-if ! aws sts get-caller-identity --region us-west-2 >/dev/null 2>&1; then
-  echo "Error: AWS credentials are invalid or expired. Check your access keys." >&2
+echo "Verifying AWS credentials with sts get-caller-identity..."
+if ! aws sts get-caller-identity --region us-west-2; then
+  echo "" >&2
+  echo "Error: AWS credentials are invalid or expired, or STS returned an error (see above)." >&2
   abort_with_note
 fi
 
