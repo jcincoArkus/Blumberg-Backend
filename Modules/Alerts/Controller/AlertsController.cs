@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Modules.Alerts.Dto;
+using Modules.Alerts.Repository;
 using Modules.Alerts.Service;
 using Shared.Entity;
 
@@ -15,7 +16,7 @@ namespace Modules.Alerts.Controller;
 [Route("api/v1/alerts")]
 [Tags("Alerts")]
 [Authorize]
-public class AlertsController(IAlertService service, ILogger<AlertsController> logger) : ControllerBase
+public class AlertsController(IAlertService service, IRecommendedActionRepository recommendedActionRepository, ILogger<AlertsController> logger) : ControllerBase
 {
     /// <summary>Get paginated alerts</summary>
     [HttpGet(Name = "GetAllAlertsV1")]
@@ -72,7 +73,10 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
         {
             var entity = await service.GetByIdAsync(id);
             logger.LogInformation("Retrieved alert {Id}", id);
-            return Ok(MapToResponse(entity));
+            var recommendedActions = entity.Sensor != null
+                ? await recommendedActionRepository.GetActiveBySensorTypeAndSeverityAsync(entity.Sensor.SensorTypeId, entity.Severity)
+                : [];
+            return Ok(MapToResponse(entity, recommendedActions));
         }
         catch (KeyNotFoundException)
         {
@@ -148,7 +152,7 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
         }
     }
 
-    private static AlertResponse MapToResponse(Alert entity)
+    private static AlertResponse MapToResponse(Alert entity, IReadOnlyList<Shared.Entity.RecommendedAction>? recommendedActions = null)
     {
         var response = new AlertResponse
         {
@@ -179,6 +183,19 @@ public class AlertsController(IAlertService service, ILogger<AlertsController> l
                     OccurredAt = e.OccurredAt,
                     Description = e.Description,
                     ActorId = e.ActorId,
+                })
+                .ToList();
+        }
+        // When recommendedActions is provided (e.g. GetById), always set the list (empty if none configured)
+        if (recommendedActions != null)
+        {
+            response.RecommendedActions = recommendedActions
+                .Select(a => new RecommendedActionResponse
+                {
+                    Id = a.Id,
+                    Title = a.Title,
+                    Description = a.Description,
+                    DisplayOrder = a.DisplayOrder,
                 })
                 .ToList();
         }
