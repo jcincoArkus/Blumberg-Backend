@@ -6,10 +6,9 @@ using Shared.Enums;
 namespace Adapters.Database.Seeders;
 
 /// <summary>
-/// Seeds predefined recommended actions for Temperature, Humidity, and Pressure sensor types
-/// with at least High severity (Critical and Warning). Idempotent: skips when a matching
-/// action (same sensor type, severity, title) already exists. Actions are active by default.
-/// Runs after SensorTypeSeeder so sensor type IDs exist. For Dev/Staging (run via dev seed).
+/// Seeds predefined recommended actions for all sensor types (Temperature, Humidity, Pressure, Energy, Co2, O2)
+/// at Critical and Warning severity. Idempotent: skips when a matching action (same sensor type, severity, title)
+/// already exists. Runs after SensorTypeSeeder so sensor type IDs exist.
 /// </summary>
 public class RecommendedActionSeeder(ILoggerFactory loggerFactory) : ISeeder
 {
@@ -40,17 +39,35 @@ public class RecommendedActionSeeder(ILoggerFactory loggerFactory) : ISeeder
         // Pressure – Warning
         new(SensorTypeKind.Pressure, AlertSeverity.Warning, "Monitor trend and compare to normal", "Compare to typical operating range and adjust setpoints if appropriate.", 1),
         new(SensorTypeKind.Pressure, AlertSeverity.Warning, "Inspect filters and strainers", "Clean or replace filters and strainers if pressure drop is suspected.", 2),
+        // Energy – Critical
+        new(SensorTypeKind.Energy, AlertSeverity.Critical, "Check for overload or fault", "Verify breakers, fuses, and load; isolate fault if present. Contact facilities if needed.", 1),
+        new(SensorTypeKind.Energy, AlertSeverity.Critical, "Verify meters and CTs", "Confirm metering and current transformers are connected and reporting correctly.", 2),
+        // Energy – Warning
+        new(SensorTypeKind.Energy, AlertSeverity.Warning, "Review load and schedule", "Compare to typical usage and adjust schedules or setpoints if appropriate.", 1),
+        new(SensorTypeKind.Energy, AlertSeverity.Warning, "Inspect connections and panels", "Check for loose connections, heating, or tripped breakers.", 2),
+        // Co2 – Critical
+        new(SensorTypeKind.Co2, AlertSeverity.Critical, "Increase ventilation immediately", "Open dampers, run fans, or evacuate if levels are unsafe. Check HVAC and fresh-air supply.", 1),
+        new(SensorTypeKind.Co2, AlertSeverity.Critical, "Verify sensor and calibrate", "Confirm sensor placement and calibration; rule out sensor fault.", 2),
+        // Co2 – Warning
+        new(SensorTypeKind.Co2, AlertSeverity.Warning, "Review ventilation setpoints", "Adjust demand-controlled ventilation or schedule to improve air quality.", 1),
+        new(SensorTypeKind.Co2, AlertSeverity.Warning, "Check filters and outdoor air", "Ensure filters are clean and outdoor air intakes are not blocked.", 2),
+        // O2 – Critical
+        new(SensorTypeKind.O2, AlertSeverity.Critical, "Evacuate if below safe level", "Follow confined-space or safety procedures; ensure ventilation and recheck before re-entry.", 1),
+        new(SensorTypeKind.O2, AlertSeverity.Critical, "Verify sensor and ventilation", "Confirm sensor is working and that fresh air or O2 supply is adequate.", 2),
+        // O2 – Warning
+        new(SensorTypeKind.O2, AlertSeverity.Warning, "Increase ventilation", "Improve fresh-air supply or run ventilation equipment per procedures.", 1),
+        new(SensorTypeKind.O2, AlertSeverity.Warning, "Check sensor location and calibration", "Ensure sensor is in representative location and within calibration.", 2),
     ];
 
     public async Task SeedAsync(ApplicationDbContext context)
     {
         var sensorTypes = await context.SensorTypes
-            .Where(st => st.DeletedAt == null && (st.Type == SensorTypeKind.Temperature || st.Type == SensorTypeKind.Humidity || st.Type == SensorTypeKind.Pressure))
+            .Where(st => st.DeletedAt == null)
             .ToDictionaryAsync(st => st.Type, st => st.Id);
 
         if (sensorTypes.Count == 0)
         {
-            _logger.LogInformation("No Temperature, Humidity, or Pressure sensor types found; skipping recommended actions seed");
+            _logger.LogInformation("No sensor types found; skipping recommended actions seed");
             return;
         }
 
@@ -88,11 +105,11 @@ public class RecommendedActionSeeder(ILoggerFactory loggerFactory) : ISeeder
         if (added > 0)
         {
             await context.SaveChangesAsync();
-            _logger.LogInformation("Seeded {Count} recommended actions for Temperature, Humidity, Pressure", added);
+            _logger.LogInformation("Seeded {Count} recommended actions", added);
         }
         else
         {
-            _logger.LogInformation("Recommended actions for Temperature, Humidity, Pressure already exist, skipping");
+            _logger.LogInformation("Recommended actions already exist, skipping");
         }
     }
 }

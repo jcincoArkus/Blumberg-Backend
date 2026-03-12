@@ -237,6 +237,20 @@ public class IngestionService(
     }
 
     /// <summary>
+    /// Derives alert severity from the breach: above max = Critical; below min = Warning or Info
+    /// (Info when only slightly below min, so simulators can trigger all severity levels).
+    /// </summary>
+    private static AlertSeverity DeriveSeverity(decimal value, decimal thresholdMin, decimal thresholdMax)
+    {
+        if (value > thresholdMax)
+            return AlertSeverity.Critical;
+        var rangeSpan = thresholdMax - thresholdMin;
+        var margin = thresholdMin - value; // positive when value is below min
+        var infoBand = Math.Max(rangeSpan * 0.1m, 0.001m);
+        return margin <= infoBand ? AlertSeverity.Info : AlertSeverity.Warning;
+    }
+
+    /// <summary>
     /// Builds new alerts respecting threshold duration: only trigger after value stays out of range
     /// for the configured duration; reset the timer when value returns to normal. Also determines
     /// which existing alerts should be automatically resolved when values return to the allowed range.
@@ -328,7 +342,7 @@ public class IngestionService(
 
                     if (durationMet && !alertedSensorIds.Contains(sensorId))
                     {
-                        var severity = reading.Value > threshold.Max ? AlertSeverity.Critical : AlertSeverity.Warning;
+                        var severity = DeriveSeverity(reading.Value, threshold.Min, threshold.Max);
                         newAlerts.Add(new Alert
                         {
                             Id = Guid.NewGuid(),
