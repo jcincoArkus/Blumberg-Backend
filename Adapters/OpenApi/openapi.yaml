@@ -3195,6 +3195,9 @@ components:
         rejectedRecords:
           type: integer
           format: int32
+        uniqueErrorTypes:
+          type: integer
+          format: int32
       additionalProperties: false
     IngestionStatus:
       enum:
