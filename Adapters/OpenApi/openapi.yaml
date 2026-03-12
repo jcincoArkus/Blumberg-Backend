@@ -501,6 +501,20 @@ paths:
             text/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  /health:
+    get:
+      tags:
+        - CLI
+      responses:
+        '200':
+          description: OK
+  /api/health:
+    get:
+      tags:
+        - CLI
+      responses:
+        '200':
+          description: OK
   /api/v1/equipment:
     get:
       tags:
@@ -2745,6 +2759,11 @@ components:
           items:
             $ref: '#/components/schemas/AlertEventResponse'
           nullable: true
+        recommendedActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendedActionResponse'
+          nullable: true
       additionalProperties: false
     AlertResponsePagedResponse:
       type: object
@@ -3176,6 +3195,9 @@ components:
         rejectedRecords:
           type: integer
           format: int32
+        uniqueErrorTypes:
+          type: integer
+          format: int32
       additionalProperties: false
     IngestionStatus:
       enum:
@@ -3220,6 +3242,22 @@ components:
           type: string
           nullable: true
       additionalProperties: { }
+    RecommendedActionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+          format: int32
+      additionalProperties: false
     RefreshRequest:
       type: object
       properties:
@@ -3927,6 +3965,7 @@ tags:
   - name: Admins
   - name: Alerts
   - name: Authentication
+  - name: CLI
   - name: Equipment
   - name: Ingestion
   - name: Permissions

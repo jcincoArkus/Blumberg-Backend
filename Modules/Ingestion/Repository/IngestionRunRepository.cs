@@ -162,7 +162,16 @@ public class IngestionRunRepository(
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return stats ?? new IngestionStatsResponse();
+        var result = stats ?? new IngestionStatsResponse();
+
+        var uniqueErrorTypes = await query
+            .SelectMany(r => r.RejectedReadings)
+            .Select(rr => rr.RejectionReason)
+            .Distinct()
+            .CountAsync(cancellationToken);
+        result.UniqueErrorTypes = uniqueErrorTypes;
+
+        return result;
     }
 
     /// <inheritdoc />

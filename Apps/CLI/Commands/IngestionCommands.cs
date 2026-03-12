@@ -343,7 +343,7 @@ public static class IngestionCommands
 
     /// <summary>
     /// Replaces one reading in the batch with an out-of-threshold value so the ingestion service creates an alert.
-    /// Picks a sensor that has threshold (round-robin by run) and sets value to Max+1 (critical) or Min-1 (warning).
+    /// Cycles through Critical (above max), Warning (below min, large margin), Info (below min, small margin).
     /// </summary>
     private static void InjectAlertReading(
         List<SimulateReadingDto> readings,
@@ -358,13 +358,30 @@ public static class IngestionCommands
         if (alertable.Count == 0)
             return;
 
+        var cycle = (run / alertEvery) % 3; // 0 = Critical, 1 = Warning, 2 = Info
         var index = (run / alertEvery) % alertable.Count;
         var info = alertable[index];
         var min = info.ThresholdMin!.Value;
         var max = info.ThresholdMax!.Value;
-        // Alternate above max (critical) vs below min (warning)
-        var aboveMax = (run / alertEvery) % 2 == 0;
-        var value = aboveMax ? max + 1 : min - 1;
+        var rangeSpan = Math.Max(max - min, 0.001m);
+
+        decimal value;
+        string variant;
+        if (cycle == 0)
+        {
+            value = max + 1;
+            variant = "above max (critical)";
+        }
+        else if (cycle == 1)
+        {
+            value = min - Math.Max(1, rangeSpan * 0.5m);
+            variant = "below min (warning)";
+        }
+        else
+        {
+            value = min - Math.Max(rangeSpan * 0.05m, 0.001m);
+            variant = "slightly below min (info)";
+        }
 
         var readingIndex = readings.FindIndex(r => r.SensorId == info.SensorId);
         if (readingIndex < 0)
@@ -377,7 +394,7 @@ public static class IngestionCommands
                 Unit = (int)info.Unit
             });
             logger.LogDebug("Run {Run}: added out-of-threshold reading for sensor {SensorId} (value {Value}, {Variant}).",
-                run, info.SensorId, value, aboveMax ? "above max" : "below min");
+                run, info.SensorId, value, variant);
         }
         else
         {
@@ -389,7 +406,7 @@ public static class IngestionCommands
                 Unit = (int)info.Unit
             };
             logger.LogDebug("Run {Run}: replaced reading at index {Index} with out-of-threshold value for sensor {SensorId} (value {Value}, {Variant}).",
-                run, readingIndex, info.SensorId, value, aboveMax ? "above max" : "below min");
+                run, readingIndex, info.SensorId, value, variant);
         }
     }
 

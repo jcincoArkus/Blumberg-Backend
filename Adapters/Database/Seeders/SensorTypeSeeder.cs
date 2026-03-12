@@ -6,7 +6,7 @@ using Shared.Enums;
 namespace Adapters.Database.Seeders;
 
 /// <summary>
-/// Seeds reference data: sensor types (Temperature, Humidity, Pressure, Energy) with their units.
+/// Seeds reference data: sensor types (Temperature, Humidity, Pressure, Energy, Co2, O2) with their units.
 /// Runs before SensorSeeder so sensors can reference them. No tenant scope.
 /// </summary>
 public class SensorTypeSeeder(ILoggerFactory loggerFactory) : ISeeder
@@ -29,6 +29,8 @@ public class SensorTypeSeeder(ILoggerFactory loggerFactory) : ISeeder
 			(SensorTypeKind.Humidity, Unit.Percent),
 			(SensorTypeKind.Pressure, Unit.Psi),
 			(SensorTypeKind.Energy, Unit.Kw),
+			(SensorTypeKind.Co2, Unit.Ppm),
+			(SensorTypeKind.O2, Unit.Percent),
 		};
 
 		var now = DateTime.UtcNow;
