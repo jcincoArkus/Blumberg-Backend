@@ -100,6 +100,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<RoleMetadata> RoleMetadata => Set<RoleMetadata>();
 
     /// <summary>
+    /// Gets or sets the RecommendedActions DbSet (predefined actions by sensor type + severity).
+    /// </summary>
+    public DbSet<RecommendedAction> RecommendedActions => Set<RecommendedAction>();
+
+    /// <summary>
     /// Configures the model and entity relationships
     /// </summary>
     /// <param name="modelBuilder">Model builder</param>
@@ -152,6 +157,8 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<AlertEvent>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
         // IngestionRun: tenant-scoped by OrganizationId
         modelBuilder.Entity<IngestionRun>().HasQueryFilter(e => e.DeletedAt == null && _tenantContext.CurrentOrganizationId != null && e.OrganizationId == _tenantContext.CurrentOrganizationId);
+        // RecommendedAction: global config (no tenant), soft delete only
+        modelBuilder.Entity<RecommendedAction>().HasQueryFilter(e => e.DeletedAt == null);
     }
 
     /// <summary>

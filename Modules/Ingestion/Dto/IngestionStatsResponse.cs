@@ -16,4 +16,8 @@ public class IngestionStatsResponse
     /// <summary>Total rejected records</summary>
     /// <example>2</example>
     public int RejectedRecords { get; set; }
+
+    /// <summary>Number of distinct rejection reasons in the range (unique error types)</summary>
+    /// <example>3</example>
+    public int UniqueErrorTypes { get; set; }
 }

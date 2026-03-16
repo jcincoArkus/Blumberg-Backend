@@ -14,6 +14,7 @@ public static class SeederRunner
     private static IEnumerable<ISeeder> GetSeeders(ILoggerFactory loggerFactory)
     {
         yield return new SensorTypeSeeder(loggerFactory);
+        yield return new RecommendedActionSeeder(loggerFactory);
         yield return new OrganizationSeeder(loggerFactory);
         yield return new SiteSeeder(loggerFactory);
         yield return new EquipmentSeeder(loggerFactory);
