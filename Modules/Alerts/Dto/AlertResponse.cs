@@ -27,4 +27,17 @@ public class AlertResponse
     public string? SensorTypeName { get; set; }
     /// <summary>Lifecycle events (triggered, acknowledged, resolved, etc.) when loaded (e.g. GetById)</summary>
     public List<AlertEventResponse>? Events { get; set; }
+    /// <summary>Predefined recommended actions for this alert (sensor type + severity) when loaded (e.g. GetById)</summary>
+    public List<RecommendedActionResponse>? RecommendedActions { get; set; }
+}
+
+/// <summary>
+/// Response DTO for a single recommended action (title, description, display order).
+/// </summary>
+public class RecommendedActionResponse
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int DisplayOrder { get; set; }
 }

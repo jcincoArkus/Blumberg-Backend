@@ -2,6 +2,7 @@ using System.Text.Json;
 using Adapters.Config;
 using Adapters.Database;
 using Adapters.Database.Seeders;
+using Adapters.Email;
 using Adapters.Jwt;
 using Adapters.Logger;
 using Adapters.Telemetry;
@@ -10,6 +11,8 @@ using Shared.Abstractions;
 using Adapters.OpenAPI.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -42,11 +45,9 @@ public class ApiServer
         builder.AddDistributedTracing(config.Telemetry);
 
         if (!string.IsNullOrEmpty(url))
-        {
             builder.WebHost.UseUrls(url);
-        }
 
-        ConfigureServices(builder.Services, config);
+        ConfigureServices(builder.Services, config, builder.Environment);
 
         var app = builder.Build();
 
@@ -55,8 +56,10 @@ public class ApiServer
         return new ApiServer(app, config);
     }
 
-    private static void ConfigureServices(IServiceCollection services, AppConfig config)
+    private static void ConfigureServices(IServiceCollection services, AppConfig config, IWebHostEnvironment env)
     {
+        services.AddSingleton(config);
+
         // Controllers and API Explorer (camelCase JSON so frontend receives equipmentName, sensorSerial, etc.)
         var mvcBuilder = services.AddControllers()
             .AddJsonOptions(options =>
@@ -103,17 +106,32 @@ public class ApiServer
         // JWT + API key authentication (API key for ingestion / M2M)
         services.AddJwtAuthentication(config).AddApiKeyAuthentication();
 
+        // Alert email notifications (NoOp or SMTP based on config)
+        services.AddAlertEmailNotifications(config);
+
         // Casbin Authorization
         services.AddCasbinAuthorization();
 
-        // CORS
+        // CORS: Development allows all origins; otherwise use CORS_ORIGINS (default localhost + Amplify)
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll", policy =>
+            options.AddDefaultPolicy(policy =>
             {
-                policy.AllowAnyOrigin()
-                      .AllowAnyMethod()
-                      .AllowAnyHeader();
+                if (env.IsDevelopment())
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                }
+                else
+                {
+                    var origins = config.Cors.AllowedOrigins.Length > 0
+                        ? config.Cors.AllowedOrigins
+                        : new[] { "https://development.d2g4yx5jn4b7oi.amplifyapp.com" };
+                    policy.WithOrigins(origins)
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                }
             });
         });
 
@@ -143,26 +161,58 @@ public class ApiServer
         // Swagger and Swagger UI first so /swagger and /swagger/v1/swagger.json are served
         // before auth (avoids 403 Forbidden when opening Swagger UI unauthenticated)
         app.UseSwagger();
-        if (app.Environment.IsDevelopment())
+        app.UseSwaggerUI(c =>
         {
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blumberg API v1");
-            });
-        }
+            // NOTE:
+            // - This enables Swagger UI in all environments (including ECS).
+            // - Access via /swagger behind your ALB/CloudFront, e.g. https://<tu-dominio>/swagger
+            // - If you ever need to restrict it, gate this with an env var like ENABLE_SWAGGER_UI.
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blumberg API v1");
+            c.RoutePrefix = "swagger";
+        });
 
         // Routing must run before CORS so the CORS middleware can apply the policy correctly (required for preflight and CORS headers on responses)
         app.UseRouting();
 
-        // CORS after Routing, before Auth — so preflight OPTIONS and all responses get Access-Control-Allow-Origin; skip HTTPS redirect in Dev so http://localhost works
-        app.UseCors("AllowAll");
-        if (!app.Environment.IsDevelopment())
+        // CORS after Routing, antes de Auth — así el preflight OPTIONS y todas las respuestas incluyen Access-Control-Allow-Origin.
+        app.UseCors();
+
+        // Preflight OPTIONS: 204 and CORS headers. In Development allow any origin.
+        app.Use(async (context, next) =>
         {
-            app.UseHttpsRedirection();
-        }
+            if (context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
+            {
+                var env = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
+                var origin = context.Request.Headers.Origin.FirstOrDefault();
+                if (env.IsDevelopment())
+                    context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                else
+                {
+                    var config = context.RequestServices.GetRequiredService<AppConfig>();
+                    var allowed = config.Cors.AllowedOrigins.Length > 0
+                        ? config.Cors.AllowedOrigins
+                        : new[] { "https://development.d2g4yx5jn4b7oi.amplifyapp.com" };
+                    if (!string.IsNullOrEmpty(origin) && allowed.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                        context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+                }
+                context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+                context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Api-Key, X-Organization-Id";
+                context.Response.Headers["Access-Control-Max-Age"] = "86400";
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return;
+            }
+            await next(context);
+        });
 
         app.UseAuthentication();
         app.UseAuthorization();
+
+        // Health check público para el ALB (no requiere autenticación)
+        app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
+           .AllowAnonymous();
+        app.MapGet("/api/health", () => Results.Ok(new { status = "Healthy" }))
+           .AllowAnonymous();
+
         app.MapControllers();
     }
 

@@ -2,6 +2,7 @@ using Adapters.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Modules.Alerts.Repository;
 using Modules.Alerts.Service;
+using Shared.Notifications;
 
 namespace Modules.Alerts;
 
@@ -16,7 +17,9 @@ public static class AlertsModule
     public static IServiceCollection AddAlertsModule(this IServiceCollection services)
     {
         services.AddScopedWithSpan<IAlertRepository, AlertRepository>();
+        services.AddScopedWithSpan<IRecommendedActionRepository, RecommendedActionRepository>();
         services.AddScopedWithSpan<IAlertService, AlertService>();
+        services.AddScopedWithSpan<IAlertTriggeredNotifier, AlertTriggeredNotifier>();
         return services;
     }
 }

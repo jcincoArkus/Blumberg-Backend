@@ -66,7 +66,7 @@ public class SensorSeeder(ILoggerFactory loggerFactory) : ISeeder
 				Id = Guid.NewGuid(),
 				Min = row.Min,
 				Max = row.Max,
-				Duration = TimeSpan.FromMinutes(row.DurationMinutes),
+				Duration = TimeSpan.FromSeconds(row.DurationSeconds),
 				CreatedAt = now,
 			};
 			context.Thresholds.Add(threshold);
@@ -98,6 +98,8 @@ public class SensorSeeder(ILoggerFactory loggerFactory) : ISeeder
 			"humidity" => SensorTypeKind.Humidity,
 			"pressure" => SensorTypeKind.Pressure,
 			"energy" => SensorTypeKind.Energy,
+			"co2" => SensorTypeKind.Co2,
+			"o2" => SensorTypeKind.O2,
 			_ => SensorTypeKind.Custom,
 		};
 	}

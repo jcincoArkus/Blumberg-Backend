@@ -9,5 +9,7 @@ public enum AlertEventType
     Acknowledged,
     Resolved,
     Note,
-    SystemUpdate
+    SystemUpdate,
+    /// <summary>Email (or other channel) notification was sent for this alert.</summary>
+    NotificationSent
 }

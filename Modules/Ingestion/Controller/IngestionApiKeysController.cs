@@ -46,7 +46,6 @@ public class IngestionApiKeysController(
             return BadRequest(new { message = "Name is required" });
 
         var (entity, rawKey) = await apiKeyService.CreateKeyAsync(orgId.Value, name, cancellationToken);
-        logger.LogInformation("Created API key {Id} for organization {OrgId}", entity.Id, orgId);
 
         return CreatedAtAction(
             nameof(List),

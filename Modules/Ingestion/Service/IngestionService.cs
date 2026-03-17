@@ -6,6 +6,7 @@ using Modules.Ingestion.Repository;
 using Modules.Sensors.Repository;
 using Shared.Entity;
 using Shared.Enums;
+using Shared.Notifications;
 
 namespace Modules.Ingestion.Service;
 
@@ -16,6 +17,7 @@ public class IngestionService(
     IIngestionRunRepository ingestionRunRepository,
     ISensorRepository sensorRepository,
     IAlertRepository alertRepository,
+    IAlertTriggeredNotifier alertTriggeredNotifier,
     ILogger<IngestionService> logger) : IIngestionService
 {
     /// <summary>
@@ -98,6 +100,21 @@ public class IngestionService(
             newAlerts,
             sensorBreachStateUpdates,
             cancellationToken);
+
+        // Notify recipients for each newly triggered alert (email, etc.). Do not fail ingestion if notification fails.
+        if (newAlerts.Count > 0)
+            logger.LogInformation("Notifying for {Count} new alert(s)", newAlerts.Count);
+        foreach (var alert in newAlerts)
+        {
+            try
+            {
+                await alertTriggeredNotifier.NotifyTriggeredAsync(alert, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Alert notification failed for alert {AlertId}; ingestion completed successfully", alert.Id);
+            }
+        }
 
         // Automatically resolve alerts whose sensor values returned to normal during this batch
         foreach (var (alertId, resolvedAt) in autoResolvedAlerts)
@@ -220,6 +237,20 @@ public class IngestionService(
     }
 
     /// <summary>
+    /// Derives alert severity from the breach: above max = Critical; below min = Warning or Info
+    /// (Info when only slightly below min, so simulators can trigger all severity levels).
+    /// </summary>
+    private static AlertSeverity DeriveSeverity(decimal value, decimal thresholdMin, decimal thresholdMax)
+    {
+        if (value > thresholdMax)
+            return AlertSeverity.Critical;
+        var rangeSpan = thresholdMax - thresholdMin;
+        var margin = thresholdMin - value; // positive when value is below min
+        var infoBand = Math.Max(rangeSpan * 0.1m, 0.001m);
+        return margin <= infoBand ? AlertSeverity.Info : AlertSeverity.Warning;
+    }
+
+    /// <summary>
     /// Builds new alerts respecting threshold duration: only trigger after value stays out of range
     /// for the configured duration; reset the timer when value returns to normal. Also determines
     /// which existing alerts should be automatically resolved when values return to the allowed range.
@@ -311,7 +342,7 @@ public class IngestionService(
 
                     if (durationMet && !alertedSensorIds.Contains(sensorId))
                     {
-                        var severity = reading.Value > threshold.Max ? AlertSeverity.Critical : AlertSeverity.Warning;
+                        var severity = DeriveSeverity(reading.Value, threshold.Min, threshold.Max);
                         newAlerts.Add(new Alert
                         {
                             Id = Guid.NewGuid(),
