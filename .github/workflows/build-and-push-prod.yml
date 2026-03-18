@@ -18,7 +18,7 @@ env:
   DOCKERFILE_PATH: ./Dockerfile
   IMAGE_NAME: app
   SECRET_NAME: ci-cd-blumberg-prod
-  AWS_REGION_DEFAULT: us-west-2
+  AWS_REGION_DEFAULT: us-east-1
 
 jobs:
   build-push-deploy:
