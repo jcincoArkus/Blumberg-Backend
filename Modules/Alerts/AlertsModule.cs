@@ -20,6 +20,13 @@ public static class AlertsModule
         services.AddScopedWithSpan<IRecommendedActionRepository, RecommendedActionRepository>();
         services.AddScopedWithSpan<IAlertService, AlertService>();
         services.AddScopedWithSpan<IAlertTriggeredNotifier, AlertTriggeredNotifier>();
+
+        // Email queue worker (SQS + SES) used by endpoints:
+        // - POST /api/queue-email
+        // - POST /api/process-queue
+        // Uses only Environment.GetEnvironmentVariable() inside the service.
+        services.AddSingleton<SqsSesEmailQueueService>();
+
         return services;
     }
 }
