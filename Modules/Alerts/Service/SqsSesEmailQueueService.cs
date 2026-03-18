@@ -72,7 +72,7 @@ public class SqsSesEmailQueueService(ILogger<SqsSesEmailQueueService> logger)
         // SQS suele limitar MaxNumberOfMessages a 10
         var batchSize = Math.Min(10, maxMessages);
 
-        AmazonSQS.Model.ReceiveMessageResponse receiveResponse;
+        ReceiveMessageResponse receiveResponse;
         try
         {
             receiveResponse = await sqs.ReceiveMessageAsync(new ReceiveMessageRequest
@@ -99,7 +99,13 @@ public class SqsSesEmailQueueService(ILogger<SqsSesEmailQueueService> logger)
 
         if (messages.Count == 0)
         {
-            return new ProcessQueueResult(total: 0, processed: 0, failed: 0, errors: null, Error: null);
+            return new ProcessQueueResult(
+                Total: 0,
+                Processed: 0,
+                Failed: 0,
+                Errors: null,
+                Error: null
+            );
         }
 
         foreach (var msg in messages)
