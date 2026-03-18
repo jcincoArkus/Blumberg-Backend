@@ -11,7 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.17" />
+    <!-- Align AWS SDK major/minor versions with AWSSDK.SimpleEmail (v3.x) to avoid runtime client config mismatches. -->
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.502.47" />
     <PackageReference Include="AWSSDK.SimpleEmail" Version="3.7.502.50" />
   </ItemGroup>
 
