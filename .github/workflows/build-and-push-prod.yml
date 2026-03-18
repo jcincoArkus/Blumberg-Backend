@@ -27,7 +27,7 @@ jobs:
 
     env:
       # TODO: si tienes un rol distinto para prod, cambia este ARN aquí.
-      AWS_ROLE_TO_ASSUME: arn:aws:iam::097659826120:role/github-oidc-deploy-prod
+      AWS_ROLE_TO_ASSUME: arn:aws:iam::201462387644:role/github-oidc-deploy-prod
 
     steps:
       - name: Validate manual dispatch branch
