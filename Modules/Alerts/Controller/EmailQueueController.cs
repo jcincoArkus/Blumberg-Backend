@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Modules.Alerts.Service;
@@ -17,7 +18,12 @@ public class EmailQueueController(SqsSesEmailQueueService service, ILogger<Email
 
     public sealed record ProcessQueueRequest(int? MaxMessages);
 
-    public sealed record ProcessQueueResponse(int Received, int Sent, int Deleted);
+    public sealed record ProcessQueueResponse(
+        bool Ok,
+        int Processed,
+        int Total,
+        IReadOnlyList<string>? Errors
+    );
 
     /// <summary>
     /// Encola un email en SQS.
@@ -48,8 +54,42 @@ public class EmailQueueController(SqsSesEmailQueueService service, ILogger<Email
         var maxMessages = request?.MaxMessages ?? 10;
         logger.LogInformation("ProcessQueue requested. maxMessages={MaxMessages}", maxMessages);
 
-        var result = await service.ProcessQueueAsync(maxMessages, cancellationToken);
-        return Ok(new ProcessQueueResponse(result.Received, result.Sent, result.Deleted));
+        try
+        {
+            var result = await service.ProcessQueueAsync(maxMessages, cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(result.Error))
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    ok = false,
+                    processed = result.Processed,
+                    total = result.Total,
+                    errors = (IReadOnlyList<string>?)null,
+                    error = result.Error
+                });
+            }
+
+            var errors = (result.Errors != null && result.Errors.Count > 0) ? result.Errors : null;
+
+            return Ok(new ProcessQueueResponse(
+                Ok: true,
+                Processed: result.Processed,
+                Total: result.Total,
+                Errors: errors
+            ));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                ok = false,
+                processed = 0,
+                total = 0,
+                errors = (IReadOnlyList<string>?)null,
+                error = ex.Message
+            });
+        }
     }
 }
 
