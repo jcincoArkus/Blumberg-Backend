@@ -112,26 +112,14 @@ public class ApiServer
         // Casbin Authorization
         services.AddCasbinAuthorization();
 
-        // CORS: Development allows all origins; otherwise use CORS_ORIGINS (default localhost + Amplify)
+        // CORS: explicit allowlist in all environments via CORS_ORIGINS.
         services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
             {
-                if (env.IsDevelopment())
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                }
-                else
-                {
-                    var origins = config.Cors.AllowedOrigins.Length > 0
-                        ? config.Cors.AllowedOrigins
-                        : new[] { "https://development.d2g4yx5jn4b7oi.amplifyapp.com" };
-                    policy.WithOrigins(origins)
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                }
+                policy.WithOrigins(config.Cors.AllowedOrigins)
+                      .AllowAnyMethod()
+                      .AllowAnyHeader();
             });
         });
 
@@ -177,24 +165,16 @@ public class ApiServer
         // CORS after Routing, antes de Auth — así el preflight OPTIONS y todas las respuestas incluyen Access-Control-Allow-Origin.
         app.UseCors();
 
-        // Preflight OPTIONS: 204 and CORS headers. In Development allow any origin.
+        // Preflight OPTIONS: 204 and CORS headers using configured allowlist.
         app.Use(async (context, next) =>
         {
             if (context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
             {
-                var env = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
                 var origin = context.Request.Headers.Origin.FirstOrDefault();
-                if (env.IsDevelopment())
-                    context.Response.Headers["Access-Control-Allow-Origin"] = "*";
-                else
-                {
-                    var config = context.RequestServices.GetRequiredService<AppConfig>();
-                    var allowed = config.Cors.AllowedOrigins.Length > 0
-                        ? config.Cors.AllowedOrigins
-                        : new[] { "https://development.d2g4yx5jn4b7oi.amplifyapp.com" };
-                    if (!string.IsNullOrEmpty(origin) && allowed.Contains(origin, StringComparer.OrdinalIgnoreCase))
-                        context.Response.Headers["Access-Control-Allow-Origin"] = origin;
-                }
+                var config = context.RequestServices.GetRequiredService<AppConfig>();
+                var allowed = config.Cors.AllowedOrigins;
+                if (!string.IsNullOrEmpty(origin) && allowed.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                    context.Response.Headers["Access-Control-Allow-Origin"] = origin;
                 context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
                 context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Api-Key, X-Organization-Id";
                 context.Response.Headers["Access-Control-Max-Age"] = "86400";

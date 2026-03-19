@@ -12,13 +12,17 @@ services:
       - postgres:/var/lib/postgresql/data
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
-      POSTGRES_DB: blumberg
-      POSTGRES_USER: blumberg
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${DB_NAME:?DB_NAME must be set}
+      POSTGRES_USER: ${DB_USER:?DB_USER must be set}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U blumberg -d blumberg"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:?DB_USER must be set} -d ${DB_NAME:?DB_NAME must be set}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,7 +45,9 @@ services:
       - path: .env
         required: false
     environment:
-      ASPNETCORE_URLS: http://0.0.0.0:5000
+      # Ensure dev-only seeders run. Seeders are idempotent and will skip when data already exists.
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:?ASPNETCORE_ENVIRONMENT must be set}
+      ASPNETCORE_URLS: ${ASPNETCORE_URLS:?ASPNETCORE_URLS must be set}
       DB_HOST: postgres
       DB_PORT: 5432
 
