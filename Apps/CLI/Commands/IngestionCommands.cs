@@ -90,7 +90,11 @@ public static class IngestionCommands
         command.SetHandler(async (InvocationContext invocationContext) =>
         {
             var pr = invocationContext.ParseResult;
-            var baseUrl = GetOptionValue(pr, baseUrlOption, Environment.GetEnvironmentVariable(EnvBaseUrl) ?? config.Application.Urls.FirstOrDefault() ?? "http://localhost:5000").TrimEnd('/');
+            var rawBaseUrl = GetOptionValue(
+                pr,
+                baseUrlOption,
+                Environment.GetEnvironmentVariable(EnvBaseUrl) ?? config.Application.Urls.FirstOrDefault() ?? "http://localhost:5000");
+            var baseUrl = NormalizeBaseUrlForHttpTarget(rawBaseUrl, logger).TrimEnd('/');
             var apiKey = GetOptionValue(pr, apiKeyOption);
             var orgIdStr = GetOptionValue(pr, orgIdOption);
             var sensorIdsStr = GetOptionValue(pr, sensorIdsOption);
@@ -608,6 +612,39 @@ public static class IngestionCommands
             SensorTypeKind.Energy => Math.Round((decimal)(random.NextDouble() * 10 + 2), 2),            // 2–12 kW
             _ => Math.Round((decimal)(random.NextDouble() * 10 + 20), 2)
         };
+    }
+
+    /// <summary>
+    /// Normalizes a base URL used by HttpClient.
+    /// Converts bind/wildcard hosts (0.0.0.0, ::, +, *) to localhost, since they are valid bind addresses
+    /// for servers but invalid as client request targets.
+    /// </summary>
+    private static string NormalizeBaseUrlForHttpTarget(string baseUrl, ILogger logger)
+    {
+        var trimmed = (baseUrl ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return "http://localhost:5000";
+
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+            return trimmed;
+
+        var host = uri.Host;
+        var isWildcardHost =
+            host == "0.0.0.0" ||
+            host == "::" ||
+            host == "[::]" ||
+            host == "+" ||
+            host == "*";
+
+        if (!isWildcardHost)
+            return trimmed;
+
+        var builder = new UriBuilder(uri) { Host = "localhost" };
+        var normalized = builder.Uri.ToString().TrimEnd('/');
+        logger.LogWarning(
+            "Base URL '{BaseUrl}' uses bind/wildcard host '{Host}', which is not a valid HTTP target. Using '{Normalized}' instead.",
+            trimmed, host, normalized);
+        return normalized;
     }
 
     private sealed class SimulateReadingDto

@@ -33,10 +33,21 @@ This guide assumes you're using the repo from the project root. VS Code is recom
 
 5. **Initialize the database**
 
-    From the repo root:
+    Choose one:
 
     ```bash
+    # Local .NET SDK execution (host environment)
     ./scripts/cli nukeAndPave
+    ```
+
+    ```bash
+    # Docker execution (recommended when API is running in compose)
+    ./scripts/cli-docker nukeAndPave
+    ```
+
+    ```powershell
+    # Docker execution on Windows
+    ./scripts/cli-docker.ps1 nukeAndPave
     ```
 
 6. **Run the API** (Swagger UI)
