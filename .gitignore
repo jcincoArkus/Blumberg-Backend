@@ -1,0 +1,71 @@
+# From .NET Core 3.0 you can use the command: `dotnet new gitignore` to generate a customizable .gitignore file
+
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+*.pyc
+.claude/
+.augment/
+.idea/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# MSBuild bug on Mac - creates folders with backslash in name
+# Using double backslash to match literal backslash in folder name
+**/[Bb]in\\[Dd]ebug/
+**/[Bb]in\\[Rr]elease/
+**/[Oo]bj\\[Dd]ebug/
+**/[Oo]bj\\[Rr]elease/
+
+# Visual Studio 2015
+.vs/
+
+.env
+.env.local
+.env.*.local
+.temp/
+.tmp/
+tmp/
+logs/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Docker override
+docker-compose.override.yml
+
+**/tmp/
+**/temp/

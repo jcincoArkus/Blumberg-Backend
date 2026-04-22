@@ -1,0 +1,205 @@
+name: Build, Push to ECR & Deploy ECS - Prod
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy (only main)"
+        required: true
+        default: "main"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  DOCKERFILE_PATH: ./Dockerfile
+  IMAGE_NAME: app
+  SECRET_NAME: ci-cd-blumberg-prod
+  AWS_REGION_DEFAULT: us-east-1
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      # TODO: si tienes un rol distinto para prod, cambia este ARN aquí.
+      AWS_ROLE_TO_ASSUME: arn:aws:iam::201462387644:role/github-oidc-deploy-prod
+
+    steps:
+      - name: Validate manual dispatch branch
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ "${{ github.event.inputs.branch }}" != "main" ]; then
+            echo "Solo se permite ejecutar manualmente para branch: main"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install jq (safe)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract commit hash (short) and branch
+        id: vars
+        run: |
+          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "branch_name=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION_DEFAULT }}
+
+      - name: Load config from Secrets Manager
+        id: load-secret
+        run: |
+          set -euo pipefail
+
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id "$SECRET_NAME" \
+            --query SecretString \
+            --output text)
+
+          AWS_REGION=$(echo "$SECRET" | jq -r '.AWS_REGION')
+          AWS_ACCOUNT_ID=$(echo "$SECRET" | jq -r '.AWS_ACCOUNT_ID')
+          ECR_REPOSITORY_NAME=$(echo "$SECRET" | jq -r '.ECR_REPOSITORY_NAME')
+          ECS_CLUSTER=$(echo "$SECRET" | jq -r '.ECS_CLUSTER')
+          ECS_SERVICE=$(echo "$SECRET" | jq -r '.ECS_SERVICE')
+          ECS_CONTAINER_NAME=$(echo "$SECRET" | jq -r '.ECS_CONTAINER_NAME')
+
+          echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
+          echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY_NAME=$ECR_REPOSITORY_NAME" >> $GITHUB_ENV
+          echo "ECS_CLUSTER=$ECS_CLUSTER" >> $GITHUB_ENV
+          echo "ECS_SERVICE=$ECS_SERVICE" >> $GITHUB_ENV
+          echo "ECS_CONTAINER_NAME=$ECS_CONTAINER_NAME" >> $GITHUB_ENV
+
+      - name: Ensure ECR repository exists (optional)
+        run: |
+          set -e
+          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY_NAME" --region "$AWS_REGION" >/dev/null 2>&1 \
+            || aws ecr create-repository --repository-name "$ECR_REPOSITORY_NAME" --region "$AWS_REGION" >/dev/null
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: true
+
+      - name: Build and push Docker image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG_COMMIT: ${{ steps.vars.outputs.short_sha }}
+          IMAGE_TAG_BRANCH: ${{ steps.vars.outputs.branch_name }}
+        run: |
+          set -euo pipefail
+          echo "Repo ECR: $ECR_REGISTRY/$ECR_REPOSITORY_NAME"
+
+          docker buildx build \
+            --platform linux/amd64 \
+            --file "$DOCKERFILE_PATH" \
+            --tag "$ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG_COMMIT" \
+            --tag "$ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG_BRANCH" \
+            --tag "$ECR_REGISTRY/$ECR_REPOSITORY_NAME:latest" \
+            --push \
+            .
+
+          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG_COMMIT" >> $GITHUB_OUTPUT
+
+      - name: Register new ECS task definition revision (commit-based image)
+        id: register-task-def
+        run: |
+          set -euo pipefail
+
+          NEW_IMAGE="${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY_NAME}:${{ steps.vars.outputs.short_sha }}"
+          echo "ECS_CONTAINER_NAME: $ECS_CONTAINER_NAME"
+          echo "Using new image: $NEW_IMAGE"
+
+          TASK_DEF_ARN=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --query "services[0].taskDefinition" \
+            --output text \
+            --region "$AWS_REGION")
+
+          echo "Current task definition: $TASK_DEF_ARN"
+
+          TASK_DEF_JSON=$(aws ecs describe-task-definition \
+            --task-definition "$TASK_DEF_ARN" \
+            --region "$AWS_REGION")
+
+          # Build a new task definition JSON:
+          # - Always includes executionRoleArn
+          # - Includes taskRoleArn only if present
+          # - Prevents null arrays for volumes/placementConstraints
+          NEW_TASK_DEF=$(echo "$TASK_DEF_JSON" | \
+            jq --arg IMAGE "$NEW_IMAGE" \
+               --arg CONTAINER "$ECS_CONTAINER_NAME" '
+              .taskDefinition
+              | .containerDefinitions |= map(
+                  if .name == $CONTAINER then
+                    .image = $IMAGE
+                  else
+                    .
+                  end
+                )
+              | {
+                  family,
+                  executionRoleArn,
+                  networkMode,
+                  containerDefinitions,
+                  requiresCompatibilities,
+                  cpu,
+                  memory,
+                  volumes: (.volumes // []),
+                  placementConstraints: (.placementConstraints // [])
+                }
+              + (if .taskRoleArn? != null then { taskRoleArn: .taskRoleArn } else {} end)
+            ')
+
+          echo "$NEW_TASK_DEF" > task-def.json
+
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://task-def.json \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text \
+            --region "$AWS_REGION")
+
+          echo "task_def_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+          echo "Registered new task definition: $NEW_TASK_DEF_ARN"
+
+      - name: Update ECS service to new task definition
+        run: |
+          set -euo pipefail
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "${{ steps.register-task-def.outputs.task_def_arn }}" \
+            --force-new-deployment \
+            --region "$AWS_REGION"
+
+      - name: Summary
+        run: |
+          echo "## 🐳 Docker Image Built & Pushed to ECR (prod)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image (commit):** \`${{ steps.build-image.outputs.image_uri }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 ECS Deployment (prod)" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster:** \`$ECS_CLUSTER\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Service:** \`$ECS_SERVICE\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Task Definition:** \`${{ steps.register-task-def.outputs.task_def_arn }}\`" >> $GITHUB_STEP_SUMMARY
+

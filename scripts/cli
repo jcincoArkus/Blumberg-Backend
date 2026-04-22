@@ -1,0 +1,19 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(dirname "$0")"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+CLI_PROJECT="${ROOT_DIR}/Apps/CLI"
+
+# Handle built-in commands
+case "$1" in
+    skills:claude)
+        mkdir -p "${ROOT_DIR}/.claude" && ln -sfn ../.llm/skills "${ROOT_DIR}/.claude/skills"
+        echo "Skills symlink created at .claude/skills"
+        exit 0
+        ;;
+    *)
+        # Run C# CLI application
+        dotnet run --project "${CLI_PROJECT}" -- "$@"
+        ;;
+esac

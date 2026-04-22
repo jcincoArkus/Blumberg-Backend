@@ -1,0 +1,11 @@
+# Casbin Role Inheritance File
+# Format: g, user, role
+# This file maps users to their roles
+# Note: In production, this will be managed dynamically through the database
+# This file is for initial setup and testing only
+
+# Example role assignments (will be replaced by database-driven assignments)
+# g, user@example.com, admin
+# g, operator@example.com, standard
+# g, viewer@example.com, readonly
+

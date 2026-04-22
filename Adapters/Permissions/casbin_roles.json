@@ -1,0 +1,49 @@
+{
+  "roles": [
+    {
+      "name": "admin",
+      "display_name": "Administrator",
+      "description": "Full system access with all permissions. Can manage users, roles, equipment, alerts, sensors, and all system configurations.",
+      "color": {
+        "r": 220,
+        "g": 38,
+        "b": 38
+      },
+      "is_default": true
+    },
+    {
+      "name": "manager",
+      "display_name": "Manager",
+      "description": "Operational management access. Can view all data, manage equipment and alerts, but cannot modify system configuration or user management.",
+      "color": {
+        "r": 37,
+        "g": 99,
+        "b": 235
+      },
+      "is_default": false
+    },
+    {
+      "name": "operator",
+      "display_name": "Operator",
+      "description": "Standard operational access. Can view data, acknowledge alerts, and perform routine operations. Cannot modify configurations.",
+      "color": {
+        "r": 22,
+        "g": 163,
+        "b": 74
+      },
+      "is_default": false
+    },
+    {
+      "name": "readonly",
+      "display_name": "Read Only",
+      "description": "View-only access to all data. Cannot make any modifications or acknowledge alerts.",
+      "color": {
+        "r": 107,
+        "g": 114,
+        "b": 128
+      },
+      "is_default": false
+    }
+  ]
+}
+

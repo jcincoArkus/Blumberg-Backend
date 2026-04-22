@@ -1,0 +1,14 @@
+{
+	"recommendations": [
+		"Gruntfuggly.todo-tree",
+		"aaron-bond.better-comments",
+		"eamodio.gitlens",
+		"gruntfuggly.todo-tree",
+		"possan.nbsp-vscode",
+		"streetsidesoftware.code-spell-checker",
+		"wayou.vscode-todo-highlight",
+		"ms-dotnettools.vscode-dotnet-runtime",
+		"ms-dotnettools.csharp",
+		"ms-dotnettools.csdevkit"
+	]
+}

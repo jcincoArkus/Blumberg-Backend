@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Logger\Adapters.Logger.csproj" />
+    <ProjectReference Include="..\Config\Adapters.Config.csproj" />
+    <ProjectReference Include="..\Telemetry\Adapters.Telemetry.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.csproj" />
+    <ProjectReference Include="..\Database\Adapters.Database.csproj" />
+    <ProjectReference Include="..\Email\Adapters.Email.csproj" />
+    <ProjectReference Include="..\Jwt\Adapters.Jwt.csproj" />
+    <ProjectReference Include="..\OpenApi\Adapters.OpenApi.csproj" />
+    <ProjectReference Include="..\..\Modules\Modules.csproj" />
+    <ProjectReference Include="..\Permissions\Adapters.Permissions.csproj" />
+  </ItemGroup>
+
+</Project>
+
