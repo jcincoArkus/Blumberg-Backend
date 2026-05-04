@@ -30,5 +30,9 @@
     <ProjectReference Include="Permissions\Modules.Permissions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Permissions\" />
+  </ItemGroup>
+
 </Project>
 

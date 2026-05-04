@@ -2,9 +2,11 @@
   <Folder Name="/Apps/CLI/">
     <Project Path="Apps/CLI/CLI.csproj" />
   </Folder>
+    <Folder Name="/Apps/" />
   <Folder Name="/Apps/API/">
     <Project Path="Apps/API/API.csproj" />
   </Folder>
+    <Folder Name="/Adapters/" />
     <Folder Name="/Adapters/Config/">
       <Project Path="Adapters/Config/Adapters.Config.csproj" />
     </Folder>
@@ -32,11 +34,12 @@
     <Folder Name="/Adapters/Telemetry/">
       <Project Path="Adapters/Telemetry/Adapters.Telemetry.csproj" />
     </Folder>
-  <Folder Name="/Modules/" >
+  <Folder Name="/Modules/">
     <Project Path="Modules/Modules.csproj" />
   </Folder>
      <Folder Name="/Modules/Auth/">
       <Project Path="Modules/Auth/Modules.Auth.csproj" />
     </Folder>
+    <Project Path="Modules/Permissions/Modules.Permissions.csproj" />
   <Project Path="Shared/Shared.csproj" />
 </Solution>

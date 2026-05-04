@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "CLI": {
+      "commandName": "Project",
+      "commandLineArgs": "nukeAndPave",
+      "environmentVariables": {
+        "DB_PASSWORD": "alsk",
+        "JWT_SECRET_KEY": "l;kasdjflkajse;okj2309482034jlksdf",
+        "CORS_ORIGINS": "*",
+        "DB_USER": "Felipe"
+      }
+    }
+  }
+}
