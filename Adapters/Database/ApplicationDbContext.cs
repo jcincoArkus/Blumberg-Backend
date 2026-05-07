@@ -104,6 +104,16 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<RecommendedAction> RecommendedActions => Set<RecommendedAction>();
 
+    public DbSet<InventoryCategory> InventoryCategories => Set<InventoryCategory>();
+    public DbSet<InventorySite> InventorySites => Set<InventorySite>();
+    public DbSet<SiteZone> SiteZones => Set<SiteZone>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<InventoryProduct> InventoryProducts => Set<InventoryProduct>();
+    public DbSet<Lot> Lots => Set<Lot>();
+    public DbSet<Movement> Movements => Set<Movement>();
+    public DbSet<IntakeShipment> IntakeShipments => Set<IntakeShipment>();
+    public DbSet<IntakeShipmentLine> IntakeShipmentLines => Set<IntakeShipmentLine>();
+
     /// <summary>
     /// Configures the model and entity relationships
     /// </summary>
