@@ -1,0 +1,884 @@
+{
+  "info": {
+    "name": "Blumberg Inventory API",
+    "_postman_id": "blumberg-inventory-api-v1",
+    "description": "Full CRUD collection for the Inventory module. Set the `baseUrl` and `token` variables before running.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "token",   "value": "YOUR_BEARER_TOKEN",     "type": "string" },
+    { "key": "categoryId",  "value": "", "type": "string" },
+    { "key": "siteId",      "value": "", "type": "string" },
+    { "key": "zoneId",      "value": "", "type": "string" },
+    { "key": "supplierId",  "value": "", "type": "string" },
+    { "key": "productId",   "value": "", "type": "string" },
+    { "key": "lotCode",     "value": "L-250501-01", "type": "string" },
+    { "key": "movementId",  "value": "", "type": "string" },
+    { "key": "shipmentId",  "value": "", "type": "string" },
+    { "key": "shipmentLineId", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/categories?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "categories"],
+              "query": [
+                { "key": "page",     "value": "1"  },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "categories", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('categoryId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fruit\",\n  \"color\": \"teal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fruit (Updated)\",\n  \"color\": \"green\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "categories", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "categories", "{{categoryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sites",
+      "item": [
+        {
+          "name": "List Sites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/sites?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "sites"],
+              "query": [
+                { "key": "page",     "value": "1"  },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Site by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/sites/{{siteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "sites", "{{siteId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Site",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('siteId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Warehouse A - Main Distribution Center\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/sites",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "sites"]
+            }
+          }
+        },
+        {
+          "name": "Update Site",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Warehouse A - Updated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/sites/{{siteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "sites", "{{siteId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Site",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/sites/{{siteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "sites", "{{siteId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Site Zones",
+      "item": [
+        {
+          "name": "List Site Zones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/site-zones?siteId={{siteId}}&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "site-zones"],
+              "query": [
+                { "key": "siteId",   "value": "{{siteId}}" },
+                { "key": "page",     "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Site Zone by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/site-zones/{{zoneId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "site-zones", "{{zoneId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Site Zone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('zoneId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"name\": \"Cold Room A\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/site-zones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "site-zones"]
+            }
+          }
+        },
+        {
+          "name": "Update Site Zone",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"siteId\": \"{{siteId}}\",\n  \"name\": \"Cold Room A (Updated)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/site-zones/{{zoneId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "site-zones", "{{zoneId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Site Zone",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/site-zones/{{zoneId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "site-zones", "{{zoneId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Suppliers",
+      "item": [
+        {
+          "name": "List Suppliers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/suppliers?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "suppliers"],
+              "query": [
+                { "key": "page",     "value": "1"  },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Supplier by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/suppliers/{{supplierId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "suppliers", "{{supplierId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Supplier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('supplierId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fresh Farms Co.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/suppliers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "suppliers"]
+            }
+          }
+        },
+        {
+          "name": "Update Supplier",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fresh Farms Co. (Updated)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/suppliers/{{supplierId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "suppliers", "{{supplierId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Supplier",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/suppliers/{{supplierId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "suppliers", "{{supplierId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/products?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "products"],
+              "query": [
+                { "key": "categoryId", "value": "",   "disabled": true },
+                { "key": "unit",       "value": "kg", "disabled": true },
+                { "key": "page",       "value": "1"  },
+                { "key": "pageSize",   "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "products", "{{productId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Product (kg)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('productId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"AVO-HASS\",\n  \"name\": \"Avocado - Hass\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"unit\": \"kg\",\n  \"shelfLifeDays\": 14,\n  \"price\": 3.50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "products"]
+            }
+          }
+        },
+        {
+          "name": "Create Product (box)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"STRAW-BOX\",\n  \"name\": \"Strawberries - Box\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"unit\": \"box\",\n  \"kgPerBox\": 2.5,\n  \"shelfLifeDays\": 7,\n  \"price\": 8.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "products"]
+            }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"AVO-HASS\",\n  \"name\": \"Avocado - Hass (Updated)\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"unit\": \"kg\",\n  \"shelfLifeDays\": 14,\n  \"price\": 3.75\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "products", "{{productId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "products", "{{productId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lots",
+      "item": [
+        {
+          "name": "List Lots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/lots?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "lots"],
+              "query": [
+                { "key": "productId",      "value": "",                        "disabled": true },
+                { "key": "siteId",         "value": "",                        "disabled": true },
+                { "key": "expiringBefore", "value": "2025-12-31T23:59:59Z",    "disabled": true },
+                { "key": "page",           "value": "1"  },
+                { "key": "pageSize",       "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Lot by Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/lots/{{lotCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "lots", "{{lotCode}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Lot",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lotCode\": \"L-250501-01\",\n  \"productId\": \"{{productId}}\",\n  \"qty\": 500,\n  \"unit\": \"kg\",\n  \"entryAt\": \"2025-05-01T08:00:00Z\",\n  \"expiresAt\": \"2025-05-15T08:00:00Z\",\n  \"siteId\": \"{{siteId}}\",\n  \"zone\": \"Cold Room A\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"costPerUnit\": 2.80\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/lots",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "lots"]
+            }
+          }
+        },
+        {
+          "name": "Update Lot",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lotCode\": \"L-250501-01\",\n  \"productId\": \"{{productId}}\",\n  \"qty\": 480,\n  \"unit\": \"kg\",\n  \"entryAt\": \"2025-05-01T08:00:00Z\",\n  \"expiresAt\": \"2025-05-15T08:00:00Z\",\n  \"siteId\": \"{{siteId}}\",\n  \"zone\": \"Cold Room A\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"costPerUnit\": 2.80\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/lots/{{lotCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "lots", "{{lotCode}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Lot",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/lots/{{lotCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "lots", "{{lotCode}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Movements",
+      "item": [
+        {
+          "name": "List Movements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/movements?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "movements"],
+              "query": [
+                { "key": "type",      "value": "intake",             "disabled": true },
+                { "key": "productId", "value": "",                   "disabled": true },
+                { "key": "siteId",    "value": "",                   "disabled": true },
+                { "key": "lotCode",   "value": "",                   "disabled": true },
+                { "key": "from",      "value": "2025-01-01T00:00:00Z", "disabled": true },
+                { "key": "to",        "value": "2025-12-31T23:59:59Z", "disabled": true },
+                { "key": "page",      "value": "1"  },
+                { "key": "pageSize",  "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Movement by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/movements/{{movementId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "movements", "{{movementId}}"]
+            }
+          }
+        },
+        {
+          "name": "Record Movement - Intake",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('movementId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"intake\",\n  \"occurredAt\": \"2025-05-01T09:00:00Z\",\n  \"productId\": \"{{productId}}\",\n  \"qty\": 200,\n  \"unit\": \"kg\",\n  \"lotCode\": \"L-250501-01\",\n  \"siteId\": \"{{siteId}}\",\n  \"performedBy\": \"John Smith\",\n  \"note\": \"Morning delivery from supplier\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "movements"]
+            }
+          }
+        },
+        {
+          "name": "Record Movement - Output",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"output\",\n  \"occurredAt\": \"2025-05-02T10:00:00Z\",\n  \"productId\": \"{{productId}}\",\n  \"qty\": -50,\n  \"unit\": \"kg\",\n  \"lotCode\": \"L-250501-01\",\n  \"siteId\": \"{{siteId}}\",\n  \"performedBy\": \"Jane Doe\",\n  \"note\": \"Sold to customer #1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "movements"]
+            }
+          }
+        },
+        {
+          "name": "Record Movement - Waste",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"waste\",\n  \"occurredAt\": \"2025-05-03T14:00:00Z\",\n  \"productId\": \"{{productId}}\",\n  \"qty\": -10,\n  \"unit\": \"kg\",\n  \"lotCode\": \"L-250501-01\",\n  \"siteId\": \"{{siteId}}\",\n  \"performedBy\": \"Jane Doe\",\n  \"note\": \"Damaged during handling\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "movements"]
+            }
+          }
+        },
+        {
+          "name": "Record Movement - Adjustment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"adjustment\",\n  \"occurredAt\": \"2025-05-04T11:00:00Z\",\n  \"productId\": \"{{productId}}\",\n  \"qty\": 5,\n  \"unit\": \"kg\",\n  \"lotCode\": \"L-250501-01\",\n  \"siteId\": \"{{siteId}}\",\n  \"performedBy\": \"Carlos Rivera\",\n  \"note\": \"Stock count correction after physical inventory\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "movements"]
+            }
+          }
+        },
+        {
+          "name": "Record Movement - Transfer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"transfer\",\n  \"occurredAt\": \"2025-05-05T08:30:00Z\",\n  \"productId\": \"{{productId}}\",\n  \"qty\": 100,\n  \"unit\": \"kg\",\n  \"lotCode\": \"L-250501-01\",\n  \"siteId\": \"{{siteId}}\",\n  \"destSiteId\": \"DESTINATION_SITE_UUID\",\n  \"performedBy\": \"Carlos Rivera\",\n  \"note\": \"Transfer to secondary warehouse\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "movements"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Intake Shipments",
+      "item": [
+        {
+          "name": "List Intake Shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/intake-shipments?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "intake-shipments"],
+              "query": [
+                { "key": "supplierId", "value": "",        "disabled": true },
+                { "key": "siteId",     "value": "",        "disabled": true },
+                { "key": "status",     "value": "draft",   "disabled": true },
+                { "key": "page",       "value": "1"  },
+                { "key": "pageSize",   "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Intake Shipment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/intake-shipments/{{shipmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "intake-shipments", "{{shipmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Intake Shipment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('shipmentId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"poReference\": \"PO-2025-00123\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"vehicle\": \"Truck ABC-123\",\n  \"driver\": \"Miguel Torres\",\n  \"siteId\": \"{{siteId}}\",\n  \"receivingZone\": \"Dock 3\",\n  \"coldChainTempC\": 4.5,\n  \"arrivedAt\": \"2025-05-01T07:45:00Z\",\n  \"receivedBy\": \"John Smith\",\n  \"status\": \"draft\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/intake-shipments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "intake-shipments"]
+            }
+          }
+        },
+        {
+          "name": "Update Intake Shipment",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"poReference\": \"PO-2025-00123\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"vehicle\": \"Truck ABC-123\",\n  \"driver\": \"Miguel Torres\",\n  \"siteId\": \"{{siteId}}\",\n  \"receivingZone\": \"Dock 3\",\n  \"coldChainTempC\": 4.5,\n  \"arrivedAt\": \"2025-05-01T07:45:00Z\",\n  \"receivedBy\": \"John Smith\",\n  \"status\": \"received\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/intake-shipments/{{shipmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "intake-shipments", "{{shipmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Intake Shipment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/intake-shipments/{{shipmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "intake-shipments", "{{shipmentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shipment Lines",
+      "item": [
+        {
+          "name": "List Shipment Lines",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/shipment-lines?shipmentId={{shipmentId}}&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "shipment-lines"],
+              "query": [
+                { "key": "shipmentId", "value": "{{shipmentId}}" },
+                { "key": "page",       "value": "1"  },
+                { "key": "pageSize",   "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Shipment Line by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/shipment-lines/{{shipmentLineId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "shipment-lines", "{{shipmentLineId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Shipment Line",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('shipmentLineId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipmentId\": \"{{shipmentId}}\",\n  \"productId\": \"{{productId}}\",\n  \"lotCode\": \"L-250501-01\",\n  \"qty\": 200,\n  \"unit\": \"kg\",\n  \"costPerUnit\": 2.80\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/shipment-lines",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "shipment-lines"]
+            }
+          }
+        },
+        {
+          "name": "Update Shipment Line",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipmentId\": \"{{shipmentId}}\",\n  \"productId\": \"{{productId}}\",\n  \"lotCode\": \"L-250501-01\",\n  \"qty\": 180,\n  \"unit\": \"kg\",\n  \"costPerUnit\": 2.80\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/shipment-lines/{{shipmentLineId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "shipment-lines", "{{shipmentLineId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Shipment Line",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/shipment-lines/{{shipmentLineId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "shipment-lines", "{{shipmentLineId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

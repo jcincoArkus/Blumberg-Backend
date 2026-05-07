@@ -2573,6 +2573,1312 @@ paths:
           description: OK
       security:
         - Bearer: [ ]
+  /api/v1/inventory/categories:
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventoryCategoriesV1
+      parameters:
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateInventoryCategoryV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryCategoryRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventoryCategoryRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventoryCategoryRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/categories/{id}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventoryCategoryByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryCategoryResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Inventory
+      operationId: UpdateInventoryCategoryV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryCategoryRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventoryCategoryRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventoryCategoryRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Inventory
+      operationId: DeleteInventoryCategoryV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+  /api/v1/inventory/sites:
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventorySitesV1
+      parameters:
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateInventorySiteV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/sites/{id}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventorySiteByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Inventory
+      operationId: UpdateInventorySiteV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Inventory
+      operationId: DeleteInventorySiteV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+  /api/v1/inventory/site-zones:
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventorySiteZonesV1
+      parameters:
+        - name: SiteId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateInventorySiteZoneV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteZoneRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteZoneRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteZoneRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/site-zones/{id}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventorySiteZoneByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySiteZoneResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Inventory
+      operationId: UpdateInventorySiteZoneV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteZoneRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteZoneRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventorySiteZoneRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Inventory
+      operationId: DeleteInventorySiteZoneV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+  /api/v1/inventory/suppliers:
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventorySuppliersV1
+      parameters:
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateInventorySupplierV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventorySupplierRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventorySupplierRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventorySupplierRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/suppliers/{id}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventorySupplierByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventorySupplierResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Inventory
+      operationId: UpdateInventorySupplierV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventorySupplierRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventorySupplierRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventorySupplierRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Inventory
+      operationId: DeleteInventorySupplierV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+  /api/v1/inventory/products:
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventoryProductsV1
+      parameters:
+        - name: CategoryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateInventoryProductV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryProductRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventoryProductRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventoryProductRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/products/{id}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventoryProductByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryProductResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Inventory
+      operationId: UpdateInventoryProductV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryProductRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventoryProductRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventoryProductRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Inventory
+      operationId: DeleteInventoryProductV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+  /api/v1/inventory/lots:
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventoryLotsV1
+      parameters:
+        - name: ProductId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: SiteId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: ExpiringBefore
+          in: query
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateInventoryLotV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryLotRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventoryLotRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventoryLotRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/lots/{lotCode}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventoryLotByCodeV1
+      parameters:
+        - name: lotCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryLotResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Inventory
+      operationId: UpdateInventoryLotV1
+      parameters:
+        - name: lotCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryLotRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventoryLotRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventoryLotRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Inventory
+      operationId: DeleteInventoryLotV1
+      parameters:
+        - name: lotCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+  /api/v1/inventory/movements:
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventoryMovementsV1
+      parameters:
+        - name: Type
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: ProductId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: SiteId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: LotCode
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: From
+          in: query
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: To
+          in: query
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateInventoryMovementV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryMovementRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/InventoryMovementRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/InventoryMovementRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/movements/{id}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetInventoryMovementByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+  /api/v1/inventory/intake-shipments:
+    get:
+      tags:
+        - Inventory
+      operationId: GetIntakeShipmentsV1
+      parameters:
+        - name: SupplierId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: SiteId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: Status
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateIntakeShipmentV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntakeShipmentRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/IntakeShipmentRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/IntakeShipmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/intake-shipments/{id}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetIntakeShipmentByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/IntakeShipmentResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Inventory
+      operationId: UpdateIntakeShipmentV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntakeShipmentRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/IntakeShipmentRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/IntakeShipmentRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Inventory
+      operationId: DeleteIntakeShipmentV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+  /api/v1/inventory/shipment-lines:
+    get:
+      tags:
+        - Inventory
+      operationId: GetShipmentLinesV1
+      parameters:
+        - name: ShipmentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+        - name: Page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: PageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponsePagedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponsePagedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponsePagedResponse'
+        '500':
+          description: Internal Server Error
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Inventory
+      operationId: CreateShipmentLineV1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentLineRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentLineRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ShipmentLineRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponse'
+        '400':
+          description: Bad Request
+      security:
+        - Bearer: []
+  '/api/v1/inventory/shipment-lines/{id}':
+    get:
+      tags:
+        - Inventory
+      operationId: GetShipmentLineByIdV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentLineResponse'
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Inventory
+      operationId: UpdateShipmentLineV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentLineRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentLineRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ShipmentLineRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Inventory
+      operationId: DeleteShipmentLineV1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      security:
+        - Bearer: []
 components:
   schemas:
     ActionsResponse:
@@ -3950,6 +5256,751 @@ components:
             type: string
           nullable: true
       additionalProperties: false
+    InventoryCategoryRequest:
+      required:
+        - color
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 100
+          type: string
+        color:
+          maxLength: 50
+          type: string
+      additionalProperties: false
+    InventoryCategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    InventoryCategoryResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryCategoryResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    InventorySiteRequest:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 200
+          type: string
+      additionalProperties: false
+    InventorySiteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    InventorySiteResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventorySiteResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    InventorySiteZoneRequest:
+      required:
+        - name
+        - siteId
+      type: object
+      properties:
+        siteId:
+          type: string
+          format: uuid
+        name:
+          maxLength: 100
+          type: string
+      additionalProperties: false
+    InventorySiteZoneResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        siteId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    InventorySiteZoneResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventorySiteZoneResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    InventorySupplierRequest:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 200
+          type: string
+      additionalProperties: false
+    InventorySupplierResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    InventorySupplierResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventorySupplierResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    InventoryProductRequest:
+      required:
+        - categoryId
+        - name
+        - price
+        - shelfLifeDays
+        - sku
+        - unit
+      type: object
+      properties:
+        sku:
+          maxLength: 50
+          type: string
+        name:
+          maxLength: 200
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        unit:
+          type: string
+        kgPerBox:
+          type: number
+          format: double
+          nullable: true
+        shelfLifeDays:
+          minimum: 1
+          type: integer
+          format: int32
+        price:
+          minimum: 0
+          type: number
+          format: double
+      additionalProperties: false
+    InventoryProductResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sku:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+          nullable: true
+        categoryColor:
+          type: string
+          nullable: true
+        unit:
+          type: string
+          nullable: true
+        kgPerBox:
+          type: number
+          format: double
+          nullable: true
+        shelfLifeDays:
+          type: integer
+          format: int32
+        price:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    InventoryProductResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryProductResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    InventoryLotRequest:
+      required:
+        - costPerUnit
+        - entryAt
+        - expiresAt
+        - lotCode
+        - productId
+        - qty
+        - siteId
+        - unit
+        - zone
+      type: object
+      properties:
+        lotCode:
+          maxLength: 50
+          type: string
+        productId:
+          type: string
+          format: uuid
+        qty:
+          minimum: 0
+          type: number
+          format: double
+        unit:
+          type: string
+        entryAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        siteId:
+          type: string
+          format: uuid
+        zone:
+          maxLength: 100
+          type: string
+        supplierId:
+          type: string
+          format: uuid
+          nullable: true
+        costPerUnit:
+          minimum: 0
+          type: number
+          format: double
+      additionalProperties: false
+    InventoryLotResponse:
+      type: object
+      properties:
+        lotCode:
+          type: string
+          nullable: true
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+          nullable: true
+        productSku:
+          type: string
+          nullable: true
+        qty:
+          type: number
+          format: double
+        unit:
+          type: string
+          nullable: true
+        entryAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        siteId:
+          type: string
+          format: uuid
+        siteName:
+          type: string
+          nullable: true
+        zone:
+          type: string
+          nullable: true
+        supplierId:
+          type: string
+          format: uuid
+          nullable: true
+        supplierName:
+          type: string
+          nullable: true
+        costPerUnit:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    InventoryLotResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryLotResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    InventoryMovementRequest:
+      required:
+        - occurredAt
+        - performedBy
+        - productId
+        - qty
+        - siteId
+        - type
+        - unit
+      type: object
+      properties:
+        type:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        productId:
+          type: string
+          format: uuid
+        qty:
+          type: number
+          format: double
+        unit:
+          type: string
+        lotCode:
+          maxLength: 50
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+        destSiteId:
+          type: string
+          format: uuid
+          nullable: true
+        performedBy:
+          maxLength: 200
+          type: string
+        note:
+          type: string
+          nullable: true
+      additionalProperties: false
+    InventoryMovementResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+          nullable: true
+        productSku:
+          type: string
+          nullable: true
+        qty:
+          type: number
+          format: double
+        unit:
+          type: string
+          nullable: true
+        lotCode:
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+        siteName:
+          type: string
+          nullable: true
+        destSiteId:
+          type: string
+          format: uuid
+          nullable: true
+        performedBy:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    InventoryMovementResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryMovementResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    IntakeShipmentRequest:
+      required:
+        - arrivedAt
+        - poReference
+        - receivedBy
+        - receivingZone
+        - siteId
+        - status
+        - supplierId
+      type: object
+      properties:
+        poReference:
+          maxLength: 100
+          type: string
+        supplierId:
+          type: string
+          format: uuid
+        vehicle:
+          maxLength: 200
+          type: string
+          nullable: true
+        driver:
+          maxLength: 200
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+        receivingZone:
+          maxLength: 100
+          type: string
+        coldChainTempC:
+          type: number
+          format: double
+          nullable: true
+        arrivedAt:
+          type: string
+          format: date-time
+        receivedBy:
+          maxLength: 200
+          type: string
+        status:
+          type: string
+      additionalProperties: false
+    IntakeShipmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        poReference:
+          type: string
+          nullable: true
+        supplierId:
+          type: string
+          format: uuid
+        supplierName:
+          type: string
+          nullable: true
+        vehicle:
+          type: string
+          nullable: true
+        driver:
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+        siteName:
+          type: string
+          nullable: true
+        receivingZone:
+          type: string
+          nullable: true
+        coldChainTempC:
+          type: number
+          format: double
+          nullable: true
+        arrivedAt:
+          type: string
+          format: date-time
+        receivedBy:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    IntakeShipmentResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntakeShipmentResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
+    ShipmentLineRequest:
+      required:
+        - costPerUnit
+        - productId
+        - qty
+        - shipmentId
+        - unit
+      type: object
+      properties:
+        shipmentId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        lotCode:
+          maxLength: 50
+          type: string
+          nullable: true
+        qty:
+          minimum: 0
+          exclusiveMinimum: true
+          type: number
+          format: double
+        unit:
+          type: string
+        costPerUnit:
+          minimum: 0
+          type: number
+          format: double
+      additionalProperties: false
+    ShipmentLineResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        shipmentId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+          nullable: true
+        lotCode:
+          type: string
+          nullable: true
+        qty:
+          type: number
+          format: double
+        unit:
+          type: string
+          nullable: true
+        costPerUnit:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    ShipmentLineResponsePagedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipmentLineResponse'
+          nullable: true
+        totalCount:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+          readOnly: true
+      additionalProperties: false
   securitySchemes:
     Bearer:
       type: http
@@ -3974,6 +6025,7 @@ tags:
   - name: RoleUsers
   - name: Sensor Types
   - name: Sensors
+  - name: Inventory
   - name: Sites
   - name: Thresholds
   - name: UserRoles
