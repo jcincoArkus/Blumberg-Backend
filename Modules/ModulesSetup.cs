@@ -5,6 +5,7 @@ using Modules.Alerts;
 using Modules.Auth;
 using Modules.Equipment;
 using Modules.Ingestion;
+using Modules.Inventory;
 using Modules.Permissions;
 using Modules.Sensors;
 using Modules.SensorTypes;
@@ -35,6 +36,7 @@ public static class ModulesSetup
         services.AddAlertsModule();
         services.AddIngestionModule();
         services.AddPermissionsModule();
+        services.AddInventoryModule();
         return services;
     }
 
@@ -52,6 +54,7 @@ public static class ModulesSetup
         yield return typeof(Ingestion.Controller.IngestionController).Assembly;
         yield return typeof(Permissions.Controller.RolesController).Assembly;
         yield return typeof(Alerts.Controller.AlertsController).Assembly;
+        yield return typeof(Inventory.Controller.CategoriesController).Assembly;
     }
 }
 
