@@ -11,7 +11,7 @@
         "JWT_SECRET_KEY": "LDKF3dkr3934345dxfl.341sddf15434sa",
         "CORS_ORIGINS": "*"
       },
-      "applicationUrl": "https://localhost:52542;http://localhost:52543"
+      "applicationUrl": "https://localhost:52542"
     }
   }
 }
