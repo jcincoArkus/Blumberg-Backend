@@ -119,6 +119,8 @@ public class SuppliersController(ISupplierService service, ILogger<SuppliersCont
     {
         Id = e.Id,
         Name = e.Name,
+        Latitude = e.Latitude,
+        Longitude = e.Longitude,
         CreatedAt = e.CreatedAt,
         UpdatedAt = e.UpdatedAt ?? e.CreatedAt
     };

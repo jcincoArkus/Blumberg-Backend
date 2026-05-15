@@ -266,9 +266,11 @@ Creates a new supplier.
 
 **Request body**
 
-| Field  | Type   | Required | Max length | Description           |
-|--------|--------|----------|------------|-----------------------|
-| `name` | string | ✅       | 200        | Supplier company name |
+| Field       | Type    | Required | Constraint     | Description                        |
+|-------------|---------|----------|----------------|------------------------------------|
+| `name`      | string  | ✅       | max 200        | Supplier company name              |
+| `latitude`  | decimal | ❌       | −90 to 90      | Geographic latitude of the supplier |
+| `longitude` | decimal | ❌       | −180 to 180    | Geographic longitude of the supplier |
 
 **Responses:** `201 Created`
 
@@ -277,6 +279,8 @@ Creates a new supplier.
 ### `PUT api/v1/inventory/suppliers/{id}`
 
 Updates a supplier.
+
+**Request body:** same as `POST`
 
 **Responses:** `200 OK` · `404 Not Found`
 

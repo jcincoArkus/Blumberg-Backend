@@ -16,6 +16,9 @@ public class SupplierSchema : IEntityTypeConfiguration<Supplier>
 
         builder.Property(e => e.Name).HasColumnName("name").IsRequired().HasMaxLength(200);
 
+        builder.Property(e => e.Latitude).HasColumnName("latitude").HasPrecision(9, 6);
+        builder.Property(e => e.Longitude).HasColumnName("longitude").HasPrecision(9, 6);
+
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
 

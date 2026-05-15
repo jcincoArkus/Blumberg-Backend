@@ -32,7 +32,7 @@ public class SupplierService(ISupplierRepository repository, ILogger<SupplierSer
     public virtual async Task<Supplier> CreateAsync(SupplierRequest request)
     {
         logger.LogDebug("Creating supplier: {Name}", request.Name);
-        var entity = new Supplier { Name = request.Name };
+        var entity = new Supplier { Name = request.Name, Latitude = request.Latitude, Longitude = request.Longitude };
         return await repository.CreateAsync(entity);
     }
 
@@ -41,6 +41,8 @@ public class SupplierService(ISupplierRepository repository, ILogger<SupplierSer
     {
         var entity = await GetByIdAsync(id);
         entity.Name = request.Name;
+        entity.Latitude = request.Latitude;
+        entity.Longitude = request.Longitude;
         return await repository.UpdateAsync(entity);
     }
 
