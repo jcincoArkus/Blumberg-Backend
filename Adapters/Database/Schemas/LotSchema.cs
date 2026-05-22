@@ -51,5 +51,15 @@ public class LotSchema : IEntityTypeConfiguration<Lot>
             .HasForeignKey(e => e.SupplierId)
             .HasConstraintName("fk_lots_supplier_id")
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(x => x.IntakeShipmentId)
+            .HasColumnName("intake_shipment_id")
+            .IsRequired(false);
+
+        builder.HasOne(x => x.IntakeShipment)
+            .WithMany(x => x.Lots)
+            .HasForeignKey(x => x.IntakeShipmentId)
+            .HasConstraintName("fk_lots_intake_shipment_id")
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
