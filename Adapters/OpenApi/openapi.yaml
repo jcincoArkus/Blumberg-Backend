@@ -5422,6 +5422,18 @@ components:
         name:
           maxLength: 200
           type: string
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          nullable: true
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          nullable: true
       additionalProperties: false
     InventorySupplierResponse:
       type: object
@@ -5431,6 +5443,14 @@ components:
           format: uuid
         name:
           type: string
+          nullable: true
+        latitude:
+          type: number
+          format: double
+          nullable: true
+        longitude:
+          type: number
+          format: double
           nullable: true
         createdAt:
           type: string
