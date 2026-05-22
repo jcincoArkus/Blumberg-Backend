@@ -43,4 +43,7 @@ public class IntakeShipment : BaseEntity
 
     /// <summary>Line items in this shipment</summary>
     public ICollection<IntakeShipmentLine> Lines { get; set; } = new List<IntakeShipmentLine>();
+
+    /// <summary>Lots created from this shipment</summary>
+    public ICollection<Lot> Lots { get; set; } = new List<Lot>();
 }

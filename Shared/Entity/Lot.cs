@@ -42,6 +42,12 @@ public class Lot
     /// <summary>Navigation to supplier</summary>
     public Supplier? Supplier { get; set; }
 
+    /// <summary>Intake shipment that created this lot</summary>
+    public Guid? IntakeShipmentId { get; set; }
+
+    /// <summary>Navigation to intake shipment</summary>
+    public IntakeShipment? IntakeShipment { get; set; }
+
     /// <summary>Cost per unit when this lot was received</summary>
     public decimal CostPerUnit { get; set; }
 
