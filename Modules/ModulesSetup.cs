@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Modules.Admins;
 using Modules.Alerts;
 using Modules.Auth;
+using Modules.Demo;
 using Modules.Equipment;
 using Modules.Ingestion;
 using Modules.Inventory;
@@ -37,6 +38,7 @@ public static class ModulesSetup
         services.AddIngestionModule();
         services.AddPermissionsModule();
         services.AddInventoryModule();
+        services.AddDemoModule(); // no-op unless DEMO_MODE=true
         return services;
     }
 

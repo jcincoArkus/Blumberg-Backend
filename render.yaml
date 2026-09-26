@@ -15,6 +15,9 @@ services:
       # Development enables the idempotent dev seeders (demo admin users, sites, sensors).
       - key: ASPNETCORE_ENVIRONMENT
         value: Development
+      # Demo data mode: background backfill + live readings/alerts/inventory (see .env.example).
+      - key: DEMO_MODE
+        value: "true"
       - key: ASPNETCORE_URLS
         value: http://0.0.0.0:5000
       - key: PORT
