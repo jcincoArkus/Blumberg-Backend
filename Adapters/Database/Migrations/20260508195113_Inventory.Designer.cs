@@ -3,6 +3,7 @@ using System;
 using Adapters.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Adapters.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260508195113_Inventory")]
+    partial class Inventory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -758,10 +761,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
-                    b.Property<Guid?>("IntakeShipmentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("intake_shipment_id");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid")
                         .HasColumnName("product_id");
@@ -803,8 +802,6 @@ namespace Adapters.Database.Migrations
 
                     b.HasIndex("ExpiresAt")
                         .HasDatabaseName("idx_lots_expires_at");
-
-                    b.HasIndex("IntakeShipmentId");
 
                     b.HasIndex("ProductId")
                         .HasDatabaseName("idx_lots_product_id");
@@ -1365,16 +1362,6 @@ namespace Adapters.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<decimal?>("Latitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("numeric(9,6)")
-                        .HasColumnName("latitude");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("numeric(9,6)")
-                        .HasColumnName("longitude");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1625,12 +1612,6 @@ namespace Adapters.Database.Migrations
 
             modelBuilder.Entity("Shared.Entity.Lot", b =>
                 {
-                    b.HasOne("Shared.Entity.IntakeShipment", "IntakeShipment")
-                        .WithMany("Lots")
-                        .HasForeignKey("IntakeShipmentId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_lots_intake_shipment_id");
-
                     b.HasOne("Shared.Entity.InventoryProduct", "Product")
                         .WithMany("Lots")
                         .HasForeignKey("ProductId")
@@ -1650,8 +1631,6 @@ namespace Adapters.Database.Migrations
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_lots_supplier_id");
-
-                    b.Navigation("IntakeShipment");
 
                     b.Navigation("Product");
 
@@ -1821,8 +1800,6 @@ namespace Adapters.Database.Migrations
             modelBuilder.Entity("Shared.Entity.IntakeShipment", b =>
                 {
                     b.Navigation("Lines");
-
-                    b.Navigation("Lots");
                 });
 
             modelBuilder.Entity("Shared.Entity.InventoryCategory", b =>

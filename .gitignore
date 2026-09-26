@@ -43,6 +43,7 @@ msbuild.wrn
 .env
 .env.local
 .env.*.local
+env.ps1
 .temp/
 .tmp/
 tmp/
