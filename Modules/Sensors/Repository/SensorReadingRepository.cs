@@ -49,18 +49,18 @@ public class SensorReadingRepository(ApplicationDbContext context, ILogger<Senso
 
         logger.LogDebug("Querying latest reading per sensor for {Count} sensors", sensorIds.Count);
 
-        var allRecent = await context.SensorReadings
-            .Include(r => r.IngestionRun)
-            .Where(r => sensorIds.Contains(r.SensorId))
-            .OrderByDescending(r => r.TimestampUtc)
-            .ToListAsync();
-
-        var seen = new HashSet<Guid>();
+        // One indexed top-1 query per sensor (uses ix_sensor_readings_sensor_id_timestamp_utc) instead of
+        // loading every reading of every sensor into memory.
         var latest = new List<Shared.Entity.SensorReading>();
-        foreach (var r in allRecent)
+        foreach (var sensorId in sensorIds.Distinct())
         {
-            if (seen.Add(r.SensorId))
-                latest.Add(r);
+            var reading = await context.SensorReadings
+                .Include(r => r.IngestionRun)
+                .Where(r => r.SensorId == sensorId)
+                .OrderByDescending(r => r.TimestampUtc)
+                .FirstOrDefaultAsync();
+            if (reading != null)
+                latest.Add(reading);
         }
 
         logger.LogInformation("Retrieved latest readings for {Count} sensors", latest.Count);
