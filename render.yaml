@@ -1,0 +1,61 @@
+# Render Blueprint: Blumberg API (Docker) + Postgres, for the demo environment.
+databases:
+  - name: blumberg-db
+    plan: free
+    databaseName: blumberg
+    user: blumberg
+
+services:
+  - type: web
+    name: blumberg-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      # Development enables the idempotent dev seeders (demo admin users, sites, sensors).
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Development
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:5000
+      - key: PORT
+        value: "5000"
+      - key: CORS_ORIGINS
+        value: https://blumberg-rho.vercel.app,http://localhost:5080
+      - key: DB_HOST
+        fromDatabase: { name: blumberg-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: blumberg-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: blumberg-db, property: database }
+      - key: DB_USER
+        fromDatabase: { name: blumberg-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: blumberg-db, property: password }
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ISSUER
+        value: Blumberg.API
+      - key: JWT_AUDIENCE
+        value: Blumberg.Client
+      - key: JWT_EXPIRATION_HOURS
+        value: "24"
+      - key: JWT_REFRESH_EXPIRATION_DAYS
+        value: "7"
+      - key: LOG_LEVEL
+        value: Information
+      - key: LOG_FORMAT_JSON
+        value: "false"
+      - key: LOG_WRITE_FILE
+        value: "false"
+      - key: OTEL_ENABLED
+        value: "false"
+      - key: ALERT_EMAIL_PROVIDER
+        value: Smtp
+      - key: SMTP_HOST
+        value: smtp.invalid
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USE_SSL
+        value: "true"
+      - key: SMTP_FROM_ADDRESS
+        value: noreply@blumberg.demo
