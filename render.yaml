@@ -18,6 +18,9 @@ services:
       # Demo data mode: background backfill + live readings/alerts/inventory (see .env.example).
       - key: DEMO_MODE
         value: "true"
+      # Keep the header at "Degraded" (warnings) instead of an always-on critical alert for stakeholder demos.
+      - key: DEMO_ACTIVE_CRITICAL
+        value: "false"
       - key: ASPNETCORE_URLS
         value: http://0.0.0.0:5000
       - key: PORT
