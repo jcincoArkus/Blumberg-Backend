@@ -67,7 +67,8 @@ internal sealed class DemoSignalModel
     /// <summary>Sensor that drops 1 of every 6 readings (~83 % reliability → Sensor Health: "Warning"/flapping).</summary>
     public const string GapSerial = "Generator Energy";
 
-    /// <summary>Env var: set to false to drop the always-on critical scenario (dashboard then shows "Degraded").</summary>
+    /// <summary>Env var: set to false so the demo never produces Critical alerts (no always-on critical scenario and
+    /// every out-of-range episode stays below the min → Warning / Info only; dashboard shows "Degraded").</summary>
     public const string ActiveCriticalEnvVar = "DEMO_ACTIVE_CRITICAL";
 
     private sealed record PersistentSpec(
@@ -96,6 +97,7 @@ internal sealed class DemoSignalModel
     private readonly PersistentSpec[] _persistent;
     private readonly string[] _transientPool;
     private readonly Dictionary<int, List<DemoEpisode>> _transientCache = new();
+    private readonly bool _allowCritical;
 
     public DemoSignalModel(IEnumerable<DemoSensor> sensors)
     {
@@ -106,6 +108,7 @@ internal sealed class DemoSignalModel
         var includeCritical = !string.Equals(
             Environment.GetEnvironmentVariable(ActiveCriticalEnvVar)?.Trim(), "false", StringComparison.OrdinalIgnoreCase);
 
+        _allowCritical = includeCritical;
         _persistent = PersistentSpecs
             .Where(p => _bySerial.ContainsKey(p.Serial) && (includeCritical || !p.Critical))
             .ToArray();
@@ -122,6 +125,9 @@ internal sealed class DemoSignalModel
     }
 
     public IReadOnlyCollection<DemoSensor> Sensors => _bySerial.Values;
+
+    /// <summary>False when DEMO_ACTIVE_CRITICAL=false: no episode ever goes above max (above max is always Critical).</summary>
+    public bool AllowCritical => _allowCritical;
 
     public bool IsKnown(string serial) => _bySerial.ContainsKey(serial);
 
@@ -218,7 +224,9 @@ internal sealed class DemoSignalModel
                 var start = dayStart.AddMinutes(Math.Round(rng.Range(30, 23 * 60)));
                 start = new DateTime(start.Ticks - start.Ticks % TimeSpan.FromMinutes(5).Ticks, DateTimeKind.Utc).AddMinutes(1);
                 var end = start.AddMinutes(rng.Next(25, 85));
-                var direction = rng.Chance(0.55) ? +1 : -1;
+                // Draw the chance unconditionally so the rest of the deterministic schedule is unchanged.
+                var goesAboveMax = rng.Chance(0.55);
+                var direction = goesAboveMax && _allowCritical ? +1 : -1;
                 var magnitude = rng.Range(0.06, 0.2);
                 TimeSpan? ack = rng.Chance(0.5) ? TimeSpan.FromMinutes(rng.Next(6, 16)) : null;
                 var manual = rng.Chance(0.4);

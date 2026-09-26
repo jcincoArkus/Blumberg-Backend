@@ -59,6 +59,9 @@ internal sealed class DemoSensorDataSeeder(ILogger logger)
 
         var model = new DemoSignalModel(sensors);
 
+        if (!model.AllowCritical)
+            await ScrubCriticalAsync(organizationId, model, ct);
+
         // Readings first: they decide what the dashboard shows right after a cold start.
         var (readings, runs, rejected) = await TopUpReadingsAsync(organizationId, model, now, ct);
         logger.LogInformation("Demo: topped up {Readings} readings in {Runs} ingestion runs ({Rejected} rejected rows)", readings, runs, rejected);
@@ -374,6 +377,41 @@ internal sealed class DemoSensorDataSeeder(ILogger logger)
 
         await ctx.SaveChangesAsync(ct);
         return (created, resolved);
+    }
+
+    /// <summary>
+    /// With criticals disabled, remove what an earlier run (or the live pipeline) stored while they were allowed:
+    /// readings above max are recomputed from the current model (which never exceeds max) and Critical alerts are
+    /// deleted with their events. The reconcile step then recreates those episodes as Warning / Info alerts.
+    /// </summary>
+    private async Task ScrubCriticalAsync(Guid organizationId, DemoSignalModel model, CancellationToken ct)
+    {
+        await using var ctx = DemoDb.Create(organizationId);
+
+        var rewritten = 0;
+        foreach (var sensor in model.Sensors)
+        {
+            var above = await ctx.SensorReadings
+                .Where(r => r.SensorId == sensor.Id && r.Value > sensor.Max)
+                .ToListAsync(ct);
+            foreach (var reading in above)
+                reading.Value = model.ValueAt(sensor, reading.TimestampUtc);
+            rewritten += above.Count;
+        }
+        await ctx.SaveChangesAsync(ct);
+
+        var criticalIds = await ctx.Alerts
+            .Where(a => a.OrganizationId == organizationId && a.Severity == AlertSeverity.Critical)
+            .Select(a => a.Id)
+            .ToListAsync(ct);
+        if (criticalIds.Count > 0)
+        {
+            await ctx.AlertEvents.Where(e => criticalIds.Contains(e.AlertId)).ExecuteDeleteAsync(ct);
+            await ctx.Alerts.Where(a => criticalIds.Contains(a.Id)).ExecuteDeleteAsync(ct);
+        }
+
+        if (rewritten > 0 || criticalIds.Count > 0)
+            logger.LogInformation("Demo: criticals disabled — rewrote {Readings} readings above max, removed {Alerts} critical alerts", rewritten, criticalIds.Count);
     }
 
     internal static AlertEvent NewEvent(Alert alert, AlertEventType type, DateTime at, string description, Guid? actorId) => new()
