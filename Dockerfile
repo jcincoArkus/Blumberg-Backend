@@ -30,7 +30,6 @@ RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
     dotnet publish "Apps/API/API.csproj" \
     -c Release \
     -o /app/publish \
-    --no-restore \
     -p:UseAppHost=false
 
 # Publish CLI for running nukeAndPave and ingestion:simulate inside the container (ECS Exec).
